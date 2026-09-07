@@ -1,4 +1,4 @@
-import { mkdir, open, readFile, rename, chmod, lstat, unlink, readdir, stat, rmdir } from "node:fs/promises";
+import { mkdir, open, readFile, rename, chmod, lstat, unlink, readdir, stat, rmdir, link } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { randomUUID } from "node:crypto";
 import { spawn, execFile } from "node:child_process";
@@ -121,7 +121,7 @@ async function removeAbandonedLegacyClaim(path) {
   } catch (error) {
     if (!(error instanceof SyntaxError)) throw error;
     // An interrupted legacy write may still contain a usable owner PID.
-    owner = { pid: Number(/"pid"\s*:\s*(\d+)/.exec(text)?.[1]) };
+    owner = { pid: Number(/"pid"\s*:\s*([1-9]\d*)(?=\s*[,}])/.exec(text)?.[1]) };
   }
   if (Number.isSafeInteger(owner?.pid) && owner.pid > 0) {
     if (processAlive(owner.pid)) throw new RunError("locked", "A live process still owns legacy lock metadata.", { blocked: true });
@@ -140,6 +140,28 @@ async function removeAbandonedLegacyClaim(path) {
   await unlink(path);
 }
 
+export async function publishExclusiveOwner(path, owner) {
+  const temporary = `${path}.${owner.token}.claim`;
+  const handle = await open(temporary, "wx", 0o600);
+  try {
+    try {
+      await handle.writeFile(`${JSON.stringify(owner)}\n`, "utf8");
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
+    // Unlike rename, link never overwrites a legacy wx claimant that won the race.
+    try {
+      await link(temporary, path);
+    } catch (error) {
+      if (error.code !== "EEXIST") throw error;
+      throw new RunError("locked", "Another process published its lock claim first.", { blocked: true });
+    }
+  } finally {
+    await unlink(temporary);
+  }
+}
+
 export async function acquireLock(root, runId) {
   await privateDirectory(root);
   const guard = await kernelLock(root);
@@ -149,7 +171,7 @@ export async function acquireLock(root, runId) {
     await removeAbandonedLegacyClaim(path);
     await removeAbandonedLegacyClaim(join(root, "lock-recovery"));
     guard.assertHeld();
-    await atomicJson(path, owner);
+    await publishExclusiveOwner(path, owner);
     guard.assertHeld();
   } catch (error) {
     await guard.release();

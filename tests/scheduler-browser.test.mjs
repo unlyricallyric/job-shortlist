@@ -4,7 +4,7 @@ import vm from "node:vm";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { cardsInPage, detailInPage, pageGuard, searchUrl, ownedTab } from "../scheduler/browser.mjs";
+import { cardsInPage, detailInPage, pageGuard, searchUrl, ownedTab, waitPage } from "../scheduler/browser.mjs";
 import { atomicJson, readJson, RunError } from "../scheduler/io.mjs";
 
 const evaluate = (fn, globals, ...args) => vm.runInNewContext(`(${fn.toString()})(...args)`, {
@@ -76,7 +76,31 @@ test("full JD requires both matching public ID and exact heading before acceptan
   });
   assert.equal(evaluate(detailInPage, page("a", "市场经理"), "boss-a", "市场经理").state, "ready");
   assert.equal(evaluate(detailInPage, page("stale", "市场经理"), "boss-a", "市场经理").state, "waiting");
-  assert.equal(evaluate(detailInPage, page("a", "其他职位"), "boss-a", "市场经理").state, "waiting");
+  assert.equal(evaluate(detailInPage, page("a", "其他职位"), "boss-a", "市场经理").state, "identity-conflict");
+});
+
+test("same-ID conflicting detail title never exposes the JD and needs repeated stable observations", async () => {
+  const document = {
+    querySelector: (selector) => ({
+      ".job-detail-body a.more-job-btn": { href: "https://www.zhipin.com/job_detail/test-only.html" },
+      ".job-detail-body .desc": { get innerText() { assert.fail("Conflicting detail text must not be read."); } },
+      ".job-detail-info": { innerText: "海外大客户经理（出差马来西亚等）" },
+    })[selector],
+  };
+  const conflict = evaluate(detailInPage, { document }, "boss-test-only", "海外大客户经理");
+  assert.equal(conflict.state, "identity-conflict");
+  assert.equal(conflict.jd, undefined);
+  let reads = 0;
+  const result = await waitPage(async () => { reads++; return conflict; }, 500, undefined,
+    { allowIdentityConflict: true, intervalMs: 1 });
+  assert.equal(reads, 3);
+  assert.deepEqual(result, { state: "identity-conflict", code: "detail-title-conflict" });
+  let changed = 0;
+  const recovered = await waitPage(async () => ++changed < 3 ? conflict : { state: "ready", jd: "TEST_ONLY" },
+    500, undefined, { allowIdentityConflict: true, intervalMs: 1 });
+  assert.equal(recovered.state, "ready");
+  await assert.rejects(waitPage(async () => ({ state: "waiting" }), 5, undefined,
+    { allowIdentityConflict: true, intervalMs: 1 }), { code: "source-timeout" });
 });
 
 test("a legitimate empty result differs from an unknown or broken page", () => {

@@ -103,6 +103,37 @@ test("publication failure preserves lastPublished and cannot become a successful
   assert.equal((await run(root, { tick: true, services })).status, "idle");
 });
 
+test("persistent detail identity conflicts are private review only and never count as full JDs or selections", async (t) => {
+  const { root, services } = await setup(t);
+  const verified = { ...fixture(), retrievedAt: new Date().toISOString(), jd: "TEST_ONLY_VERIFIED_DETAIL" };
+  const conflict = { ...fixture(), id: "boss-test-conflict", url: "https://www.zhipin.com/job_detail/test-conflict.html" };
+  let screened = 0;
+  services.rules = {
+    prefilterCard: () => ({ eligible: true }),
+    screenJob: (record) => {
+      assert.equal(record.id, verified.id);
+      screened++;
+      return { decision: "review", reasons: ["TEST_ONLY"], job: null };
+    },
+  };
+  services.collectBoss = async ({ onEvidence }) => {
+    const evidence = { cards: [verified, conflict], details: [verified], queries: [], complete: true,
+      detailConflicts: [{ id: conflict.id, code: "detail-title-conflict" }] };
+    await onEvidence(evidence);
+    return evidence;
+  };
+  const result = await run(root, { services });
+  assert.equal(result.status, "succeeded");
+  assert.equal(screened, 1);
+  assert.equal(result.summary.details, 1);
+  assert.equal(result.summary.detailConflicts, 1);
+  assert.equal(result.summary.new, 0);
+  const ledger = await readJson(join(root, "ledger.json"));
+  assert.ok(!ledger.detailIds.includes(conflict.id));
+  const review = await readJson(join(root, "runs", result.id, "review.json"));
+  assert.ok(review.some((item) => item.id === conflict.id && item.reasons.includes("detail-title-conflict")));
+});
+
 test("launchd request executes with an explicit provenance and does not replay on next tick", async (t) => {
   const { root, services, calls } = await setup(t);
   await atomicJson(join(root, "request.json"), { id: "manual-test-request", dryRun: true });

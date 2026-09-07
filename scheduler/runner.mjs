@@ -138,15 +138,19 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
         throw new RunError("no-complete-jds", "No full matching JD was read; the dataset is unchanged.", { blocked: true });
       }
       const decisions = evidence.details.map((record) => ({ id: record.id, ...screenJob(record, matching) }));
-      await atomicJson(join(runDirectory, "review.json"), decisions.filter((item) => item.decision !== "select")
-        .map(({ id: recordId, decision, reasons }) => ({ id: recordId, decision, reasons })));
+      const detailConflicts = evidence.detailConflicts ?? [];
+      await atomicJson(join(runDirectory, "review.json"), [
+        ...decisions.filter((item) => item.decision !== "select").map(({ id: recordId, decision, reasons }) => ({ id: recordId, decision, reasons })),
+        ...detailConflicts.map(({ id: recordId, code }) => ({ id: recordId, decision: "review", reasons: [code] })),
+      ]);
       const snapshot = buildSnapshot(prepared.snapshot, evidence, decisions, ledger, {
         runId: id, startedAt: active.startedAt, generatedAt: new Date().toISOString(), maxNewJobs: runtime.limits.maxNewJobs,
       });
       await atomicJson(join(runDirectory, "candidate.json"), snapshot);
       summary = {
         reviewed: evidence.cards.length, details: evidence.details.length, selected: snapshot.jobs.length,
-        new: snapshot.run.newCount, review: decisions.filter((decision) => decision.decision === "review").length,
+        new: snapshot.run.newCount, review: decisions.filter((decision) => decision.decision === "review").length + detailConflicts.length,
+        detailConflicts: detailConflicts.length,
         rejected: decisions.filter((decision) => decision.decision === "reject").length,
       };
       signal.throwIfAborted();

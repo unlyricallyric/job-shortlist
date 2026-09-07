@@ -96,7 +96,8 @@ export function detailInPage(id, title) {
   const url = new URL(link.href);
   const actualTitle = header.innerText.split("\n")[0].trim();
   if (url.origin !== "https://www.zhipin.com" || url.pathname !== `/job_detail/${id.slice(5)}.html`
-    || actualTitle !== title) return { state: "waiting" };
+    || !actualTitle) return { state: "waiting" };
+  if (actualTitle !== title) return { state: "identity-conflict", code: "detail-title-conflict", actualTitle };
   const jd = description.innerText.trim();
   if (jd.length < 80) return { state: "waiting" };
   if (jd.length > 60000) return { state: "error", code: "jd-too-large" };
@@ -202,20 +203,31 @@ export async function evaluatePage(tab, expectedUrl, fn, args = [], signal) {
   return result;
 }
 
-async function waitPage(read, timeoutMs, signal) {
+export async function waitPage(read, timeoutMs, signal, { allowIdentityConflict = false, intervalMs = 1200 } = {}) {
   const deadline = Date.now() + timeoutMs;
+  let conflictTitle = null, conflicts = 0;
   while (Date.now() < deadline) {
     signal?.throwIfAborted();
     const result = await read();
     if (result.state === "ready") return result;
-    await delay(1200, undefined, { signal });
+    if (allowIdentityConflict && result.state === "identity-conflict") {
+      conflicts = result.actualTitle === conflictTitle ? conflicts + 1 : 1;
+      conflictTitle = result.actualTitle;
+      if (conflicts >= 3) return { state: "identity-conflict", code: result.code };
+    } else {
+      conflictTitle = null;
+      conflicts = 0;
+    }
+    await delay(intervalMs, undefined, { signal });
   }
   throw new RunError("source-timeout", "No complete public result became readable; previous data is retained.", { blocked: true });
 }
 
 export async function collectBoss({ root, queries, limits, prefilter, signal, onEvidence }) {
   const tab = await ownedTab(root, searchUrl(queries[0]), signal);
-  const cards = new Map(), details = new Map(), queryResults = [];
+  const cards = new Map(), details = new Map(), detailConflicts = new Map(), queryResults = [];
+  const progress = (complete) => ({ cards: [...cards.values()], details: [...details.values()],
+    detailConflicts: [...detailConflicts.values()], queries: queryResults, complete });
   for (const query of queries) {
     signal.throwIfAborted();
     const url = searchUrl(query);
@@ -225,20 +237,27 @@ export async function collectBoss({ root, queries, limits, prefilter, signal, on
     const inspected = result.cards.slice(0, Math.min(limits.cardsPerQuery, Math.max(0, limits.maxCards - cards.size)));
     for (const card of inspected) cards.set(card.id, { ...card, retrievedAt: result.retrievedAt });
     queryResults.push({ term: query.term, industry: query.industry ?? null, count: inspected.length, empty: result.empty === true });
-    await onEvidence({ cards: [...cards.values()], details: [...details.values()], queries: queryResults, complete: false });
+    await onEvidence(progress(false));
     for (const card of inspected) {
       if (details.size >= limits.maxDetails) break;
-      if (details.has(card.id) || !prefilter(card).eligible) continue;
+      if (details.has(card.id) || detailConflicts.has(card.id) || !prefilter(card).eligible) continue;
       await evaluatePage(tab, url, openCardInPage, [card.id, card.title], signal);
-      const detail = await waitPage(() => evaluatePage(tab, url, detailInPage, [card.id, card.title], signal), 40000, signal);
+      const detail = await waitPage(() => evaluatePage(tab, url, detailInPage, [card.id, card.title], signal), 40000, signal,
+        { allowIdentityConflict: true });
+      if (detail.state === "identity-conflict") {
+        detailConflicts.set(card.id, { id: card.id, code: detail.code });
+        await onEvidence(progress(false));
+        await delay(1500, undefined, { signal });
+        continue;
+      }
       details.set(card.id, { ...card, jd: detail.jd, retrievedAt: detail.retrievedAt });
-      await onEvidence({ cards: [...cards.values()], details: [...details.values()], queries: queryResults, complete: false });
+      await onEvidence(progress(false));
       await delay(1500, undefined, { signal });
     }
     if (cards.size >= limits.maxCards) break;
     await delay(1800, undefined, { signal });
   }
-  const result = { cards: [...cards.values()], details: [...details.values()], queries: queryResults, complete: true };
+  const result = progress(true);
   await onEvidence(result);
   return result;
 }

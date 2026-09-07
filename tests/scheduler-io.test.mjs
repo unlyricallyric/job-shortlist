@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { setTimeout as delay } from "node:timers/promises";
-import { acquireLock, atomicJson, readJson } from "../scheduler/io.mjs";
+import { acquireLock, atomicJson, readJson, publishExclusiveOwner } from "../scheduler/io.mjs";
 
 test("manual and scheduled execution share an exclusive lock and private atomic state", async (t) => {
   const root = await mkdtemp(join(tmpdir(), "shortlist-lock-test-"));
@@ -24,7 +24,7 @@ test("manual and scheduled execution share an exclusive lock and private atomic 
 });
 
 test("old empty and partial initialization claims and abandoned recovery markers are recoverable", async (t) => {
-  for (const content of ["", '{"token":', '{"protocol":"legacy",']) {
+  for (const content of ["", '{"token":', '{"protocol":"legacy",', '{"pid":1']) {
     await t.test(content || "empty", async (subtest) => {
       const root = await mkdtemp(join(tmpdir(), "shortlist-lock-crash-test-"));
       subtest.after(() => rm(root, { recursive: true, force: true }));
@@ -55,6 +55,19 @@ test("recent incomplete claims and live legacy owners are never removed", async 
   assert.equal(await readFile(path, "utf8"), partial);
 });
 
+test("an initialized new owner never overwrites a legacy exclusive-create claimant", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "shortlist-legacy-lock-race-test-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const path = join(root, "run.lock");
+  assert.equal(await readJson(path, null), null);
+  // The legacy writer wins after the new process observed no previous claim.
+  const legacy = { pid: process.pid, token: "legacy-live-owner", runId: "legacy-test" };
+  await writeFile(path, JSON.stringify(legacy), { flag: "wx", mode: 0o600 });
+  await assert.rejects(publishExclusiveOwner(path, {
+    pid: process.pid, token: "new-contender", runId: "new-test", protocol: "flock-v1",
+  }), { code: "locked" });
+  assert.deepEqual(await readJson(path), legacy);
+});
 test("an old incomplete claim with an open descriptor is not an abandoned owner", async (t) => {
   const root = await mkdtemp(join(tmpdir(), "shortlist-lock-descriptor-test-"));
   t.after(() => rm(root, { recursive: true, force: true }));
