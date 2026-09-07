@@ -1,6 +1,11 @@
 import { mkdir, open, readFile, rename, chmod, lstat, unlink, readdir, stat, rmdir } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { randomUUID } from "node:crypto";
+import { spawn, execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
+
+const executeFile = promisify(execFile);
 
 export class RunError extends Error {
   constructor(code, message, { blocked = false, cause } = {}) {
@@ -54,60 +59,114 @@ function processAlive(pid) {
   }
 }
 
+async function kernelLock(root) {
+  const lost = new AbortController();
+  const child = spawn("/usr/bin/perl", [fileURLToPath(new URL("./lock-helper.pl", import.meta.url)), join(root, "run.guard")], {
+    stdio: ["pipe", "pipe", "pipe"], env: { PATH: "/usr/bin:/bin", LANG: "C" },
+  });
+  let releasing = false;
+  const closed = new Promise((resolve) => child.once("close", (code) => {
+    if (!releasing) lost.abort(new RunError("lock-lost", "Kernel lock helper exited unexpectedly."));
+    resolve(code);
+  }));
+  child.stdin.on("error", () => lost.abort(new RunError("lock-lost", "Kernel lock pipe closed unexpectedly.")));
+  try {
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        child.kill("SIGTERM");
+        reject(new RunError("lock-timeout", "Kernel lock helper did not respond."));
+      }, 10000);
+      child.once("error", (error) => { clearTimeout(timer); reject(error); });
+      child.once("close", (code) => {
+        clearTimeout(timer);
+        reject(new RunError(code === 73 ? "locked" : "lock-unavailable",
+          code === 73 ? "Another run owns the kernel lock." : "Kernel locking is unavailable.", { blocked: true }));
+      });
+      child.stdout.once("data", (chunk) => {
+        clearTimeout(timer);
+        if (chunk.toString("utf8") !== "locked\n") reject(new RunError("lock-unavailable", "Unexpected kernel lock response."));
+        else resolve();
+      });
+    });
+  } catch (error) {
+    releasing = true;
+    child.stdin.end();
+    await closed;
+    throw error;
+  }
+  return {
+    signal: lost.signal,
+    assertHeld: () => lost.signal.throwIfAborted(),
+    release: async () => {
+      releasing = true;
+      child.stdin.end();
+      await closed;
+    },
+  };
+}
+
+async function removeAbandonedLegacyClaim(path) {
+  let info, text;
+  try {
+    info = await lstat(path);
+    if (!info.isFile() || info.isSymbolicLink()) throw new RunError("unsafe-path", "Lock metadata must be a regular file.");
+    text = await readFile(path, "utf8");
+  } catch (error) {
+    if (error.code === "ENOENT") return;
+    throw error;
+  }
+  let owner;
+  try {
+    owner = JSON.parse(text);
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error;
+    // An interrupted legacy write may still contain a usable owner PID.
+    owner = { pid: Number(/"pid"\s*:\s*(\d+)/.exec(text)?.[1]) };
+  }
+  if (Number.isSafeInteger(owner?.pid) && owner.pid > 0) {
+    if (processAlive(owner.pid)) throw new RunError("locked", "A live process still owns legacy lock metadata.", { blocked: true });
+  } else {
+    if (Date.now() - info.mtimeMs < 120000) throw new RunError("locked", "A legacy lock claim is still initializing.", { blocked: true });
+  }
+  try {
+    const result = await executeFile("/usr/sbin/lsof", ["-t", "--", path], { timeout: 10000, maxBuffer: 65536 });
+    if (result.stdout.trim()) throw new RunError("locked", "A process still holds the legacy claim.", { blocked: true });
+  } catch (error) {
+    if (error.code !== 1 || error.stderr?.trim()) throw error;
+  }
+  const current = await lstat(path);
+  if (current.ino !== info.ino || current.dev !== info.dev || current.mtimeMs !== info.mtimeMs
+    || current.size !== info.size) throw new RunError("locked", "Legacy lock metadata changed during recovery.", { blocked: true });
+  await unlink(path);
+}
+
 export async function acquireLock(root, runId) {
   await privateDirectory(root);
+  const guard = await kernelLock(root);
   const path = join(root, "run.lock");
-  const owner = { pid: process.pid, token: randomUUID(), runId, startedAt: new Date().toISOString() };
-  for (let attempt = 0; attempt < 2; attempt++) {
-    let handle;
+  const owner = { protocol: "flock-v1", pid: process.pid, token: randomUUID(), runId, startedAt: new Date().toISOString() };
+  try {
+    await removeAbandonedLegacyClaim(path);
+    await removeAbandonedLegacyClaim(join(root, "lock-recovery"));
+    guard.assertHeld();
+    await atomicJson(path, owner);
+    guard.assertHeld();
+  } catch (error) {
+    await guard.release();
+    throw error;
+  }
+  const release = async () => {
     try {
-      handle = await open(path, "wx", 0o600);
-    } catch (error) {
-      if (error.code !== "EEXIST") throw error;
-      let existing;
-      try {
-        existing = await readJson(path);
-      } catch (readError) {
-        if (readError.code === "ENOENT") continue;
-        if (readError instanceof SyntaxError) throw new RunError("locked", "Another run is acquiring the scheduler lock.", { blocked: true });
-        throw readError;
-      }
-      if (!Number.isSafeInteger(existing.pid) || existing.pid <= 0 || processAlive(existing.pid)) {
-        throw new RunError("locked", "Another run owns the scheduler lock.", { blocked: true });
-      }
-      const recoveryPath = join(root, "lock-recovery");
-      let recovery;
-      try {
-        recovery = await open(recoveryPath, "wx", 0o600);
-      } catch (recoveryError) {
-        if (recoveryError.code === "EEXIST") throw new RunError("locked", "Another process is recovering an abandoned run.", { blocked: true });
-        throw recoveryError;
-      }
-      try {
-        const latest = await readJson(path, null);
-        if (latest?.token !== existing.token || (latest && processAlive(latest.pid))) {
-          throw new RunError("locked", "Scheduler lock changed during recovery.", { blocked: true });
-        }
-        if (latest) await unlink(path);
-      } finally {
-        await recovery.close();
-        await unlink(recoveryPath);
-      }
-      continue;
-    }
-    try {
-      await handle.writeFile(JSON.stringify(owner));
-      await handle.sync();
-    } finally {
-      await handle.close();
-    }
-    return async () => {
       const current = await readJson(path, null);
       if (current?.token !== owner.token) throw new RunError("lock-lost", "Scheduler lock ownership changed.");
       await unlink(path);
-    };
-  }
-  throw new RunError("locked", "Could not acquire scheduler lock.", { blocked: true });
+    } finally {
+      await guard.release();
+    }
+  };
+  release.signal = guard.signal;
+  release.assertHeld = guard.assertHeld;
+  return release;
 }
 
 export async function appendLog(root, event) {

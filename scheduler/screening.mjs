@@ -159,7 +159,9 @@ function sections(record) {
 function clauses(text) {
   const result = [];
   let preferredBlock = false;
-  for (let line of normalize(text).split(/[\r\n。；;]+/u)) {
+  const separated = normalize(text).replace(
+    /\(\s*(学历不限|不限学历|专业不限|不限专业|经验不限|不限经验)\s*\)/gu, ";$1;");
+  for (let line of separated.split(/[\r\n。；;]+/u)) {
     line = line.replace(/^\s*(?:[-*•]|\d+[、)）]|\d+\.(?!\d))\s*/u, "").trim();
     if (/^(?:加分项|优先条件|优先要求|preferred qualifications|nice[- ]to[- ]have)\s*[:：]?/u.test(line)) {
       preferredBlock = true;
@@ -173,7 +175,15 @@ function clauses(text) {
       if (!value) continue;
       const preferred = preferredBlock || PREFERRED.test(value);
       const positive = value.replace(/非必需|非必备|不做硬性要求|not required/gu, "");
-      result.push({ text: value, preferred, conflict: preferred && MUST.test(positive), negated: NO_REQUIREMENT.test(value) });
+      const exemption = NO_REQUIREMENT.test(value);
+      const wholeExemption = /^(?:学历不限|不限学历|专业不限|不限专业|经验不限|不限经验|no experience required|not required)$/u.test(value);
+      const leadingNegation = /^(?:不(?:做|作)?要求|无需|无须|不需(?:要)?|不涉及)/u.test(value);
+      const ambiguousNegation = exemption && !wholeExemption
+        && (!leadingNegation || MUST.test(value) || /须有|需有|具备|具有|至少|不少于|还需|仍需/u.test(value));
+      result.push({
+        text: value, preferred, conflict: (preferred && MUST.test(positive)) || ambiguousNegation,
+        negated: exemption && !ambiguousNegation,
+      });
     }
   }
   return result;
@@ -318,6 +328,12 @@ function checkEducation(text, config, state, implicit = false) {
   return 1;
 }
 
+function hasUnconfirmedSpecialization(text) {
+  const withoutGenericActivities = text.replace(/行业(?:活动|会议|会展|展会|沙龙|趋势|洞察|研究|分析)/gu, "");
+  return /行业|领域|垂直市场|细分市场|industry|sector/u.test(withoutGenericActivities)
+    || /医疗器械|医药|制药|医疗|半导体|芯片|汽车|工业制造|新能源|金融|证券|保险|房地产|medical|pharma|semiconductor|automotive/u.test(text);
+}
+
 function assessClause(clause, config, state, role, kind) {
   const { text, preferred, conflict, negated } = clause;
   const duty = kind === "duty";
@@ -338,6 +354,7 @@ function assessClause(clause, config, state, role, kind) {
   let assessed = capabilities.size;
   assessed += checkYears(text, config, state, role.years, kind === "experience");
   if (!duty) assessed += checkEducation(text, config, state, kind === "education");
+  if (!duty && hasUnconfirmedSpecialization(text)) state.review.add("industry-specialization-unconfirmed");
   if (UNSUPPORTED_REQUIREMENT.test(text) || BUSINESS_SCALE.test(text)) state.review.add("requirement-unassessed");
   if (duty && UNRELATED_DUTY.test(text)) state.review.add("duties-unassessed");
   if (capabilities.has("budgetOwnership") && BUDGET_AMOUNT.test(text)) state.review.add("requirement-unassessed");

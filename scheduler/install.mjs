@@ -1,4 +1,4 @@
-import { mkdir, cp, readFile, writeFile, chmod, lstat, access, unlink, realpath } from "node:fs/promises";
+import { mkdir, cp, writeFile, chmod, lstat, access, unlink, realpath } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
 import { homedir } from "node:os";
@@ -98,6 +98,8 @@ export async function install({ root = defaultRoot(), matchingPath, ledgerPath, 
     }
     await command(runtime.nodePath, ["--version"]);
     await command(runtime.gitPath, ["--version"]);
+    await command("/usr/bin/perl", ["-MFcntl=:flock", "-e", "exit 0"]);
+    await access("/usr/sbin/lsof");
     const source = resolve(dirname(fileURLToPath(import.meta.url)), "..");
     const installed = join(root, "app");
     if (source === installed) throw new RunError("install-source", "Run installation from the repository, not the installed runtime.");

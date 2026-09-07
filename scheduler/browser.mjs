@@ -144,15 +144,34 @@ export async function discoverBoss(signal) {
   return { windowId, tabId };
 }
 
-async function ownedTab(root, initialUrl, signal) {
+export async function ownedTab(root, initialUrl, signal, services = {}) {
+  const execute = services.apple ?? apple;
+  const discover = services.discoverBoss ?? discoverBoss;
   const existing = await readJson(join(root, "browser.json"), null);
   if (existing) {
-    // A user-navigated or closed owned tab is a blocker, not permission to reuse another tab.
-    await apple([...tabLines(existing), "return URL of targetTab"], signal);
-    return existing;
+    tabLines(existing);
+    const target = await execute([
+      `if not (exists window id ${existing.windowId}) then return "missing-window"`,
+      `if not (exists tab id ${existing.tabId} of window id ${existing.windowId}) then return "missing-tab"`,
+      `return URL of tab id ${existing.tabId} of window id ${existing.windowId}`,
+    ], signal);
+    if (!["missing-window", "missing-tab"].includes(target)) {
+      let url;
+      try {
+        url = new URL(target);
+      } catch (error) {
+        if (!(error instanceof TypeError)) throw error;
+        throw new RunError("unexpected-owned-tab", "The task-owned tab is no longer on the public BOSS search page.", { blocked: true });
+      }
+      if (url.origin !== searchOrigin || url.pathname !== searchPath) {
+        throw new RunError("unexpected-owned-tab", "The task-owned tab was navigated elsewhere; no other tab will be reused.", { blocked: true });
+      }
+      return existing;
+    }
   }
-  const source = await discoverBoss(signal);
-  const result = await apple([
+  // Only a missing handle is recoverable. Permission, login and navigation failures are not.
+  const source = await discover(signal);
+  const result = await execute([
     `set sourceWindow to window id ${source.windowId}`,
     "set originalIndex to active tab index of sourceWindow",
     `set ownedTab to make new tab at end of tabs of sourceWindow with properties {URL:${JSON.stringify(initialUrl)}}`,

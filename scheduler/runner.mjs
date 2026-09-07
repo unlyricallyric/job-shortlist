@@ -99,9 +99,10 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
     await atomicJson(join(root, "state.json"), state);
     await appendLog(root, { runId: id, event: "started", trigger: active.trigger, dryRun });
     controller = new AbortController();
-    if (outerSignal) outerSignal.addEventListener("abort", () => controller.abort(outerSignal.reason), { once: true });
+    if (outerSignal?.aborted) controller.abort(outerSignal.reason);
+    else if (outerSignal) outerSignal.addEventListener("abort", () => controller.abort(outerSignal.reason), { once: true });
     timer = setTimeout(() => controller.abort(new RunError("run-timeout", "The bounded run deadline was reached.")), 30 * 60000);
-    const signal = controller.signal;
+    const signal = AbortSignal.any([controller.signal, release.signal]);
     monitor = setInterval(() => {
       readJson(join(root, "control.json")).then((latest) => {
         if (latest.cancelRunId === id || (latest.paused && !dryRun)) controller.abort(new RunError("cancelled", "Scheduler paused or run cancelled."));

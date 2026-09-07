@@ -229,6 +229,49 @@ test("hard and preferred requirements have different scopes", () => {
   ]) assert.equal(screenJob(withRequirements(`具备伙伴营销经验；${text}。`), testConfig()).decision, "review");
 });
 
+test("unrestricted education never exempts a required leadership or experience qualification", () => {
+  const config = testConfig();
+  for (const required of [
+    "必须具备团队管理经验（学历不限）",
+    "必须具备团队管理经验(不限学历)",
+    "必须具备十年以上市场营销经验（学历不限）",
+    "必须具备十年以上市场营销经验(不限经验)",
+    "不要求学历但必须具备团队管理经验",
+    "不要求学历须有三年团队管理经验",
+    "必须具备团队管理经验学历不限",
+  ]) {
+    const result = screenJob(withRequirements(`具备伙伴营销经验；${required}`), config);
+    assert.equal(result.decision, "review", required);
+    assert.equal(result.job, null);
+  }
+  assertSelected(screenJob(withRequirements("具备伙伴营销经验（学历不限）；无需团队管理经验"), config));
+  const result = screenJob(withRequirements("具备伙伴营销经验；必须具备三年市场营销经验（学历不限）"),
+    testConfig({ years: { ...config.years, marketing: 1 } }));
+  assert.equal(result.decision, "reject");
+  assert.ok(result.reasons.includes("years-insufficient"));
+});
+
+test("mandatory industry specialization is assessed independently from a generic matching capability", () => {
+  for (const requirement of [
+    "必须具备医疗器械行业伙伴营销经验",
+    "必须具备医疗器械行业伙伴营销能力",
+    "具备医疗器械伙伴营销经验",
+    "具备半导体领域伙伴营销经验",
+    "必须具备企业软件行业伙伴营销经验",
+    "熟悉金融行业客户且具备伙伴营销经验",
+  ]) {
+    const result = screenJob(withRequirements(`具备伙伴营销经验；${requirement}`), testConfig());
+    assert.equal(result.decision, "review", requirement);
+    assert.ok(result.reasons.includes("industry-specialization-unconfirmed"), requirement);
+    assert.equal(result.job, null);
+  }
+  for (const requirement of ["医疗器械行业伙伴营销经验优先", "医疗器械行业伙伴营销能力优先",
+    "半导体领域经验加分", "无需医疗器械行业经验", "无需医疗器械行业伙伴营销能力"]) {
+    assertSelected(screenJob(withRequirements(`具备伙伴营销经验；${requirement}`), testConfig()));
+  }
+  assertSelected(screenJob(withRequirements("具备伙伴营销经验；熟悉B2B企业软件"), testConfig()));
+});
+
 test("numeric years are exact, dimensioned and never inferred from a capability", () => {
   const base = testConfig();
   for (const [text, dimension, minimum] of [

@@ -48,7 +48,7 @@ try {
       const control = await readJson(join(root, "control.json"));
       if (control.paused) throw new RunError("paused", "Resume before explicitly retrying a publication.", { blocked: true });
       const { runtime } = await loadConfiguration(root);
-      const recovered = await retryPending(root, runtime, AbortSignal.timeout(300000));
+      const recovered = await retryPending(root, runtime, AbortSignal.any([release.signal, AbortSignal.timeout(300000)]));
       const state = await readJson(join(root, "state.json"));
       state.lastPublished = recovered;
       // Preserve the old run's failed/cancelled state; recovery is a separate explicit action.

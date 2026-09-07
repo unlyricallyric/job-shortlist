@@ -1,7 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import vm from "node:vm";
-import { cardsInPage, detailInPage, pageGuard, searchUrl } from "../scheduler/browser.mjs";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { cardsInPage, detailInPage, pageGuard, searchUrl, ownedTab } from "../scheduler/browser.mjs";
+import { atomicJson, readJson, RunError } from "../scheduler/io.mjs";
 
 const evaluate = (fn, globals, ...args) => vm.runInNewContext(`(${fn.toString()})(...args)`, {
   URL, Date, ...globals, args,
@@ -80,6 +84,7 @@ test("a legitimate empty result differs from an unknown or broken page", () => {
   const result = evaluate(cardsInPage, {
     document: { querySelectorAll: (selector) => selector === "a.job-name" ? [] : [visible("没有找到相关职位")] },
   });
+
   assert.equal(result.state, "ready");
   assert.equal(result.empty, true);
   const currentBossEmpty = evaluate(cardsInPage, {
@@ -93,4 +98,47 @@ test("a legitimate empty result differs from an unknown or broken page", () => {
       ? [{ innerText: "没有找到相关职位", getClientRects: () => [] }] : [] },
   });
   assert.equal(hiddenEmpty.state, "waiting");
+});
+
+test("missing owned window or tab after Chrome restart creates a new task tab, never reuses the discovered tab", async (t) => {
+  for (const missing of ["missing-window", "missing-tab"]) {
+    await t.test(missing, async (subtest) => {
+      const root = await mkdtemp(join(tmpdir(), "shortlist-browser-test-"));
+      subtest.after(() => rm(root, { recursive: true, force: true }));
+      await atomicJson(join(root, "browser.json"), { windowId: 10, tabId: 11 });
+      const calls = [];
+      const fresh = await ownedTab(root, searchUrl({ term: "渠道市场" }), undefined, {
+        discoverBoss: async () => ({ windowId: 20, tabId: 21 }),
+        apple: async (lines) => {
+          calls.push(lines);
+          return calls.length === 1 ? missing : "20,22";
+        },
+      });
+      assert.deepEqual(fresh, { windowId: 20, tabId: 22 });
+      assert.deepEqual(await readJson(join(root, "browser.json")), fresh);
+      assert.ok(calls[0].some((line) => line.includes("exists window")));
+      assert.ok(calls[0].some((line) => line.includes("exists tab")));
+      assert.ok(calls[1].some((line) => line.includes("make new tab at end")));
+      assert.ok(calls[1].some((line) => line.includes("active tab index of sourceWindow to originalIndex")));
+      assert.ok(!calls.flat().some((line) => /activate|set URL of.*21/.test(line)));
+    });
+  }
+});
+
+test("unexpected navigation and Apple Events denial do not trigger tab recovery", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "shortlist-browser-test-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const existing = { windowId: 10, tabId: 11 };
+  await atomicJson(join(root, "browser.json"), existing);
+  for (const url of ["https://example.invalid/", "https://www.zhipin.com/web/geek/jobs-other", "https://www.zhipin.com/web/user/login"]) {
+    await assert.rejects(ownedTab(root, searchUrl({ term: "市场" }), undefined, {
+      apple: async () => url,
+      discoverBoss: async () => assert.fail("Unexpected navigation must not discover a replacement."),
+    }), { code: "unexpected-owned-tab" });
+  }
+  await assert.rejects(ownedTab(root, searchUrl({ term: "市场" }), undefined, {
+    apple: async () => { throw new RunError("apple-events-denied", "Permission denied.", { blocked: true }); },
+    discoverBoss: async () => assert.fail("Permission denial must not create a replacement."),
+  }), { code: "apple-events-denied" });
+  assert.deepEqual(await readJson(join(root, "browser.json")), existing);
 });
