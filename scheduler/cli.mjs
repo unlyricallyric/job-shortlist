@@ -63,17 +63,42 @@ try {
   else if (action === "tick" || action === "run-once") {
     result = await run(root, { tick: action === "tick", dryRun: flags.has("dry-run") });
     if (["failed", "blocked", "cancelled"].includes(result.status)) process.exitCode = 1;
-  } else if (action === "request-run") {
+  } else if (action === "request-run" || action === "retry-slot") {
     if (!await isLoaded(label)) throw new RunError("service-not-loaded", "The installed LaunchAgent is not loaded.", { blocked: true });
-    if ((await readJson(join(root, "state.json"))).lastRun?.status === "running") {
+    const state = await readJson(join(root, "state.json"));
+    if (state.lastRun?.status === "running") {
       throw new RunError("locked", "A scheduled run is already active.", { blocked: true });
     }
-    const id = `manual-${new Date().toISOString().replace(/\D/g, "")}-${randomUUID().slice(0, 8)}`;
-    await atomicJson(join(root, "request.json"), { id, dryRun: flags.has("dry-run"), requestedAt: new Date().toISOString() });
+    let request;
+    if (action === "retry-slot") {
+      const failed = state.lastRun;
+      if (!failed || !["failed", "blocked"].includes(failed.status)
+        || !/^\d{4}-\d{2}-\d{2}-\d{4}$/.test(failed.id)
+        || state.lastScheduledSlot !== failed.id || await readJson(join(root, "pending.json"), null)) {
+        throw new RunError("retry-not-available", "Only the last failed scheduled slot without a pending publication can be explicitly retried.");
+      }
+      const { runtime } = await loadConfiguration(root);
+      let cursor = failed.queryCursor;
+      if (!Number.isSafeInteger(cursor)) {
+        const evidence = await readJson(join(root, "runs", failed.id, "evidence.json"), null);
+        const first = evidence?.queries?.[0];
+        cursor = first ? runtime.queries.findIndex((query) => query.term === first.term
+          && (query.industry ?? null) === (first.industry ?? null)) : -1;
+      }
+      if (!Number.isSafeInteger(cursor) || cursor < 0 || cursor >= runtime.queries.length) {
+        throw new RunError("retry-query-unknown", "The failed slot's exact query rotation cannot be confirmed.");
+      }
+      request = { id: `retry-${failed.id}-${randomUUID().slice(0, 8)}`, dryRun: false,
+        retryOf: failed.id, queryCursor: cursor, requestedAt: new Date().toISOString() };
+    } else {
+      request = { id: `manual-${new Date().toISOString().replace(/\D/g, "")}-${randomUUID().slice(0, 8)}`,
+        dryRun: flags.has("dry-run"), requestedAt: new Date().toISOString() };
+    }
+    await atomicJson(join(root, "request.json"), request);
     await command("/bin/launchctl", ["kickstart", `${serviceDomain()}/${label}`]);
-    result = { requested: id, via: "installed-launchd", dryRun: flags.has("dry-run") };
+    result = { requested: request.id, retryOf: request.retryOf ?? null, via: "installed-launchd", dryRun: request.dryRun };
   } else {
-    throw new RunError("usage", "Use install, preflight, run-once [--dry-run], request-run [--dry-run], retry-publication, status, pause, resume, or uninstall.");
+    throw new RunError("usage", "Use install, preflight, run-once [--dry-run], request-run [--dry-run], retry-slot, retry-publication, status, pause, resume, or uninstall.");
   }
   if (action !== "tick" || !["idle", "paused"].includes(result.status)) console.log(JSON.stringify(result, null, 2));
 } catch (error) {

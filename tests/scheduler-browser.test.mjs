@@ -82,4 +82,15 @@ test("a legitimate empty result differs from an unknown or broken page", () => {
   });
   assert.equal(result.state, "ready");
   assert.equal(result.empty, true);
+  const currentBossEmpty = evaluate(cardsInPage, {
+    document: { querySelectorAll: (selector) => selector.includes(".job-empty-wrapper")
+      ? [visible("没有找到相关职位，打开 APP，查看全部职位库，优质职位随心聊。")] : [] },
+  });
+  assert.equal(currentBossEmpty.state, "ready");
+  assert.equal(currentBossEmpty.empty, true);
+  const hiddenEmpty = evaluate(cardsInPage, {
+    document: { querySelectorAll: (selector) => selector.includes(".job-empty-wrapper")
+      ? [{ innerText: "没有找到相关职位", getClientRects: () => [] }] : [] },
+  });
+  assert.equal(hiddenEmpty.state, "waiting");
 });

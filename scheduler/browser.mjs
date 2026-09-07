@@ -39,7 +39,7 @@ export function pageGuard(expectedUrl) {
     if ([...document.querySelectorAll(selector)].some(visible)) return { state: "blocked", code: "login-required" };
   }
   // Only inspect public result/error containers; never read the account panel or body text.
-  const text = [...document.querySelectorAll(".job-list-box,.job-list-container,.error-content,.error-page,.tip-box,.search-job-result")]
+  const text = [...document.querySelectorAll(".job-list-box,.job-list-container,.job-empty-wrapper,.job-empty-box,.error-content,.error-page,.tip-box,.search-job-result")]
     .map((node) => node.innerText).join("\n");
   if (/安全验证|访问过于频繁|请完成验证|操作频繁|异常访问/.test(text)) return { state: "blocked", code: "captcha" };
   if (/网络异常|服务异常|系统繁忙|加载失败/.test(text)) return { state: "error", code: "source-error" };
@@ -67,7 +67,8 @@ export function cardsInPage() {
     });
   }
   if (cards.length) return { state: "ready", cards, retrievedAt: new Date().toISOString() };
-  const emptyText = [...document.querySelectorAll(".job-list-box,.job-list-container,.job-empty,.data-empty,.search-job-result")]
+  const emptyText = [...document.querySelectorAll(".job-list-box,.job-list-container,.job-empty,.job-empty-wrapper,.job-empty-box,.data-empty,.search-job-result")]
+    .filter((node) => node.getClientRects().length > 0)
     .map((node) => node.innerText).join("\n");
   if (/没有找到相关职位|暂无符合条件的职位|暂无相关职位/.test(emptyText)) {
     return { state: "ready", cards: [], empty: true, retrievedAt: new Date().toISOString() };

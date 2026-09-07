@@ -21,6 +21,17 @@ export function finalStatus({ error, dryRun, publication }) {
   return "succeeded";
 }
 
+export function validateRunRequest(request) {
+  if (!request || typeof request !== "object" || Array.isArray(request)
+    || typeof request.id !== "string" || !/^[a-z0-9-]{8,90}$/.test(request.id)
+    || typeof request.dryRun !== "boolean"
+    || (request.retryOf !== undefined && (typeof request.retryOf !== "string" || !/^[a-z0-9-]{8,90}$/.test(request.retryOf)))
+    || (request.queryCursor !== undefined && (!Number.isSafeInteger(request.queryCursor) || request.queryCursor < 0))) {
+    throw new RunError("invalid-request", "Manual run request is invalid.", { blocked: true });
+  }
+  return request;
+}
+
 function sanitizeCode(error) {
   return typeof error.code === "string" && /^[a-z0-9-]{1,60}$/.test(error.code) ? error.code : "internal-error";
 }
@@ -68,6 +79,7 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
       await appendLog(root, { event: "interrupted-run-recovered", runId: state.lastRun.id });
     }
     const request = tick ? await readJson(join(root, "request.json"), null) : null;
+    if (request) validateRunRequest(request);
     const slot = dueSlot({ ...state, paused: control.paused });
     if (tick && !request && !slot) return { status: "idle" };
     if (request) dryRun = request.dryRun === true;
@@ -78,8 +90,9 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
     }
     const scheduled = tick && !request;
     const id = scheduled ? slot.id : request?.id ?? `manual-${new Date().toISOString().replace(/\D/g, "")}-${randomUUID().slice(0, 8)}`;
-    active = { id, trigger: scheduled ? "scheduled" : request ? "launchd-manual" : "manual",
+    active = { id, trigger: scheduled ? "scheduled" : request?.retryOf ? "launchd-retry" : request ? "launchd-manual" : "manual",
       pid: process.pid, startedAt: new Date().toISOString(), status: "running", dryRun };
+    if (request?.retryOf) active.retryOf = request.retryOf;
     state.lastRun = active;
     if (!dryRun && slot) state.lastScheduledSlot = slot.id;
     if (request) await unlink(join(root, "request.json"));
@@ -107,8 +120,10 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
       timer = setTimeout(() => controller.abort(new RunError("run-timeout", "The bounded run deadline was reached.")), runtime.limits.timeoutMinutes * 60000);
       await operations.preflightGithub(runtime, signal);
       const prepared = await operations.prepareClone(root, runtime, signal);
-      const queries = rotatingQueries(runtime.queries, state.queryCursor, runtime.limits.queriesPerRun);
-      state.queryCursor = (state.queryCursor + queries.length) % runtime.queries.length;
+      const queryCursor = request?.queryCursor ?? state.queryCursor;
+      active.queryCursor = queryCursor;
+      const queries = rotatingQueries(runtime.queries, queryCursor, runtime.limits.queriesPerRun);
+      if (!request?.retryOf) state.queryCursor = (queryCursor + queries.length) % runtime.queries.length;
       await atomicJson(join(root, "state.json"), state);
       const evidence = await operations.collectBoss({
         root, queries, limits: runtime.limits, signal, prefilter: (card) => prefilterCard(card, matching),

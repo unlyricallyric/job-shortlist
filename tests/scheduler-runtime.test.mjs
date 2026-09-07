@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { initialState, run, finalStatus } from "../scheduler/runner.mjs";
+import { initialState, run, finalStatus, validateRunRequest } from "../scheduler/runner.mjs";
 import { dueSlot } from "../scheduler/clock.mjs";
 import { atomicJson, readJson, RunError } from "../scheduler/io.mjs";
 import { defaultLimits, defaultQueries } from "../scheduler/config.mjs";
@@ -112,6 +112,32 @@ test("launchd request executes with an explicit provenance and does not replay o
   assert.equal(result.status, "dry-run");
   assert.equal(await readJson(join(root, "request.json"), null), null);
   assert.equal(calls.includes("publish"), false);
+});
+
+test("explicit slot retry uses the failed query rotation without clearing its failure or advancing the rotation", async (t) => {
+  const { root, services } = await setup(t);
+  const state = await readJson(join(root, "state.json"));
+  state.lastScheduledSlot = "2099-01-01-1230";
+  state.queryCursor = 6;
+  await atomicJson(join(root, "state.json"), state);
+  await atomicJson(join(root, "request.json"), {
+    id: "retry-2099-01-01-1230-testonly", dryRun: false, retryOf: "2099-01-01-1230", queryCursor: 3,
+  });
+  const originalCollect = services.collectBoss;
+  services.collectBoss = async (options) => {
+    assert.equal(options.queries[0].term, defaultQueries[3].term);
+    return originalCollect(options);
+  };
+  const result = await run(root, { tick: true, services });
+  assert.equal(result.status, "succeeded");
+  assert.equal(result.trigger, "launchd-retry");
+  assert.equal(result.retryOf, "2099-01-01-1230");
+  assert.equal((await readJson(join(root, "state.json"))).queryCursor, 6);
+  assert.equal((await run(root, { tick: true, services })).status, "idle");
+  for (const request of [{ id: "../unsafe", dryRun: false }, { id: "manual-request", dryRun: "false" },
+    { id: "manual-request", dryRun: false, queryCursor: -1 }]) {
+    assert.throws(() => validateRunRequest(request), { code: "invalid-request" });
+  }
 });
 
 test("LaunchAgents use durable explicit executable arguments, bounded ticks and AC-only awake support", () => {
