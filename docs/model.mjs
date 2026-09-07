@@ -106,6 +106,60 @@ export function formatShanghaiTime(value) {
   return `${parts.year}.${parts.month}.${parts.day} ${parts.hour}:${parts.minute}`;
 }
 
+function referenceTimestamp(value) {
+  const timestamp = value instanceof Date ? value.getTime() : typeof value === "number" ? value
+    : isIsoDate(value, false) ? Date.parse(value) : NaN;
+  if (!Number.isFinite(timestamp)) throw new RangeError("参考时间必须是有效时间点。");
+  return timestamp;
+}
+
+export function shanghaiDateKey(value = Date.now()) {
+  if (typeof value === "string" && value.length === 10 && isIsoDate(value)) return value;
+  const parts = Object.fromEntries(dateFormatter.formatToParts(referenceTimestamp(value))
+    .map(({ type, value: part }) => [type, part]));
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+export function nextShanghaiMidnight(now = Date.now()) {
+  return Date.parse(`${shanghaiDateKey(referenceTimestamp(now))}T00:00:00+08:00`) + 86400000;
+}
+
+export function selectArrivalView(jobs, view = "all", now = Date.now()) {
+  if (!["today", "week", "all"].includes(view)) throw new RangeError("不支持的收录日期视图。");
+  if (view === "all") return [...jobs];
+  const timestamp = referenceTimestamp(now);
+  const today = shanghaiDateKey(timestamp);
+  const earliest = view === "today" ? today : shanghaiDateKey(nextShanghaiMidnight(timestamp) - 7 * 86400000);
+  return jobs.filter((job) => {
+    const day = shanghaiDateKey(job.firstSeen);
+    return day >= earliest && day <= today
+      && (job.firstSeen.length === 10 || Date.parse(job.firstSeen) <= timestamp);
+  });
+}
+
+export function firstSeenGroupLabel(day, now = Date.now()) {
+  if (!isIsoDate(day) || day.length !== 10) throw new RangeError("分组日期必须是有效日历日期。");
+  const timestamp = referenceTimestamp(now);
+  const today = shanghaiDateKey(timestamp);
+  const yesterday = shanghaiDateKey(nextShanghaiMidnight(timestamp) - 2 * 86400000);
+  const fullDate = `${day.slice(0, 4)}年${day.slice(5, 7)}月${day.slice(8)}日`;
+  const date = day.slice(0, 4) === today.slice(0, 4) ? fullDate.slice(5) : fullDate;
+  if (day === today) return `今天 · ${date}`;
+  if (day === yesterday) return `昨天 · ${date}`;
+  return fullDate;
+}
+
+export function groupJobsByFirstSeen(jobs, { sortBy = "score", now = Date.now() } = {}) {
+  const groups = new Map();
+  for (const job of selectJobs(jobs, { sortBy })) {
+    const day = shanghaiDateKey(job.firstSeen);
+    if (!groups.has(day)) groups.set(day, []);
+    groups.get(day).push(job);
+  }
+  return [...groups.entries()].sort(([a], [b]) => b.localeCompare(a))
+    .map(([date, groupedJobs]) => ({ date, label: firstSeenGroupLabel(date, now), jobs: groupedJobs }));
+}
+
 export function safeJobUrl(value, source = "BOSS直聘") {
   if (typeof value !== "string" || /[\s\\\u0000-\u001f\u007f]/u.test(value)) return null;
   if (source === "字节跳动招聘官网") {

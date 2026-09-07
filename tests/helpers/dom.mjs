@@ -67,6 +67,11 @@ class NodeDouble extends EventTarget {
     this.append(...nodes);
   }
   add(option) { this.append(option); }
+  focus() {
+    let root = this;
+    while (root.parentElement) root = root.parentElement;
+    root.activeElement = this;
+  }
   *descendants() {
     for (const child of this.children) {
       yield child;

@@ -1,7 +1,8 @@
 import {
   SnapshotError, filterOptions, formatShanghaiTime, hasSalaryRange,
   parseSalaryRange, safeJobUrl, selectJobs, validateSnapshot,
-} from "./model.mjs?rev=20260907-scheduled1";
+  shanghaiDateKey, nextShanghaiMidnight, selectArrivalView, groupJobsByFirstSeen,
+} from "./model.mjs?rev=20260908-daily1";
 
 const sourceLinkLabels = new Map([
   ["BOSS直聘", "查看原始岗位"],
@@ -17,6 +18,12 @@ const salaryMode = byId("salary-mode");
 const sortBy = byId("sort-by");
 const list = byId("job-list");
 const stateAction = byId("state-action");
+const stateAllAction = byId("state-all-action");
+const dateControls = byId("date-view-controls");
+const dateInputs = new Map([
+  ["today", byId("view-today")], ["week", byId("view-week")], ["all", byId("view-all")],
+]);
+const viewLabels = { today: "今日新增", week: "近7天新增", all: "全部岗位" };
 const fields = {
   keyword: byId("keyword"), category: byId("category"),
   priority: byId("priority"), newOnly: byId("new-only"),
@@ -25,11 +32,12 @@ const manualGuidance = {
   assessment: byId("assessment-description").textContent,
   category: byId("category-help").textContent,
 };
-const scheduleDateFormatter = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit",
-});
 let snapshot = null;
 let stateActionKind = "retry";
+let arrivalView = "today";
+let renderedDay = null;
+let calendarTimer = null;
+let renderedJobIds = [];
 
 class DataLoadError extends Error {
   constructor(message) {
@@ -44,7 +52,9 @@ function setState(title, description, action = null) {
   byId("state-description").textContent = description;
   stateAction.hidden = action === null;
   stateActionKind = action;
-  stateAction.textContent = action === "reset" ? "清除筛选条件" : "重新读取";
+  stateAction.textContent = { reset: "重置筛选", week: "查看近7天", all: "查看全部岗位" }[action] ?? "重新读取";
+  stateAllAction.hidden = action !== "week";
+  byId("state-context").hidden = true;
 }
 
 function setTime(node, value) {
@@ -63,8 +73,7 @@ function fillList(node, items, fallback) {
 
 function isScheduleOverdue(data, now = Date.now()) {
   if (!data.automation?.enabled) return false;
-  const parts = Object.fromEntries(scheduleDateFormatter.formatToParts(now).map(({ type, value }) => [type, value]));
-  const day = `${parts.year}-${parts.month}-${parts.day}`;
+  const day = shanghaiDateKey(now);
   const slots = data.automation.times.map((time) => Date.parse(`${day}T${time}:00+08:00`));
   const cutoff = now - 30 * 60_000;
   // Keep an earlier missed slot visible while the next slot is still within its grace period.
@@ -168,30 +177,85 @@ function readFilters() {
   return { filters, error: range.error };
 }
 
-function renderResults() {
+function clearResults() {
+  list.replaceChildren();
+  renderedJobIds = [];
+}
+
+function renderResults(now = Date.now(), { preserveCards = false } = {}) {
   if (snapshot === null) throw new Error("Cannot render before the snapshot is loaded.");
   const { filters, error } = readFilters();
-  list.replaceChildren();
+  renderedDay = shanghaiDateKey(now);
+  byId("arrival-date").textContent = renderedDay.replaceAll("-", ".");
+  byId("arrival-date").setAttribute("datetime", renderedDay);
+  const viewJobs = selectArrivalView(snapshot.jobs, arrivalView, now);
+  for (const view of dateInputs.keys()) {
+    byId(`view-${view}-count`).textContent = selectArrivalView(snapshot.jobs, view, now).length;
+  }
+  byId("view-count").textContent = `${viewLabels[arrivalView]} ${viewJobs.length} 个 · 不含其他筛选条件`;
   byId("results-footnote").hidden = true;
   if (error) {
+    clearResults();
     byId("result-count").textContent = "薪资区间需要调整";
     setState("请调整薪资区间", error, "reset");
     return;
   }
-  const jobs = selectJobs(snapshot.jobs, filters);
-  byId("result-count").textContent = `显示 ${jobs.length} / ${snapshot.jobs.length} 个岗位`;
+  const jobs = selectJobs(viewJobs, filters);
+  byId("result-count").textContent = `筛选结果 ${jobs.length} / 本视图 ${viewJobs.length} 个`;
   if (snapshot.jobs.length === 0) {
+    clearResults();
     setState("这份快照尚未收录岗位", "当前数据为空，没有示例或推测岗位。本页不采集岗位，也不自动刷新；刷新页面读取最新已发布数据。");
     return;
   }
+  if (viewJobs.length === 0 && arrivalView !== "all") {
+    clearResults();
+    setState(arrivalView === "today" ? "今日暂无新增" : "近7天暂无新增",
+      "按本站首次收录的上海日期统计，历史岗位仍保留在累计清单中；没有新增不代表没有岗位。",
+      arrivalView === "today" ? "week" : "all");
+    const automation = snapshot.automation;
+    byId("state-context").textContent = `最近快照：${formatShanghaiTime(snapshot.generatedAt)}（上海）。${automation
+      ? `本轮采样 ${automation.reviewedThisRun} 条记录、${automation.detailsThisRun} 份完整 JD；最新运行状态以本机为准。`
+      : "这是已发布的静态快照，刷新页面可读取最新数据。"}`;
+    byId("state-context").hidden = false;
+    return;
+  }
   if (jobs.length === 0) {
-    setState("暂时没有符合条件的岗位", "试试减少关键词、放宽薪资区间，或保留月薪未公开或不可比较的岗位。", "reset");
+    clearResults();
+    setState("当前视图没有符合筛选条件的岗位",
+      `${viewLabels[arrivalView]}原有 ${viewJobs.length} 个岗位。可减少关键词、放宽薪资范围，或取消“仅本轮新增”。重置会返回今日视图。`, "reset");
     return;
   }
   byId("data-state").hidden = true;
+  const groups = groupJobsByFirstSeen(jobs, { sortBy: filters.sortBy, now });
+  const ids = groups.flatMap((group) => group.jobs.map((job) => job.id));
+  if (preserveCards && ids.length === renderedJobIds.length && ids.every((id, index) => id === renderedJobIds[index])) {
+    for (const [index, group] of groups.entries()) list.children[index].querySelector("h3").textContent = group.label;
+    byId("results-footnote").hidden = false;
+    return;
+  }
+  clearResults();
   const fragment = document.createDocumentFragment();
-  for (const [index, job] of jobs.entries()) fragment.append(createCard(job, index));
+  let cardIndex = 0;
+  for (const group of groups) {
+    const section = document.createElement("section");
+    section.setAttribute("class", "date-group");
+    const heading = document.createElement("div");
+    heading.setAttribute("class", "date-group-heading");
+    const title = document.createElement("h3");
+    title.id = `arrival-${group.date}`;
+    title.textContent = group.label;
+    section.setAttribute("aria-labelledby", title.id);
+    const count = document.createElement("p");
+    count.textContent = `${group.jobs.length} 个匹配岗位`;
+    heading.append(title, count);
+    const grid = document.createElement("div");
+    grid.setAttribute("class", "job-grid");
+    for (const job of group.jobs) grid.append(createCard(job, cardIndex++));
+    section.append(heading, grid);
+    fragment.append(section);
+  }
   list.append(fragment);
+  renderedJobIds = ids;
   byId("results-footnote").hidden = false;
 }
 
@@ -206,7 +270,7 @@ function setFilterOptions(id, key, defaultText) {
 async function fetchSnapshot() {
   let response;
   try {
-    response = await fetch(new URL("./data/jobs.json?rev=20260907-scheduled1", import.meta.url), {
+    response = await fetch(new URL("./data/jobs.json?rev=20260908-daily1", import.meta.url), {
       cache: "no-store", credentials: "omit", redirect: "error",
     });
   } catch (error) {
@@ -227,6 +291,7 @@ async function fetchSnapshot() {
 
 async function loadSnapshot() {
   controls.disabled = true;
+  dateControls.disabled = true;
   sortBy.disabled = true;
   stateAction.disabled = true;
   byId("results-area").setAttribute("aria-busy", "true");
@@ -249,16 +314,20 @@ async function loadSnapshot() {
     setFilterOptions("priority", "priority", "全部优先级");
     renderResults();
     controls.disabled = false;
+    dateControls.disabled = false;
     sortBy.disabled = false;
+    scheduleCalendarRefresh();
   } catch (error) {
     console.error("Unable to display the job snapshot.", error);
     snapshot = null;
-    list.replaceChildren();
+    window.clearTimeout(calendarTimer);
+    clearResults();
     byId("automation-panel").hidden = true;
     byId("automation-warning").hidden = true;
     byId("snapshot-label").textContent = "只读 · 岗位快照";
     byId("results-footnote").hidden = true;
     byId("result-count").textContent = "数据不可用";
+    byId("view-count").textContent = "日期视图不可用";
     if (error instanceof DataLoadError || error instanceof SnapshotError) {
       setState("岗位数据暂时无法读取", error.message, "retry");
     } else {
@@ -274,9 +343,40 @@ async function loadSnapshot() {
 function resetFilters() {
   form.reset();
   sortBy.value = "score";
+  setArrivalView("today");
+}
+
+function setArrivalView(view) {
+  if (!dateInputs.has(view)) throw new RangeError("不支持的收录日期视图。");
+  arrivalView = view;
+  for (const [name, input] of dateInputs) input.checked = name === view;
   renderResults();
 }
 
+function scheduleCalendarRefresh() {
+  window.clearTimeout(calendarTimer);
+  const now = Date.now();
+  calendarTimer = window.setTimeout(refreshCalendar, Math.max(1000, nextShanghaiMidnight(now) - now + 50));
+}
+
+function refreshCalendar() {
+  if (snapshot === null) return;
+  const now = Date.now();
+  if (renderedDay !== shanghaiDateKey(now)) renderResults(now, { preserveCards: true });
+  byId("automation-warning").hidden = !isScheduleOverdue(snapshot, now);
+  scheduleCalendarRefresh();
+}
+
+dateControls.addEventListener("change", () => {
+  const selected = [...dateInputs].find(([, input]) => input.checked);
+  if (!selected) throw new Error("必须选择一个收录日期视图。");
+  setArrivalView(selected[0]);
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") refreshCalendar();
+});
+window.addEventListener("pageshow", refreshCalendar);
+window.addEventListener("pagehide", () => window.clearTimeout(calendarTimer));
 form.addEventListener("submit", (event) => event.preventDefault());
 form.addEventListener("input", () => renderResults());
 form.addEventListener("change", () => renderResults());
@@ -285,6 +385,14 @@ sortBy.addEventListener("change", () => renderResults());
 stateAction.addEventListener("click", () => {
   if (stateActionKind === "reset") resetFilters();
   else if (stateActionKind === "retry") void loadSnapshot();
+  else if (stateActionKind === "week" || stateActionKind === "all") {
+    setArrivalView(stateActionKind);
+    dateInputs.get(arrivalView).focus();
+  }
+});
+stateAllAction.addEventListener("click", () => {
+  setArrivalView("all");
+  dateInputs.get("all").focus();
 });
 if (window.matchMedia("(max-width: 760px)").matches) byId("filters-panel").open = false;
 void loadSnapshot();

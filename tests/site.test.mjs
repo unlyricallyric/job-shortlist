@@ -42,7 +42,7 @@ test("HTML assets, dependent modules and no-store data share one explicit releas
   for (const url of resolved) {
     assert.equal(url.origin, base.origin);
     assert.ok(url.pathname.startsWith(base.pathname));
-    assert.equal(url.search, "?rev=20260907-scheduled1", url.href);
+    assert.equal(url.search, "?rev=20260908-daily1", url.href);
     await access(new URL(url.pathname.slice(base.pathname.length), docs));
   }
   for (const file of ["app.mjs", "model.mjs", "styles.css", "favicon.svg", "data/jobs.json"]) {
@@ -96,14 +96,30 @@ test("discovery guidance and counters describe JD-based directions and cumulativ
   assert.ok(!/本次首次收录|本次实际查看|仅本次新增|全部类别/.test(html));
 });
 
+test("exclusive date views are accessible and chronology, counts and run-new semantics are explicit", async () => {
+  const html = await readFile(new URL("index.html", docs), "utf8");
+  const controls = [...html.matchAll(/<input id="view-(today|week|all)"[^>]+>/g)].map((match) => match[0]);
+  assert.equal(controls.length, 3);
+  assert.ok(controls.every((input) => input.includes('type="radio"') && input.includes('name="arrivalView"')));
+  assert.equal(controls.filter((input) => input.includes("checked")).length, 1);
+  assert.ok(controls[0].includes("checked"));
+  assert.ok(html.includes("近7天含今天及前6天"));
+  assert.ok(html.includes("同来源、同岗位 ID 重复观察不重复计新"));
+  assert.ok(html.includes("同日早些时候收录的岗位仍算今日新增"));
+  assert.ok(html.includes('for="sort-by">组内排序'));
+  assert.ok(html.includes('id="state-all-action"'));
+});
+
 test("rendering uses text nodes, no storage or external data services", async () => {
   const app = await readFile(new URL("app.mjs", docs), "utf8");
   assert.ok(app.includes("textContent"));
-  assert.ok(app.includes('new URL("./data/jobs.json?rev=20260907-scheduled1", import.meta.url)'));
+  assert.ok(app.includes('new URL("./data/jobs.json?rev=20260908-daily1", import.meta.url)'));
   assert.ok(app.includes('credentials: "omit"'));
   assert.ok(!/\b(?:innerHTML|outerHTML|insertAdjacentHTML|localStorage|sessionStorage|indexedDB|eval)\b/.test(app));
   assert.ok(!/document\.(?:write|cookie)/.test(app));
-  assert.ok(!/\b(?:setInterval|setTimeout|WebSocket|EventSource)\b/.test(app));
+  assert.ok(!/\b(?:setInterval|WebSocket|EventSource)\b/.test(app));
+  assert.equal([...app.matchAll(/\bsetTimeout\(/g)].length, 1);
+  assert.ok(app.includes("nextShanghaiMidnight(now)"));
   assert.equal([...app.matchAll(/\bfetch\(/g)].length, 1);
 });
 
@@ -125,7 +141,7 @@ test("schedule disclosures default hidden and distinguish local configuration fr
   assert.ok(html.includes("推送与公开页面核验结果请查看本机状态"));
   assert.ok(html.includes("本页不轮询"));
   assert.ok(html.includes("页面不自动刷新；刷新页面读取最新已发布数据"));
-  assert.ok(html.includes("时段提示按本次页面读取时间判断"));
+  assert.ok(html.includes("跨上海午夜或返回页面时仅重算日期视图与时段提示"));
   assert.ok(html.includes("固定规则计算，仅供排序参考；未经人工复核"));
   assert.ok(html.includes("保留记录 · 沿用原观察日期"));
   assert.ok(app.includes("规则初筛 · rules-v1"));

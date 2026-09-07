@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { formatShanghaiTime, selectJobs } from "../docs/model.mjs";
+import { formatShanghaiTime, groupJobsByFirstSeen } from "../docs/model.mjs";
 import { bytedanceFixture, fixture, liepinFixture, snapshotOf } from "./helpers/fixtures.mjs";
 import { OptionDouble, pageDocument } from "./helpers/dom.mjs";
 
@@ -47,8 +47,9 @@ function scheduledSnapshot(jobs, {
   return data;
 }
 
-async function boot(t, { responses = [snapshotOf(testJobs)], mobile = false, now } = {}) {
+async function boot(t, { responses = [snapshotOf(testJobs)], mobile = false, now = "2026-09-07T12:00:00+08:00" } = {}) {
   const document = pageDocument(html);
+  document.visibilityState = "visible";
   const originals = new Map(["document", "window", "Option", "fetch"].map((name) => [name, Object.getOwnPropertyDescriptor(globalThis, name)]));
   t.after(() => {
     for (const [name, descriptor] of originals) {
@@ -57,9 +58,16 @@ async function boot(t, { responses = [snapshotOf(testJobs)], mobile = false, now
     }
   });
   globalThis.document = document;
-  globalThis.window = { matchMedia: () => ({ matches: mobile }) };
+  const timers = new Map();
+  let timerId = 0;
+  globalThis.window = Object.assign(new EventTarget(), {
+    matchMedia: () => ({ matches: mobile }),
+    setTimeout: (callback, delay) => { const id = ++timerId; timers.set(id, { callback, delay }); return id; },
+    clearTimeout: (id) => timers.delete(id),
+  });
   globalThis.Option = OptionDouble;
-  if (now !== undefined) t.mock.method(Date, "now", () => Date.parse(now));
+  let clock = Date.parse(now);
+  t.mock.method(Date, "now", () => clock);
   const requests = [];
   globalThis.fetch = async (url, options) => {
     requests.push({ url, options });
@@ -74,13 +82,27 @@ async function boot(t, { responses = [snapshotOf(testJobs)], mobile = false, now
   await settle();
   const get = (id) => document.getElementById(id);
   return {
-    get, requests, errors,
-    cards: () => get("job-list").children,
+    get, requests, errors, timers, document,
+    setNow: (value) => { clock = Date.parse(value); },
+    visibility: (value) => { document.visibilityState = value; document.dispatchEvent(new Event("visibilitychange")); },
+    fireTimer: () => {
+      const [id, timer] = timers.entries().next().value;
+      timers.delete(id);
+      timer.callback();
+    },
+    groups: () => get("job-list").children,
+    cards: () => [...get("job-list").descendants()].filter((node) => node.tagName === "ARTICLE"),
     change: (id, value) => {
       const node = get(id);
       if (typeof value === "boolean") node.checked = value;
       else node.value = value;
-      (id === "sort-by" ? node : get("filter-form")).dispatchEvent(new Event("change"));
+      if (node.getAttribute("type") === "radio" && node.checked) {
+        for (const input of get("date-view-controls").descendants()) {
+          if (input.tagName === "INPUT" && input !== node) input.checked = false;
+        }
+      }
+      (id === "sort-by" ? node : node.getAttribute("type") === "radio" ? get("date-view-controls") : get("filter-form"))
+        .dispatchEvent(new Event("change"));
     },
     click: (id) => get(id).dispatchEvent(new Event("click")),
   };
@@ -107,10 +129,175 @@ test("the app shows loading, then a truthful empty state and Shanghai snapshot t
   assert.equal(app.get("state-action").hidden, true);
 });
 
+test("default today uses browser Shanghai date, offers explicit recent/all navigation and preserves the snapshot", async (t) => {
+  const data = scheduledSnapshot(testJobs, { generatedAt: "2026-09-07T16:21:15Z" });
+  const before = structuredClone(data);
+  const app = await boot(t, { responses: [data], now: "2026-09-07T16:38:44Z", mobile: true });
+  assert.equal(app.get("view-today").checked, true);
+  assert.equal(app.get("view-week").checked, false);
+  assert.equal(app.get("view-all").checked, false);
+  assert.equal(app.get("date-view-controls").disabled, false);
+  assert.equal(app.get("view-today-count").textContent, "0");
+  assert.equal(app.get("view-week-count").textContent, "3");
+  assert.equal(app.get("view-all-count").textContent, "3");
+  assert.equal(app.get("arrival-date").textContent, "2026.09.08");
+  assert.equal(app.get("state-title").textContent, "今日暂无新增");
+  assert.equal(app.get("state-action").textContent, "查看近7天");
+  assert.equal(app.get("state-all-action").hidden, false);
+  assert.match(app.get("state-context").textContent, /最近快照：2026\.09\.08 00:21/);
+  assert.match(app.get("state-context").textContent, /本轮采样 17 条记录、5 份完整 JD/);
+  assert.equal(app.cards().length, 0);
+  app.click("state-action");
+  assert.equal(app.get("view-week").checked, true);
+  assert.equal(app.get("view-today").checked, false);
+  assert.equal(app.cards().length, 3);
+  assert.equal(app.groups().length, 1);
+  assert.equal(app.groups()[0].querySelector("h3").textContent, "昨天 · 09月07日");
+  assert.equal(app.groups()[0].querySelector("p").textContent, "3 个匹配岗位");
+  assert.equal(new Set(app.cards().map((card) => card.querySelector('[data-field="link"]').href)).size, 3);
+  app.click("reset-filters");
+  assert.equal(app.get("view-today").checked, true);
+  assert.equal(app.get("state-title").textContent, "今日暂无新增");
+  app.click("state-all-action");
+  assert.equal(app.get("view-all").checked, true);
+  assert.equal(app.cards().length, 3);
+  assert.equal(app.requests.length, 1);
+  assert.deepEqual(data, before);
+});
+
+test("five today arrivals remain after noon while the secondary new-only filter selects only two", async (t) => {
+  const morning = [1, 2, 3].map((id) => job(`morning-${id}`, {
+    firstSeen: "2026-09-08T09:30:00+08:00", lastSeen: "2026-09-08T09:30:00+08:00", isNew: false,
+  }));
+  const noon = [1, 2].map((id) => job(`noon-${id}`, {
+    firstSeen: "2026-09-08T12:30:00+08:00", lastSeen: "2026-09-08T12:30:00+08:00", isNew: true,
+  }));
+  const old = job("older", { isNew: false, matchScore: 100 });
+  const data = snapshotOf([...morning, ...noon, old]);
+  data.generatedAt = "2026-09-08T12:45:00+08:00";
+  const app = await boot(t, { responses: [data], now: "2026-09-08T13:00:00+08:00" });
+  assert.equal(app.cards().length, 5);
+  assert.equal(app.get("view-today-count").textContent, "5");
+  assert.equal(app.get("new-count").textContent, "2");
+  assert.equal(app.get("total-count").textContent, "06");
+  app.change("new-only", true);
+  assert.equal(app.cards().length, 2);
+  assert.equal(app.get("view-today-count").textContent, "5");
+  assert.equal(app.get("result-count").textContent, "筛选结果 2 / 本视图 5 个");
+  app.change("keyword", "definitely-no-match");
+  assert.equal(app.cards().length, 0);
+  assert.equal(app.get("state-title").textContent, "当前视图没有符合筛选条件的岗位");
+  app.click("reset-filters");
+  assert.equal(app.get("view-today").checked, true);
+  assert.equal(app.get("keyword").value, "");
+  assert.equal(app.get("new-only").checked, false);
+  assert.equal(app.cards().length, 5);
+  app.change("view-all", true);
+  assert.equal(app.cards().length, 6);
+  assert.equal(app.groups().length, 2);
+  assert.equal(app.cards().at(-1).querySelector('[data-field="title"]').id, "job-title-5");
+  assert.equal(app.cards().at(-1).querySelector('[data-field="link"]').href, old.url, "Chronology outranks global score.");
+});
+
+test("future firstSeen timestamps are excluded from today and recent without removing them from all", async (t) => {
+  const jobs = [
+    job("current", { firstSeen: "2026-09-08T10:00:00+08:00", lastSeen: "2026-09-08T10:00:00+08:00" }),
+    job("future-hour", { firstSeen: "2026-09-08T13:00:00+08:00", lastSeen: "2026-09-08T13:00:00+08:00" }),
+    job("future-day", { firstSeen: "2026-09-09T00:00:00+08:00", lastSeen: "2026-09-09T00:00:00+08:00" }),
+  ];
+  const data = snapshotOf(jobs);
+  data.generatedAt = "2026-09-09T01:00:00+08:00";
+  const app = await boot(t, { responses: [data], now: "2026-09-08T12:00:00+08:00" });
+  assert.equal(app.get("view-today-count").textContent, "1");
+  assert.equal(app.get("view-week-count").textContent, "1");
+  assert.equal(app.get("view-all-count").textContent, "3");
+  assert.equal(app.cards()[0].querySelector('[data-field="link"]').href, jobs[0].url);
+  app.change("view-week", true);
+  assert.equal(app.cards().length, 1);
+  app.change("view-all", true);
+  assert.equal(app.cards().length, 3);
+  assert.equal(app.groups()[0].querySelector("h3").textContent, "2026年09月09日");
+});
+
+test("recent date-empty state differs from an empty dataset and links explicitly to all", async (t) => {
+  const app = await boot(t, { responses: [snapshotOf(testJobs)], now: "2026-09-20T04:00:00Z" });
+  app.click("state-action");
+  assert.equal(app.get("view-week").checked, true);
+  assert.equal(app.get("state-title").textContent, "近7天暂无新增");
+  assert.equal(app.get("state-action").textContent, "查看全部岗位");
+  app.click("state-action");
+  assert.equal(app.get("view-all").checked, true);
+  assert.equal(app.cards().length, 3);
+  assert.equal(app.groups()[0].querySelector("h3").textContent, "2026年09月07日");
+});
+
+test("midnight timer recalculates today without fetching, clearing filters or moving focus", async (t) => {
+  const app = await boot(t, { now: "2026-09-07T15:59:59Z" });
+  app.change("keyword", "TEST_ONLY");
+  app.get("keyword").focus();
+  assert.equal(app.cards().length, 3);
+  assert.equal(app.timers.size, 1);
+  assert.equal([...app.timers.values()][0].delay, 1050);
+  app.setNow("2026-09-07T16:00:00.050Z");
+  app.fireTimer();
+  assert.equal(app.get("view-today").checked, true);
+  assert.equal(app.get("state-title").textContent, "今日暂无新增");
+  assert.equal(app.cards().length, 0);
+  assert.equal(app.get("keyword").value, "TEST_ONLY");
+  assert.equal(app.document.activeElement, app.get("keyword"));
+  assert.equal(app.get("arrival-date").textContent, "2026.09.08");
+  assert.equal(app.requests.length, 1);
+  assert.equal(app.timers.size, 1);
+  assert.ok([...app.timers.values()][0].delay > 23 * 3600000);
+});
+
+test("visibility return updates a chosen recent view and relative headings without re-rendering on same-day returns", async (t) => {
+  const app = await boot(t, { now: "2026-09-07T15:59:59Z" });
+  app.change("view-week", true);
+  app.change("priority", "优先了解");
+  app.get("priority").focus();
+  const group = app.groups()[0];
+  assert.equal(group.querySelector("h3").textContent, "今天 · 09月07日");
+  app.visibility("hidden");
+  app.visibility("visible");
+  assert.equal(app.groups()[0], group, "Same-day visibility events must not rebuild results.");
+  app.visibility("hidden");
+  const sourceLink = app.cards()[0].querySelector('[data-field="link"]');
+  sourceLink.focus();
+  const details = app.cards()[0].querySelector("details");
+  details.open = true;
+  app.setNow("2026-09-07T16:00:00Z");
+  app.visibility("visible");
+  assert.equal(app.get("view-week").checked, true);
+  assert.equal(app.get("priority").value, "优先了解");
+  assert.equal(app.groups()[0].querySelector("h3").textContent, "昨天 · 09月07日");
+  assert.equal(app.groups()[0].querySelector("p").textContent, "2 个匹配岗位");
+  assert.equal(app.document.activeElement, sourceLink);
+  assert.equal(app.groups()[0], group, "Same records keep their DOM nodes across midnight.");
+  assert.equal(details.open, true);
+  assert.equal(app.requests.length, 1);
+  assert.equal(app.timers.size, 1);
+});
+
+test("the recent window drops day seven after midnight without changing the selected view", async (t) => {
+  const old = job("boundary", { firstSeen: "2026-09-01T00:00:00+08:00", isNew: false });
+  const app = await boot(t, { responses: [snapshotOf([old, ...testJobs])], now: "2026-09-07T15:59:59Z" });
+  app.change("view-week", true);
+  assert.equal(app.cards().length, 4);
+  app.setNow("2026-09-07T16:00:00Z");
+  app.visibility("visible");
+  assert.equal(app.get("view-week").checked, true);
+  assert.equal(app.cards().length, 3);
+  assert.equal(app.get("view-week-count").textContent, "3");
+  assert.equal(app.get("view-all-count").textContent, "4");
+  assert.equal(app.requests.length, 1);
+});
+
 test("the public snapshot renders all source records and counts without changing observations", async (t) => {
   const data = JSON.parse(await readFile(new URL("../docs/data/jobs.json", import.meta.url), "utf8"));
   const before = structuredClone(data);
   const app = await boot(t, { responses: [data] });
+  app.change("view-all", true);
   assert.equal(app.cards().length, data.jobs.length);
   assert.equal(app.get("new-count").textContent, String(data.run.newCount));
   assert.equal(app.get("reviewed-count").textContent, String(data.run.cardsReviewed));
@@ -125,7 +312,7 @@ test("the public snapshot renders all source records and counts without changing
     assert.match(app.get("assessment-description").textContent, /人工辅助的启发式初筛/);
     assert.doesNotMatch(app.get("category-help").textContent, /固定规则/);
   }
-  for (const [index, job] of selectJobs(data.jobs).entries()) {
+  for (const [index, job] of groupJobsByFirstSeen(data.jobs).flatMap((group) => group.jobs).entries()) {
     const field = (name) => app.cards()[index].querySelector(`[data-field="${name}"]`);
     const rulesBased = data.assessmentMethods?.[job.id] === "rules-v1";
     assert.equal(field("title").textContent, job.title ?? "岗位名称无法获取");
@@ -142,6 +329,8 @@ test("the public snapshot renders all source records and counts without changing
   app.change("new-only", true);
   assert.equal(app.cards().length, data.jobs.filter((job) => job.isNew).length);
   app.click("reset-filters");
+  assert.equal(app.get("view-today").checked, true);
+  app.change("view-all", true);
   assert.equal(app.cards().length, data.jobs.length);
   assert.deepEqual(data, before);
 });
@@ -152,6 +341,7 @@ test("legacy single and cumulative snapshots never advertise an active schedule"
       const data = snapshotOf(testJobs);
       data.run.mode = mode;
       const app = await boot(subtest, { responses: [data], now: "2027-01-01T20:00:00+08:00" });
+      app.change("view-all", true);
       assert.equal(app.get("automation-panel").hidden, true);
       assert.equal(app.get("automation-warning").hidden, true);
       assert.equal(app.get("schedule-times").textContent, "");
@@ -186,6 +376,7 @@ test("scheduled snapshots separate sampled counts, retained sources and each job
   });
   const before = structuredClone(data);
   const app = await boot(t, { responses: [data], now: "2026-09-07T11:15:00+08:00", mobile: true });
+  app.change("view-all", true);
   assert.equal(app.errors.mock.callCount(), 0);
   assert.equal(app.get("automation-panel").hidden, false);
   assert.equal(app.get("automation-warning").hidden, true);
@@ -206,7 +397,7 @@ test("scheduled snapshots separate sampled counts, retained sources and each job
   assert.match(app.get("assessment-description").textContent, /再次观察到岗位不会改变其初筛方式/);
   assert.match(app.get("category-help").textContent, /规则初筛岗位由固定规则归类/);
   assert.equal(app.cards().length, 4);
-  for (const [index, job] of selectJobs(data.jobs).entries()) {
+  for (const [index, job] of groupJobsByFirstSeen(data.jobs).flatMap((group) => group.jobs).entries()) {
     const field = (name) => app.cards()[index].querySelector(`[data-field="${name}"]`);
     const rulesBased = job.id === automated.id;
     assert.equal(field("assessment").textContent, rulesBased ? "规则初筛 · rules-v1" : "人工辅助初筛");
@@ -219,8 +410,9 @@ test("scheduled snapshots separate sampled counts, retained sources and each job
     assert.equal(field("score-box").getAttribute("aria-label").includes("固定规则计算"), rulesBased);
     assert.equal(field("new").hidden, !job.isNew);
   }
-  assert.match(app.cards()[1].querySelector('[data-field="assessment-note"]').textContent, /固定规则计算.*未经人工复核/);
-  assert.equal(app.cards()[1].querySelector('[data-field="jd-read"]').textContent, "已读取源站完整职位详情");
+  const automatedCard = app.cards().find((card) => card.querySelector('[data-field="link"]').href === automated.url);
+  assert.match(automatedCard.querySelector('[data-field="assessment-note"]').textContent, /固定规则计算.*未经人工复核/);
+  assert.equal(automatedCard.querySelector('[data-field="jd-read"]').textContent, "已读取源站完整职位详情");
   app.change("new-only", true);
   assert.equal(app.cards().length, 1);
   app.change("keyword", "demand generation");
@@ -247,6 +439,7 @@ test("rules-based cards keep missing scalars, unread details and zero run counts
   data.automation.reviewedThisRun = 0;
   data.automation.detailsThisRun = 0;
   const app = await boot(t, { responses: [data], now: "2026-09-09T20:00:00+08:00" });
+  app.change("view-all", true);
   const field = (name) => app.cards()[0].querySelector(`[data-field="${name}"]`);
   assert.equal(field("assessment").textContent, "规则初筛 · rules-v1");
   assert.equal(field("assessment-note").hidden, false);
@@ -318,7 +511,7 @@ test("real card rendering preserves literal strings, safe links, nulls and obser
   assert.equal(app.get("new-count").textContent, "2");
   assert.equal(app.requests.length, 1);
   assert.ok(app.requests[0].url.pathname.endsWith("/docs/data/jobs.json"));
-  assert.equal(app.requests[0].url.search, "?rev=20260907-scheduled1");
+  assert.equal(app.requests[0].url.search, "?rev=20260908-daily1");
   assert.equal(app.requests[0].options.credentials, "omit");
   assert.equal(app.requests[0].options.cache, "no-store");
 });
@@ -478,6 +671,7 @@ test("cumulative counters and current-run badges preserve old first-seen observa
   data.run.detailsRead = 45;
   const before = structuredClone(data);
   const app = await boot(t, { responses: [data] });
+  app.change("view-all", true);
   assert.equal(app.get("total-count").textContent, "02");
   assert.equal(app.get("reviewed-count").textContent, "123");
   assert.equal(app.get("details-count").textContent, "45");
