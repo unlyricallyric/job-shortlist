@@ -1,16 +1,192 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-07T04:19:36.452Z",
+  "generatedAt": "2026-09-07T06:17:12.572Z",
   "run": {
-    "source": "BOSS直聘",
-    "scope": "上海 · 云计算与企业软件 · 渠道及大客户销售",
-    "mode": "单次采集",
-    "cardsReviewed": 58,
-    "detailsRead": 12,
-    "selectedCount": 3,
-    "newCount": 3
+    "source": "BOSS直聘 + 字节跳动招聘官网 + 猎聘",
+    "scope": "上海 · 企业级科技 · 伙伴营销、需求生成、品牌活动及商业化转型备选",
+    "mode": "累计精选 · 第二轮快照",
+    "cardsReviewed": 158,
+    "detailsRead": 31,
+    "selectedCount": 7,
+    "newCount": 4
   },
   "jobs": [
+    {
+      "id": "bytedance-7553593747460917511",
+      "title": "资深市场营销经理（渠道与生态方向） - 飞书商业化",
+      "company": "字节跳动 · 飞书商业化",
+      "city": "上海",
+      "location": "上海",
+      "source": "字节跳动招聘官网",
+      "url": "https://jobs.bytedance.com/experienced/position/7553593747460917511/detail",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "5年以上市场营销经验",
+      "educationText": null,
+      "category": "伙伴营销",
+      "matchScore": 94,
+      "priority": "优先了解",
+      "summary": [
+        "制定区域渠道季度营销计划，与区域负责人、渠道经理对齐重点城市、伙伴、客群及转化目标。",
+        "搭建伙伴自主获客方法，通过会销、客户转介绍和资源方合作，形成邀约、跟进、复盘及分层赋能机制。",
+        "管理伙伴MDF使用、活动落地与商机转化追踪，沉淀Campaign、AI产品会销材料和渠道营销SOP。"
+      ],
+      "requirements": [
+        "5年以上市场营销经验；SaaS、企业服务、渠道或咨询服务企业经历优先。",
+        "理解ToB客群，熟悉会销、行业活动和商协会合作；团队管理或项目管理经验优先。",
+        "深度使用AI，具备数据意识、结构化输出及从业务目标反推市场打法的能力。"
+      ],
+      "matchReasons": [
+        "主要工作是伙伴联合获客、赋能、活动和商机转化，属于渠道及伙伴营销。",
+        "需要协同渠道与销售团队，但没有把既往个人终端签单或ISV接口开发列为硬性任职要求。",
+        "项目管理经验也被认可，不能因为职位名含经理就推定必须带过直属团队。"
+      ],
+      "concerns": [
+        "需确认MDF预算权限、伙伴自主获客指标、区域差旅及可调用资源。",
+        "需准备AI工具应用、活动ROI或转化复盘、可复用营销SOP的具体案例。",
+        "与A04276A华东岗位职责高度相近；需确认职级、对应团队及是否独立招聘需求，不能仅凭不同编号推定不同HC。"
+      ],
+      "languageNote": "JD为中文；团队介绍包含中国及国际业务，具体工作语言未单独说明。",
+      "publishedAt": null,
+      "firstSeen": "2026-09-07T05:37:25.456Z",
+      "lastSeen": "2026-09-07T05:42:41.425Z",
+      "jdRead": true,
+      "isNew": true
+    },
+    {
+      "id": "bytedance-7674844183321364741",
+      "title": "渠道生态市场营销专家（飞书）（华东） - 飞书商业化",
+      "company": "字节跳动 · 飞书商业化",
+      "city": "上海",
+      "location": "上海、杭州",
+      "source": "字节跳动招聘官网",
+      "url": "https://jobs.bytedance.com/experienced/position/7674844183321364741/detail",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "3~5年ToB市场营销、渠道营销经验",
+      "educationText": null,
+      "category": "伙伴营销",
+      "matchScore": 90,
+      "priority": "优先了解",
+      "summary": [
+        "落地区域渠道营销计划，协同区域和渠道负责人确定城市、伙伴、客户群、活动节奏与转化目标。",
+        "帮助伙伴建立独立获客能力，输出会销、资源合作、邀约、跟进及复盘工具，并做分层赋能。",
+        "跟踪MDF使用、活动执行和商机转化，沉淀可复制的原厂Campaign、AI产品会销资料与行业案例。"
+      ],
+      "requirements": [
+        "3~5年ToB市场营销或渠道营销经验；SaaS、企服、渠道或咨询企业经历优先。",
+        "理解企业客户画像，熟悉线下会销、行业活动与商协会合作，有会销经验优先。",
+        "要求AI工具的深度使用、数据意识、结构化输出、业务敏感度及执行韧性。"
+      ],
+      "matchReasons": [
+        "虽然名称带生态，但职责重点是伙伴营销与自主获客，而非技术集成或开发者社区运营。",
+        "活动执行、渠道赋能、销售协同和商机追踪贯穿职责，可以按工作内容与资深伙伴营销岗一起比较。",
+        "岗位归在销售支持序列，不等同于个人负责终端合同签约的销售岗位。"
+      ],
+      "concerns": [
+        "官网同时列上海、杭州，沟通时需明确上海base、办公安排及负责区域。",
+        "需确认MDF管理、活动转化目标、AI实操要求及薪资职级。",
+        "与A59039岗位职责相近，但经验要求不同；需确认是否同一团队的不同职级或招聘版本。"
+      ],
+      "languageNote": "JD为中文；团队介绍包含中国及国际业务，具体工作语言未单独说明。",
+      "publishedAt": null,
+      "firstSeen": "2026-09-07T05:37:25.487Z",
+      "lastSeen": "2026-09-07T05:42:41.447Z",
+      "jdRead": true,
+      "isNew": true
+    },
+    {
+      "id": "boss-93e1018fbdbc647a0nJ92t26FlNY",
+      "title": "市场推广专员",
+      "company": "爱重启智能科技",
+      "city": "上海",
+      "location": "上海·浦东新区·张江",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/93e1018fbdbc647a0nJ92t26FlNY.html",
+      "salaryText": "8-12K",
+      "salaryMinK": 8,
+      "salaryMaxK": 12,
+      "salaryMonths": null,
+      "experienceText": "3-5年",
+      "educationText": "本科",
+      "category": "需求生成",
+      "matchScore": 82,
+      "priority": "有条件匹配",
+      "summary": [
+        "围绕企业AI文档生成产品，搭建品牌曝光、内容获客到销售线索转化的增长流程。",
+        "开展内容与SEO、企业服务伙伴合作，以及线上会议、行业沙龙等推广活动。",
+        "跟踪渠道线索、转化率、获客成本和ROI，协同产品、销售及算法团队输出客户能理解的市场材料。"
+      ],
+      "requirements": [
+        "本科及以上，3年以上B2B软件或SaaS市场推广经验；从零搭建增长体系的经验优先。",
+        "熟悉B端内容营销和SEO，能够独立产出内容、制定关键词策略并执行。",
+        "具备伙伴拓展、商务谈判、资源整合、获客漏斗分析及跨部门协作能力。"
+      ],
+      "matchReasons": [
+        "标题只是市场推广专员，但正文实际包含需求生成、伙伴合作、活动营销和线索转化。",
+        "服务对象是企业软件客户，不是消费品地推或仅承担电话邀约量的岗位。",
+        "强调把技术能力转化为客户语言，并与销售共同优化获客漏斗。"
+      ],
+      "concerns": [
+        "SEO与独立内容产出是明示要求，不能用一般活动执行经验替代，需要作品或实操案例。",
+        "标称专员却覆盖整体增长策略、内容、渠道与分析，需确认团队配置、职责边界和资源。",
+        "招聘页标注8-12K，薪酬层级与职责范围需谨慎核对；保留用于职责比较，不把低薪隐藏。"
+      ],
+      "languageNote": "JD为中文，未单独说明工作语言。",
+      "publishedAt": null,
+      "firstSeen": "2026-09-07T05:42:42.535Z",
+      "lastSeen": "2026-09-07T05:42:42.535Z",
+      "jdRead": true,
+      "isNew": true
+    },
+    {
+      "id": "liepin-1983838723",
+      "title": "品牌营销专家（活动方向）-飞书",
+      "company": "字节跳动",
+      "city": "上海",
+      "location": "上海-徐汇区",
+      "source": "猎聘",
+      "url": "https://www.liepin.com/job/1983838723.shtml",
+      "salaryText": "20-40k·15薪",
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": 15,
+      "experienceText": "5-10年",
+      "educationText": "本科",
+      "category": "品牌活动",
+      "matchScore": 79,
+      "priority": "有条件匹配",
+      "summary": [
+        "参与年度大型品牌活动的创意落地，并独立负责中小型品牌活动从策划到执行。",
+        "协调内部团队和外部合作方，推进活动创意、策划与现场交付。",
+        "运营活动IP、展厅、礼品等品牌资产，并探索新的品牌营销形式。"
+      ],
+      "requirements": [
+        "JD写3-5年以上公关活动、品牌展会或沉浸式策展经验；与页首5-10年的口径不同，需要确认。",
+        "要求品牌审美、创意产出、跨团队与合作伙伴项目协同，以及AI工具用于创作或提效的经验。",
+        "投递必须附个人作品集；页首学历标注本科。"
+      ],
+      "matchReasons": [
+        "正文确实包含活动策划、创意执行和外部合作方协同，而不是挂市场名称的电话销售。",
+        "可作为活动营销向品牌体验方向延伸的条件候选，不把它包装成渠道赋能或需求生成岗位。",
+        "管理品牌资产不等于管理直属员工；JD没有明确要求既往直接带团队。"
+      ],
+      "concerns": [
+        "作品集是明确投递要求，应展示本人承担的创意、策划与执行范围，不能只罗列参加过的活动。",
+        "更偏品牌体验与策展；通用B2B活动经验不自动证明品牌审美或沉浸式项目能力。",
+        "薪资保留招聘页原文；计薪周期与固定、浮动构成未独立确认，暂不用于标准化月薪范围比较。"
+      ],
+      "languageNote": "JD为中文，未单独说明工作语言。",
+      "publishedAt": null,
+      "firstSeen": "2026-09-07T05:55:32.000Z",
+      "lastSeen": "2026-09-07T05:55:32.000Z",
+      "jdRead": true,
+      "isNew": true
+    },
     {
       "id": "boss-777c1f838d8dfa321H172NW1GFBW",
       "title": "渠道经理（上海）(J10370)",
@@ -26,8 +202,8 @@
       "experienceText": "5-10年",
       "educationText": "本科",
       "category": "渠道销售",
-      "matchScore": 85,
-      "priority": "优先了解",
+      "matchScore": 76,
+      "priority": "转型备选",
       "summary": [
         "负责区域渠道市场拓展，开发、建设和管理合作伙伴，对合作销售业绩负责。",
         "维护渠道体系，协调不同渠道发展，支持短期和中长期业务目标。",
@@ -48,12 +224,12 @@
         "需承担合作销售业绩，具体指标、既有伙伴资源和独立签约职责待确认。",
         "17薪是招聘页标注，固定与浮动构成、发放条件需向招聘方确认。"
       ],
-      "languageNote": "JD为中文且未明确英语要求；实际工作语言仍需确认。",
+      "languageNote": "JD为中文，未单独说明工作语言。",
       "publishedAt": null,
       "firstSeen": "2026-09-07T04:11:25.682Z",
       "lastSeen": "2026-09-07T04:11:25.682Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-aa5a22dfc85162130nN40t67GFVT",
@@ -69,9 +245,9 @@
       "salaryMonths": null,
       "experienceText": "3-5年",
       "educationText": "本科",
-      "category": "渠道销售",
-      "matchScore": 82,
-      "priority": "优先了解",
+      "category": "伙伴发展",
+      "matchScore": 75,
+      "priority": "转型备选",
       "summary": [
         "招募培训、咨询、软件代理和园区服务等合作伙伴，完成筛选、谈判及协议签署。",
         "组织产品认证与销售赋能，落实商机报备、激励政策和渠道冲突处理机制。",
@@ -92,12 +268,12 @@
         "需要独立完成合作谈判与签约，并对收入目标负责；具体指标和已有伙伴基础待确认。",
         "需确认底薪、提成、劳动合同主体及协同办公产品能力要求。"
       ],
-      "languageNote": "JD为中文且未明确英语要求；实际工作语言仍需确认。",
+      "languageNote": "JD为中文，未单独说明工作语言。",
       "publishedAt": null,
       "firstSeen": "2026-09-07T04:15:25.894Z",
       "lastSeen": "2026-09-07T04:15:25.894Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-d401f460cf8874411HNz3ti4FlJQ",
@@ -114,8 +290,8 @@
       "experienceText": "3-5年",
       "educationText": "本科",
       "category": "大客户销售",
-      "matchScore": 74,
-      "priority": "有条件匹配",
+      "matchScore": 64,
+      "priority": "转型备选",
       "summary": [
         "面向数字娱乐行业销售云计算产品，拓展新客户并承担销售业绩。",
         "维护大客户关系，挖掘需求，协调内外部资源推进项目落地。",
@@ -136,12 +312,12 @@
         "需了解数字娱乐客户场景和云产品，独立成交要求及业绩指标待确认。",
         "20薪是招聘页标注，不代表保证收入；固定薪资、奖金和提成构成待确认。"
       ],
-      "languageNote": "JD为中文且未明确英语要求；实际工作语言仍需确认。",
+      "languageNote": "JD为中文，未单独说明工作语言。",
       "publishedAt": null,
       "firstSeen": "2026-09-07T04:11:29.681Z",
       "lastSeen": "2026-09-07T04:11:29.681Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     }
   ]
 }

@@ -198,11 +198,11 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
   .total-count > span { font-size: 11px; }
   .new-summary { grid-column: 2; font-size: 10px; margin-top: 13px; }
   .collection-counts { grid-column: 2; gap: 10px; margin-top: 7px; padding-top: 9px; }
-  .collection-counts > div { gap: 6px; }
-  .collection-counts strong { font-size: 16px; }
-  .collection-counts span { font-size: 9px; }
+  .collection-counts > div { align-items: flex-start; flex-direction: column; gap: 2px; }
+  .collection-counts strong { font-size: 18px; }
+  .collection-counts span { font-size: 10px; white-space: nowrap; }
   .metric-note { grid-column: 1 / -1; font-size: 10px; margin-top: 11px; }
-  .snapshot-meta { grid-template-columns: 1fr auto; gap: 16px 24px; padding: 17px 18px; font-size: 11px; }
+  .snapshot-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; padding: 17px 18px; font-size: 11px; }
   .scope-meta { grid-column: 1 / -1; }
   .meta-label { font-size: 9px; }
   .shortlist-section { margin-top: 36px; }

@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { fixture, snapshotOf } from "./helpers/fixtures.mjs";
+import { formatShanghaiTime, selectJobs } from "../docs/model.mjs";
+import { bytedanceFixture, fixture, liepinFixture, snapshotOf } from "./helpers/fixtures.mjs";
 import { OptionDouble, pageDocument } from "./helpers/dom.mjs";
 
 const html = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
@@ -83,6 +84,33 @@ test("the app shows loading, then a truthful empty state and Shanghai snapshot t
   assert.equal(app.get("state-action").hidden, true);
 });
 
+test("the public snapshot renders all source records and counts without changing observations", async (t) => {
+  const data = JSON.parse(await readFile(new URL("../docs/data/jobs.json", import.meta.url), "utf8"));
+  const before = structuredClone(data);
+  const app = await boot(t, { responses: [data] });
+  assert.equal(app.cards().length, data.jobs.length);
+  assert.equal(app.get("new-count").textContent, String(data.run.newCount));
+  assert.equal(app.get("reviewed-count").textContent, String(data.run.cardsReviewed));
+  assert.equal(app.get("details-count").textContent, String(data.run.detailsRead));
+  assert.equal(app.get("run-source").textContent, `${data.run.source} · ${data.run.mode}`);
+  assert.equal(app.get("generated-at").textContent, formatShanghaiTime(data.generatedAt));
+  for (const [index, job] of selectJobs(data.jobs).entries()) {
+    const field = (name) => app.cards()[index].querySelector(`[data-field="${name}"]`);
+    assert.equal(field("title").textContent, job.title ?? "岗位名称无法获取");
+    assert.equal(field("source").textContent, `来源 · ${job.source}`);
+    assert.equal(field("link").href, job.url);
+    assert.equal(field("salary").textContent, job.salaryText ?? "薪资无法获取");
+    assert.equal(field("first-seen").getAttribute("datetime"), job.firstSeen);
+    assert.equal(field("last-seen").getAttribute("datetime"), job.lastSeen);
+    assert.equal(field("new").hidden, !job.isNew);
+  }
+  app.change("new-only", true);
+  assert.equal(app.cards().length, data.jobs.filter((job) => job.isNew).length);
+  app.click("reset-filters");
+  assert.equal(app.cards().length, data.jobs.length);
+  assert.deepEqual(data, before);
+});
+
 test("real card rendering preserves literal strings, safe links, nulls and observation labels", async (t) => {
   const app = await boot(t);
   assert.equal(app.cards().length, 3);
@@ -103,8 +131,87 @@ test("real card rendering preserves literal strings, safe links, nulls and obser
   assert.equal(app.get("new-count").textContent, "2");
   assert.equal(app.requests.length, 1);
   assert.ok(app.requests[0].url.pathname.endsWith("/docs/data/jobs.json"));
+  assert.equal(app.requests[0].url.search, "?rev=20260907-2");
   assert.equal(app.requests[0].options.credentials, "omit");
   assert.equal(app.requests[0].options.cache, "no-store");
+});
+
+test("mixed snapshots use each source's own labels and safe CTA while retaining unknown salary", async (t) => {
+  const official = bytedanceFixture({ matchScore: 90 });
+  const boss = fixture({ matchScore: 50, isNew: false, salaryText: "10-20K", salaryMinK: 10, salaryMaxK: 20 });
+  const data = snapshotOf([boss, official], "BOSS直聘 + 字节跳动招聘官网");
+  data.run.cardsReviewed = 80;
+  data.run.detailsRead = 20;
+  const app = await boot(t, { responses: [data], mobile: true });
+  assert.equal(app.cards().length, 2);
+  assert.equal(app.get("run-source").textContent, "BOSS直聘 + 字节跳动招聘官网 · 单次采集");
+  assert.equal(app.get("reviewed-count").textContent, "80");
+  assert.equal(app.get("details-count").textContent, "20");
+  assert.equal(app.get("new-count").textContent, "1");
+  const field = (index, name) => app.cards()[index].querySelector(`[data-field="${name}"]`);
+  assert.equal(field(0, "source").textContent, "来源 · 字节跳动招聘官网");
+  assert.equal(field(0, "link-label").textContent, "查看官网岗位");
+  assert.equal(field(0, "link").href, official.url);
+  assert.match(field(0, "link").getAttribute("aria-label"), /字节跳动招聘官网 查看官网岗位/);
+  assert.equal(field(0, "link").getAttribute("target"), "_blank");
+  assert.equal(field(0, "link").getAttribute("rel"), "noopener noreferrer");
+  assert.equal(field(0, "salary").textContent, "薪资无法获取");
+  assert.equal(field(0, "salary-note").hidden, false);
+  assert.equal(field(0, "months").textContent, "待确认");
+  assert.equal(field(0, "jd-read").textContent, "已阅读源站职位详情");
+  assert.equal(field(1, "source").textContent, "来源 · BOSS直聘");
+  assert.equal(field(1, "link-label").textContent, "查看原始岗位");
+  assert.equal(field(1, "link").href, boss.url);
+  app.change("salary-mode", "unknown");
+  assert.equal(app.cards().length, 1);
+  assert.equal(field(0, "link").href, official.url);
+  app.change("keyword", "Partner Marketing");
+  assert.equal(app.cards().length, 1);
+  assert.equal(app.requests.length, 1);
+});
+
+test("three-source cards preserve incomparable salary quotes, conditional labels and source CTAs", async (t) => {
+  const listing = liepinFixture({ salaryText: "20-40k·15薪", salaryMonths: 15, matchScore: 80 });
+  const official = bytedanceFixture({ matchScore: 90 });
+  const boss = fixture({ matchScore: 50, isNew: false, salaryText: "10-20K", salaryMinK: 10, salaryMaxK: 20 });
+  const data = snapshotOf([boss, official, listing], "BOSS直聘 + 字节跳动招聘官网 + 猎聘");
+  const before = structuredClone(data);
+  const app = await boot(t, { responses: [data], mobile: true });
+  assert.equal(app.cards().length, 3);
+  assert.equal(app.get("run-source").textContent, "BOSS直聘 + 字节跳动招聘官网 + 猎聘 · 单次采集");
+  assert.equal(app.get("salary-mode").value, "all");
+  assert.deepEqual(app.get("salary-mode").children.map((option) => option.textContent),
+    ["保留在结果中", "只看可比较月薪", "只看未公开或不可比较"]);
+  const field = (index, name) => app.cards()[index].querySelector(`[data-field="${name}"]`);
+  assert.equal(field(1, "source").textContent, "来源 · 猎聘");
+  assert.equal(field(1, "link-label").textContent, "查看猎聘岗位");
+  assert.equal(field(1, "link").href, listing.url);
+  assert.match(field(1, "link").getAttribute("aria-label"), /猎聘 查看猎聘岗位/);
+  assert.equal(field(1, "link").getAttribute("target"), "_blank");
+  assert.equal(field(1, "link").getAttribute("rel"), "noopener noreferrer");
+  assert.equal(field(1, "priority").textContent, "有条件匹配");
+  assert.equal(field(1, "salary").textContent, "20-40k·15薪");
+  assert.equal(field(1, "months").textContent, "15 薪");
+  assert.equal(field(1, "salary-note").hidden, false);
+  assert.equal(field(1, "salary-note").textContent, "保留招聘页原文，月薪不可比较，不据此推算");
+  assert.equal(field(0, "salary-note").textContent, "月薪未公开或无法获取，不据此推算");
+  assert.equal(field(2, "salary-note").hidden, true);
+  app.change("salary-min", "50");
+  assert.equal(app.cards().length, 2);
+  app.change("salary-mode", "known");
+  assert.equal(app.cards().length, 0);
+  app.change("salary-mode", "unknown");
+  assert.equal(app.cards().length, 2);
+  assert.equal(app.get("salary-min").disabled, true);
+  app.change("keyword", "活动营销");
+  assert.equal(app.cards().length, 1);
+  assert.equal(field(0, "salary").textContent, "20-40k·15薪");
+  app.click("reset-filters");
+  assert.equal(app.cards().length, 3);
+  assert.equal(app.get("salary-mode").value, "all");
+  assert.equal(app.get("salary-min").value, "");
+  assert.deepEqual(data, before);
+  assert.equal(app.requests.length, 1);
 });
 
 test("category, priority, keyword, new-only, sorting and no-match reset are wired", async (t) => {
@@ -127,6 +234,83 @@ test("category, priority, keyword, new-only, sorting and no-match reset are wire
   assert.equal(app.get("sort-by").value, "score");
   assert.equal(app.cards()[0].querySelector('[data-field="title"]').textContent, testJobs[0].title);
   assert.equal(app.requests.length, 1);
+});
+
+test("reviewed direction aliases and transition priorities work with salary and reset controls", async (t) => {
+  const jobs = [
+    job("field", { title: "业务经理", category: "区域市场", priority: "转型备选", matchScore: 90 }),
+    job("partner", { title: "业务经理", category: "伙伴营销", priority: "有条件匹配", matchScore: 50 }),
+    job("operations", { title: "业务经理", category: "销售运营", priority: "优先了解", matchScore: 10 }),
+  ];
+  const before = structuredClone(jobs);
+  const app = await boot(t, { responses: [snapshotOf(jobs)], mobile: true });
+  assert.equal(app.get("filters-panel").open, false);
+  assert.equal(app.get("category").firstElementChild.textContent, "全部方向");
+  assert.deepEqual(app.get("priority").children.map((option) => option.value),
+    ["", "优先了解", "有条件匹配", "转型备选"]);
+  assert.equal(app.get("category").children.length, 4);
+  assert.equal(app.get("salary-mode").value, "all");
+  assert.equal(app.get("salary-min").value, "");
+  assert.equal(app.get("salary-max").value, "");
+  assert.equal(app.cards().length, 3);
+
+  app.change("keyword", "  fIeLd   MARKETING ");
+  app.change("priority", "转型备选");
+  app.change("category", "区域市场");
+  assert.equal(app.cards().length, 1);
+  const card = app.cards()[0];
+  assert.equal(card.querySelector('[data-field="title"]').textContent, "业务经理");
+  assert.equal(card.querySelector('[data-field="category"]').textContent, "区域市场");
+  assert.equal(card.querySelector('[data-field="priority"]').textContent, "转型备选");
+  assert.equal(card.querySelector('[data-field="salary"]').textContent, "薪资无法获取");
+  app.change("salary-mode", "known");
+  assert.equal(app.cards().length, 0);
+  app.click("state-action");
+  assert.equal(app.get("keyword").value, "");
+  assert.equal(app.get("category").value, "");
+  assert.equal(app.get("priority").value, "");
+  assert.equal(app.get("salary-mode").value, "all");
+  assert.equal(app.get("sort-by").value, "score");
+  assert.equal(app.cards().length, 3);
+  app.change("sort-by", "priority");
+  assert.deepEqual(app.cards().map((node) => node.querySelector('[data-field="priority"]').textContent),
+    ["优先了解", "有条件匹配", "转型备选"]);
+  app.click("reset-filters");
+  assert.equal(app.get("sort-by").value, "score");
+  assert.equal(app.cards()[0].querySelector('[data-field="priority"]').textContent, "转型备选");
+  assert.equal(app.requests.length, 1);
+  assert.deepEqual(jobs, before);
+});
+
+test("cumulative counters and current-run badges preserve old first-seen observations", async (t) => {
+  const data = snapshotOf([
+    job("old", { firstSeen: "2026-09-06T08:00:00+08:00", isNew: false, matchScore: 90 }),
+    job("added", { firstSeen: "2026-09-05T08:00:00+08:00", isNew: true }),
+  ]);
+  data.run.cardsReviewed = 123;
+  data.run.detailsRead = 45;
+  const before = structuredClone(data);
+  const app = await boot(t, { responses: [data] });
+  assert.equal(app.get("total-count").textContent, "02");
+  assert.equal(app.get("reviewed-count").textContent, "123");
+  assert.equal(app.get("details-count").textContent, "45");
+  assert.equal(app.get("new-count").textContent, "1");
+  assert.match(app.get("reviewed-count").parentElement.textContent, /累计初筛/);
+  assert.match(app.get("details-count").parentElement.textContent, /累计精读/);
+  assert.match(app.get("new-count").parentElement.textContent, /本轮新增/);
+  assert.equal(app.get("new-filter-count").textContent, "（1）");
+  assert.equal(app.cards()[0].querySelector('[data-field="first-seen"]').textContent, "2026.09.06 08:00");
+  assert.equal(app.cards()[0].querySelector('[data-field="new"]').hidden, true);
+  assert.equal(app.cards()[1].querySelector('[data-field="new"]').textContent, "本轮新增");
+  app.change("new-only", true);
+  assert.equal(app.cards().length, 1);
+  assert.equal(app.cards()[0].querySelector('[data-field="new"]').hidden, false);
+  assert.equal(app.cards()[0].querySelector('[data-field="first-seen"]').textContent, "2026.09.05 08:00");
+  assert.equal(app.get("reviewed-count").textContent, "123");
+  assert.equal(app.get("details-count").textContent, "45");
+  assert.equal(app.get("total-count").textContent, "02");
+  assert.equal(app.get("new-count").textContent, "1");
+  assert.deepEqual(data, before);
 });
 
 test("unknown fields remain explicit rather than being replaced with invented facts", async (t) => {
@@ -195,6 +379,8 @@ test("HTTP, JSON and schema failures are surfaced as errors rather than empty su
     { customResponse: { ok: false, status: 404 } },
     { customResponse: { ok: true, json: async () => { throw new SyntaxError("TEST_ONLY_JSON_ERROR"); } } },
     unsafe,
+    snapshotOf([bytedanceFixture({ url: fixture().url })], "字节跳动招聘官网"),
+    snapshotOf([liepinFixture({ url: bytedanceFixture().url })], "猎聘"),
   ];
   for (const [index, response] of cases.entries()) {
     await t.test(`failure ${index + 1}`, async (subtest) => {

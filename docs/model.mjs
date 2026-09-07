@@ -7,6 +7,28 @@ export class SnapshotError extends Error {
 
 const rootKeys = ["version", "generatedAt", "run", "jobs"];
 const runKeys = ["source", "scope", "mode", "cardsReviewed", "detailsRead", "selectedCount", "newCount"];
+const snapshotModes = new Set(["单次采集", "累计精选 · 第二轮快照"]);
+const runSources = new Map([
+  ["BOSS直聘", ["BOSS直聘"]],
+  ["字节跳动招聘官网", ["字节跳动招聘官网"]],
+  ["猎聘", ["猎聘"]],
+  ["BOSS直聘 + 字节跳动招聘官网", ["BOSS直聘", "字节跳动招聘官网"]],
+  ["BOSS直聘 + 字节跳动招聘官网 + 猎聘", ["BOSS直聘", "字节跳动招聘官网", "猎聘"]],
+]);
+const sourceRoutes = new Map([
+  ["BOSS直聘", {
+    idPattern: /^boss-([A-Za-z0-9_~-]+)$/,
+    pathFor: (id) => `/job_detail/${id}.html`,
+  }],
+  ["字节跳动招聘官网", {
+    idPattern: /^bytedance-([0-9]+)$/,
+    pathFor: (id) => `/experienced/position/${id}/detail`,
+  }],
+  ["猎聘", {
+    idPattern: /^liepin-([0-9]+)$/,
+    pathFor: (id) => `/job/${id}.shtml`,
+  }],
+]);
 const jobKeys = [
   "id", "title", "company", "city", "location", "source", "url",
   "salaryText", "salaryMinK", "salaryMaxK", "salaryMonths",
@@ -19,6 +41,29 @@ const textKeys = [
   "educationText", "category", "priority", "languageNote",
 ];
 const listKeys = ["summary", "requirements", "matchReasons", "concerns"];
+const roleAliases = new Map([
+  ["区域市场", ["field marketing", "regional marketing"]],
+  ["伙伴营销", ["partner marketing", "channel marketing", "渠道市场", "生态市场"]],
+  ["需求生成", ["demand generation", "demand gen", "pipeline marketing"]],
+  ["伙伴发展", ["partner development", "pdr"]],
+  ["生态商业化", ["ecosystem"]],
+  ["销售开发", ["sales development", "bdr", "sdr"]],
+  ["销售运营", ["sales operations", "revops"]],
+  ["客户成功", ["customer success", "csm"]],
+  ["产品市场", ["产品营销", "product marketing", "pmm"]],
+  ["品牌活动", ["品牌活动", "活动营销", "活动策划", "event marketing"]],
+  ["渠道销售", ["channel sales"]],
+  ["大客户销售", ["account executive", "key account", "ae"]],
+]);
+const aliasPhrases = [...roleAliases].flatMap(([category, aliases]) =>
+  aliases.map((alias) => ({ category, tokens: alias.split(" ") }))
+).sort((a, b) => b.tokens.length - a.tokens.length);
+const wordAliasPatterns = new Map(aliasPhrases
+  .filter(({ tokens }) => tokens.length === 1 && /^[a-z]+$/.test(tokens[0]))
+  .map(({ tokens: [word] }) => [
+    word, new RegExp(`(^|[^\\p{Script=Latin}\\p{N}\\p{M}_])${word}(?=$|[^\\p{Script=Latin}\\p{N}\\p{M}_])`, "u"),
+  ]));
+const priorityOrder = new Map(["优先了解", "有条件匹配", "转型备选"].map((name, index) => [name, index]));
 const collator = new Intl.Collator("zh-CN", { numeric: true });
 const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
   timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit",
@@ -61,8 +106,15 @@ export function formatShanghaiTime(value) {
   return `${parts.year}.${parts.month}.${parts.day} ${parts.hour}:${parts.minute}`;
 }
 
-export function safeJobUrl(value) {
+export function safeJobUrl(value, source = "BOSS直聘") {
   if (typeof value !== "string" || /[\s\\\u0000-\u001f\u007f]/u.test(value)) return null;
+  if (source === "字节跳动招聘官网") {
+    return /^https:\/\/jobs\.bytedance\.com\/experienced\/position\/[0-9]+\/detail$/.test(value) ? value : null;
+  }
+  if (source === "猎聘") {
+    return /^https:\/\/www\.liepin\.com\/job\/[0-9]+\.shtml$/.test(value) ? value : null;
+  }
+  if (source !== "BOSS直聘") return null;
   let url;
   try {
     url = new URL(value);
@@ -89,7 +141,8 @@ export function validateSnapshot(value) {
   requireValue(isIsoDate(value.generatedAt, false), "快照生成时间必须包含时区。");
   requireValue(hasExactKeys(value.run, runKeys), "采集概览字段不完整或包含不支持的字段。");
   const { run, jobs } = value;
-  requireValue(run.source === "BOSS直聘" && run.mode === "单次采集" && isText(run.scope), "采集来源、范围或模式无效。");
+  const allowedSources = runSources.get(run.source);
+  requireValue(allowedSources !== undefined && snapshotModes.has(run.mode) && isText(run.scope), "采集来源、范围或模式无效。");
   for (const key of ["cardsReviewed", "detailsRead", "selectedCount", "newCount"]) {
     requireValue(Number.isSafeInteger(run[key]) && run[key] >= 0, `采集计数 ${key} 无效。`);
   }
@@ -100,11 +153,14 @@ export function validateSnapshot(value) {
   for (const [index, job] of jobs.entries()) {
     const label = `第 ${index + 1} 个岗位`;
     requireValue(hasExactKeys(job, jobKeys), `${label}字段不完整或包含不支持的字段。`);
-    requireValue(typeof job.id === "string" && /^boss-[A-Za-z0-9_~-]+$/.test(job.id) && !ids.has(job.id), `${label}标识无效或重复。`);
+    requireValue(allowedSources.includes(job.source), `${label}来源不受支持或与快照不一致。`);
+    const route = sourceRoutes.get(job.source);
+    const idMatch = typeof job.id === "string" ? route.idPattern.exec(job.id) : null;
+    requireValue(idMatch !== null && idMatch[0] === job.id && !ids.has(job.id), `${label}标识无效或重复。`);
     ids.add(job.id);
-    const url = safeJobUrl(job.url);
-    requireValue(url !== null && new URL(url).pathname === `/job_detail/${job.id.slice(5)}.html`, `${label}必须使用无跟踪参数的 BOSS直聘原始岗位链接。`);
-    requireValue(job.source === run.source, `${label}来源与快照不一致。`);
+    const expectedPath = route.pathFor(idMatch[1]);
+    const url = safeJobUrl(job.url, job.source);
+    requireValue(url !== null && new URL(url).pathname === expectedPath, `${label}必须使用与来源及标识一致、无跟踪参数的原始岗位链接。`);
     for (const key of textKeys) {
       requireValue(job[key] === null || isText(job[key]), `${label}的 ${key} 必须是文字或 null。`);
     }
@@ -121,7 +177,7 @@ export function validateSnapshot(value) {
     requireValue(job.publishedAt === null || isIsoDate(job.publishedAt), `${label}源站发布时间无效。`);
     requireValue(observationOrder(job.firstSeen, job.lastSeen) <= 0 && observationOrder(job.lastSeen, value.generatedAt) <= 0, `${label}观察时间顺序无效。`);
   }
-  requireValue(jobs.filter((job) => job.isNew).length === run.newCount, "本次新增数量与岗位标记不一致。");
+  requireValue(jobs.filter((job) => job.isNew).length === run.newCount, "本轮新增数量与岗位标记不一致。");
   requireValue(jobs.filter((job) => job.jdRead).length <= run.detailsRead, "详情阅读数量与岗位标记不一致。");
   return value;
 }
@@ -153,23 +209,50 @@ function searchableText(job) {
   ].join(" "));
 }
 
+function searchTerms(keyword) {
+  const tokens = normalizeText(keyword).split(/\s+/u).filter(Boolean);
+  const terms = [];
+  for (let index = 0; index < tokens.length;) {
+    const alias = aliasPhrases.find((phrase) =>
+      phrase.tokens.every((token, offset) => token === tokens[index + offset]));
+    const term = alias ?? { category: null, tokens: [tokens[index]] };
+    terms.push(term);
+    index += term.tokens.length;
+  }
+  return terms;
+}
+
+function matchesSearch(job, terms) {
+  const text = searchableText(job);
+  // Aliases target the reviewed category, never infer a category from the title.
+  return terms.every(({ category, tokens }) => (category !== null && job.category === category)
+    || tokens.every((token) => {
+      const pattern = wordAliasPatterns.get(token);
+      return pattern ? pattern.test(text) : text.includes(token);
+    }));
+}
+
+function priorityRank(priority) {
+  return priorityOrder.get(priority) ?? priorityOrder.size;
+}
+
 export function selectJobs(jobs, {
   keyword = "", category = "", priority = "", newOnly = false,
   salaryMin = null, salaryMax = null, salaryMode = "all", sortBy = "score",
 } = {}) {
-  if (!["all", "known", "unknown"].includes(salaryMode) || !["score", "firstSeen"].includes(sortBy)) {
+  if (!["all", "known", "unknown"].includes(salaryMode) || !["score", "firstSeen", "priority"].includes(sortBy)) {
     throw new RangeError("不支持的筛选或排序方式。");
   }
   if ([salaryMin, salaryMax].some((value) => value !== null && (typeof value !== "number" || !Number.isFinite(value) || value < 0))
     || (salaryMin !== null && salaryMax !== null && salaryMin > salaryMax)) {
     throw new RangeError("薪资筛选区间无效。");
   }
-  const tokens = normalizeText(keyword).split(/\s+/u).filter(Boolean);
+  const terms = searchTerms(keyword);
   const selected = jobs.filter((job) => {
     if (category && (job.category ?? "待确认") !== category) return false;
     if (priority && (job.priority ?? "待确认") !== priority) return false;
     if (newOnly && !job.isNew) return false;
-    if (tokens.length && !tokens.every((token) => searchableText(job).includes(token))) return false;
+    if (terms.length && !matchesSearch(job, terms)) return false;
     const knownSalary = hasSalaryRange(job);
     if (salaryMode === "unknown") return !knownSalary;
     if (!knownSalary) return salaryMode === "all";
@@ -178,7 +261,11 @@ export function selectJobs(jobs, {
     return true;
   });
   return selected.sort((a, b) => {
-    if (sortBy === "score") {
+    if (sortBy === "priority") {
+      const priorityDifference = priorityRank(a.priority) - priorityRank(b.priority);
+      if (priorityDifference) return priorityDifference;
+    }
+    if (sortBy !== "firstSeen") {
       const scoreOrder = (b.matchScore ?? -1) - (a.matchScore ?? -1);
       if (scoreOrder) return scoreOrder;
     }
@@ -193,5 +280,6 @@ export function filterOptions(jobs, key) {
     const name = job[key] ?? "待确认";
     counts.set(name, (counts.get(name) ?? 0) + 1);
   }
-  return [...counts.entries()].sort(([a], [b]) => collator.compare(a, b));
+  return [...counts.entries()].sort(([a], [b]) =>
+    (key === "priority" ? priorityRank(a) - priorityRank(b) : 0) || collator.compare(a, b));
 }

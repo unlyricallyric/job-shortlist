@@ -10,10 +10,27 @@ export const fixture = (overrides = {}) => ({
   lastSeen: "2026-09-07T09:00:00+08:00", jdRead: true, isNew: true, ...overrides,
 });
 
-export const snapshotOf = (jobs) => ({
+export const bytedanceFixture = (overrides = {}) => fixture({
+  id: "bytedance-9007199254740993",
+  source: "字节跳动招聘官网",
+  url: "https://jobs.bytedance.com/experienced/position/9007199254740993/detail",
+  category: "伙伴营销",
+  ...overrides,
+});
+
+export const liepinFixture = (overrides = {}) => fixture({
+  id: "liepin-9007199254740995",
+  source: "猎聘",
+  url: "https://www.liepin.com/job/9007199254740995.shtml",
+  category: "品牌活动",
+  priority: "有条件匹配",
+  ...overrides,
+});
+
+export const snapshotOf = (jobs, source = "BOSS直聘") => ({
   version: 1, generatedAt: "2026-09-07T12:00:00+08:00",
   run: {
-    source: "BOSS直聘", scope: "TEST_ONLY_SCOPE", mode: "单次采集",
+    source, scope: "TEST_ONLY_SCOPE", mode: "单次采集",
     cardsReviewed: jobs.length, detailsRead: jobs.filter((job) => job.jdRead).length,
     selectedCount: jobs.length, newCount: jobs.filter((job) => job.isNew).length,
   },

@@ -1,8 +1,13 @@
 import {
   SnapshotError, filterOptions, formatShanghaiTime, hasSalaryRange,
   parseSalaryRange, safeJobUrl, selectJobs, validateSnapshot,
-} from "./model.mjs";
+} from "./model.mjs?rev=20260907-2";
 
+const sourceLinkLabels = new Map([
+  ["BOSS直聘", "查看原始岗位"],
+  ["字节跳动招聘官网", "查看官网岗位"],
+  ["猎聘", "查看猎聘岗位"],
+]);
 const byId = (id) => document.getElementById(id);
 const form = byId("filter-form");
 const controls = byId("filter-controls");
@@ -69,6 +74,9 @@ function createCard(job, index) {
   put("salary", job.salaryText ?? "薪资无法获取");
   field("salary").classList.toggle("is-unknown", job.salaryText === null);
   field("salary-note").hidden = hasSalaryRange(job);
+  put("salary-note", job.salaryText === null
+    ? "月薪未公开或无法获取，不据此推算"
+    : "保留招聘页原文，月薪不可比较，不据此推算");
   put("location", job.location ?? (job.city ? `${job.city} · 具体地点待确认` : "无法获取"));
   put("experience", job.experienceText);
   put("education", job.educationText);
@@ -83,10 +91,12 @@ function createCard(job, index) {
   setTime(field("first-seen"), job.firstSeen);
   setTime(field("last-seen"), job.lastSeen);
   setTime(field("published"), job.publishedAt);
-  const url = safeJobUrl(job.url);
-  if (url === null) throw new SnapshotError("岗位来源链接无效。");
+  const url = safeJobUrl(job.url, job.source);
+  const linkLabel = sourceLinkLabels.get(job.source);
+  if (url === null || linkLabel === undefined) throw new SnapshotError("岗位来源链接无效。");
+  put("link-label", linkLabel);
   field("link").href = url;
-  field("link").setAttribute("aria-label", `${title}：在 ${job.source} 查看原始岗位（新窗口，可能需要登录）`);
+  field("link").setAttribute("aria-label", `${title}：在 ${job.source} ${linkLabel}（新窗口，可能需要登录）`);
   return card;
 }
 
@@ -131,7 +141,7 @@ function renderResults() {
     return;
   }
   if (jobs.length === 0) {
-    setState("暂时没有符合条件的岗位", "试试减少关键词、放宽薪资区间，或保留薪资待确认的岗位。", "reset");
+    setState("暂时没有符合条件的岗位", "试试减少关键词、放宽薪资区间，或保留月薪未公开或不可比较的岗位。", "reset");
     return;
   }
   byId("data-state").hidden = true;
@@ -152,7 +162,7 @@ function setFilterOptions(id, key, defaultText) {
 async function fetchSnapshot() {
   let response;
   try {
-    response = await fetch(new URL("./data/jobs.json", import.meta.url), {
+    response = await fetch(new URL("./data/jobs.json?rev=20260907-2", import.meta.url), {
       cache: "no-store", credentials: "omit", redirect: "error",
     });
   } catch (error) {
@@ -187,7 +197,7 @@ async function loadSnapshot() {
     byId("run-scope").textContent = snapshot.run.scope;
     byId("run-source").textContent = `${snapshot.run.source} · ${snapshot.run.mode}`;
     setTime(byId("generated-at"), snapshot.generatedAt);
-    setFilterOptions("category", "category", "全部类别");
+    setFilterOptions("category", "category", "全部方向");
     setFilterOptions("priority", "priority", "全部优先级");
     renderResults();
     controls.disabled = false;
