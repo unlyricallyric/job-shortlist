@@ -1,7 +1,7 @@
 import {
   SnapshotError, filterOptions, formatShanghaiTime, hasSalaryRange,
   parseSalaryRange, safeJobUrl, selectJobs, validateSnapshot,
-} from "./model.mjs?rev=20260907-2";
+} from "./model.mjs?rev=20260907-scheduled1";
 
 const sourceLinkLabels = new Map([
   ["BOSS直聘", "查看原始岗位"],
@@ -21,6 +21,13 @@ const fields = {
   keyword: byId("keyword"), category: byId("category"),
   priority: byId("priority"), newOnly: byId("new-only"),
 };
+const manualGuidance = {
+  assessment: byId("assessment-description").textContent,
+  category: byId("category-help").textContent,
+};
+const scheduleDateFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit",
+});
 let snapshot = null;
 let stateActionKind = "retry";
 
@@ -54,10 +61,41 @@ function fillList(node, items, fallback) {
   }
 }
 
+function isScheduleOverdue(data, now = Date.now()) {
+  if (!data.automation?.enabled) return false;
+  const parts = Object.fromEntries(scheduleDateFormatter.formatToParts(now).map(({ type, value }) => [type, value]));
+  const day = `${parts.year}-${parts.month}-${parts.day}`;
+  const slots = data.automation.times.map((time) => Date.parse(`${day}T${time}:00+08:00`));
+  const cutoff = now - 30 * 60_000;
+  // Keep an earlier missed slot visible while the next slot is still within its grace period.
+  const latestExpectedSlot = Math.max(...slots.map((slot) => slot < cutoff ? slot : slot - 24 * 60 * 60_000));
+  return Date.parse(data.generatedAt) < latestExpectedSlot;
+}
+
+function renderAutomation() {
+  const automation = snapshot.automation;
+  byId("automation-panel").hidden = !automation;
+  byId("automation-warning").hidden = !isScheduleOverdue(snapshot);
+  byId("snapshot-label").textContent = automation ? "只读 · 定时采样快照" : "只读 · 人工辅助快照";
+  byId("assessment-description").textContent = automation
+    ? "初筛方式以各卡片标记为准：人工辅助初筛沿用原有判断；规则初筛由固定规则计算，未经人工复核。再次观察到岗位不会改变其初筛方式。分数与优先级仅用于清单排序，不代表已满足全部任职要求，也不是录用概率。"
+    : manualGuidance.assessment;
+  byId("category-help").textContent = automation
+    ? "原标题保留，方向按 JD 实际职责归类；规则初筛岗位由固定规则归类，仍需核实具体职责。同一岗位名可能做不同工作。"
+    : manualGuidance.category;
+  if (!automation) return;
+  byId("automation-status").textContent = automation.enabled ? "上次发布：计划开启" : "上次发布：计划暂停";
+  byId("schedule-times").textContent = `每天 ${automation.times.join(" / ")}（${automation.timeZone}）`;
+  byId("run-reviewed-count").textContent = automation.reviewedThisRun;
+  byId("run-details-count").textContent = automation.detailsThisRun;
+  byId("automation-sources").textContent = `本轮仅对 ${automation.freshSources.join("、")} 进行新采样；${automation.retainedSources.join("、")} 为保留记录，沿用原始收录与最近观察日期，未在本轮重新核验。`;
+}
+
 function createCard(job, index) {
   const card = byId("job-card-template").content.firstElementChild.cloneNode(true);
   const field = (name) => card.querySelector(`[data-field="${name}"]`);
   const put = (name, value) => { field(name).textContent = value ?? "无法获取"; };
+  const rulesBased = snapshot.assessmentMethods?.[job.id] === "rules-v1";
   const title = job.title ?? "岗位名称无法获取";
   field("title").id = `job-title-${index}`;
   card.setAttribute("aria-labelledby", field("title").id);
@@ -65,11 +103,14 @@ function createCard(job, index) {
   put("category", job.category ?? "待确认");
   put("priority", job.priority ?? "优先级待确认");
   field("new").hidden = !job.isNew;
+  put("assessment", rulesBased ? "规则初筛 · rules-v1" : "人工辅助初筛");
+  field("assessment").classList.toggle("is-rules", rulesBased);
+  field("assessment-note").hidden = !rulesBased;
   put("score", job.matchScore ?? "待确认");
   field("score-total").hidden = job.matchScore === null;
   field("score-box").classList.toggle("is-unknown", job.matchScore === null);
   field("score-box").setAttribute("aria-label", job.matchScore === null
-    ? "初筛参考分无法获取" : `初筛参考分 ${job.matchScore}，满分 100；仅用于排序，不代表满足全部要求或录用概率`);
+    ? "初筛参考分无法获取" : `初筛参考分 ${job.matchScore}，满分 100；${rulesBased ? "固定规则计算，" : ""}仅用于排序，不代表满足全部要求或录用概率`);
   put("company", job.company ?? "公司名称无法获取");
   put("salary", job.salaryText ?? "薪资无法获取");
   field("salary").classList.toggle("is-unknown", job.salaryText === null);
@@ -86,8 +127,11 @@ function createCard(job, index) {
   fillList(field("requirements"), job.requirements, "任职要求无法获取，请查看原文或向招聘方确认。");
   put("language", job.languageNote ?? "工作语言待确认");
   put("months", job.salaryMonths === null ? "待确认" : `${job.salaryMonths} 薪`);
-  put("jd-read", job.jdRead ? "已阅读源站职位详情" : "仅获得职位卡片，详情未读取");
+  put("jd-read", job.jdRead
+    ? (rulesBased ? "已读取源站完整职位详情" : "已阅读源站职位详情")
+    : "仅获得职位卡片，详情未读取");
   put("source", `来源 · ${job.source}`);
+  field("source-retention").hidden = !snapshot.automation?.retainedSources.includes(job.source);
   setTime(field("first-seen"), job.firstSeen);
   setTime(field("last-seen"), job.lastSeen);
   setTime(field("published"), job.publishedAt);
@@ -137,7 +181,7 @@ function renderResults() {
   const jobs = selectJobs(snapshot.jobs, filters);
   byId("result-count").textContent = `显示 ${jobs.length} / ${snapshot.jobs.length} 个岗位`;
   if (snapshot.jobs.length === 0) {
-    setState("这份快照尚未收录岗位", "当前数据为空，没有示例或推测岗位。本页不会自动抓取或更新职位。");
+    setState("这份快照尚未收录岗位", "当前数据为空，没有示例或推测岗位。本页不采集岗位，也不自动刷新；刷新页面读取最新已发布数据。");
     return;
   }
   if (jobs.length === 0) {
@@ -162,7 +206,7 @@ function setFilterOptions(id, key, defaultText) {
 async function fetchSnapshot() {
   let response;
   try {
-    response = await fetch(new URL("./data/jobs.json?rev=20260907-2", import.meta.url), {
+    response = await fetch(new URL("./data/jobs.json?rev=20260907-scheduled1", import.meta.url), {
       cache: "no-store", credentials: "omit", redirect: "error",
     });
   } catch (error) {
@@ -186,6 +230,9 @@ async function loadSnapshot() {
   sortBy.disabled = true;
   stateAction.disabled = true;
   byId("results-area").setAttribute("aria-busy", "true");
+  byId("automation-panel").hidden = true;
+  byId("automation-warning").hidden = true;
+  byId("snapshot-label").textContent = "只读 · 岗位快照";
   setState("正在读取岗位快照", "只读取本站的静态数据，不会实时访问招聘平台。");
   try {
     snapshot = await fetchSnapshot();
@@ -197,6 +244,7 @@ async function loadSnapshot() {
     byId("run-scope").textContent = snapshot.run.scope;
     byId("run-source").textContent = `${snapshot.run.source} · ${snapshot.run.mode}`;
     setTime(byId("generated-at"), snapshot.generatedAt);
+    renderAutomation();
     setFilterOptions("category", "category", "全部方向");
     setFilterOptions("priority", "priority", "全部优先级");
     renderResults();
@@ -206,6 +254,9 @@ async function loadSnapshot() {
     console.error("Unable to display the job snapshot.", error);
     snapshot = null;
     list.replaceChildren();
+    byId("automation-panel").hidden = true;
+    byId("automation-warning").hidden = true;
+    byId("snapshot-label").textContent = "只读 · 岗位快照";
     byId("results-footnote").hidden = true;
     byId("result-count").textContent = "数据不可用";
     if (error instanceof DataLoadError || error instanceof SnapshotError) {

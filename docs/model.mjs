@@ -7,7 +7,7 @@ export class SnapshotError extends Error {
 
 const rootKeys = ["version", "generatedAt", "run", "jobs"];
 const runKeys = ["source", "scope", "mode", "cardsReviewed", "detailsRead", "selectedCount", "newCount"];
-const snapshotModes = new Set(["单次采集", "累计精选 · 第二轮快照"]);
+const snapshotModes = new Set(["单次采集", "累计精选 · 第二轮快照", "定时规则初筛 · 累计快照"]);
 const runSources = new Map([
   ["BOSS直聘", ["BOSS直聘"]],
   ["字节跳动招聘官网", ["字节跳动招聘官网"]],
@@ -136,13 +136,15 @@ function observationOrder(first, last) {
 }
 
 export function validateSnapshot(value) {
-  requireValue(hasExactKeys(value, rootKeys), "快照字段不完整或包含不支持的字段。");
+  const scheduled = value !== null && typeof value === "object" && Object.hasOwn(value, "automation");
+  requireValue(hasExactKeys(value, scheduled ? [...rootKeys, "automation", "assessmentMethods"] : rootKeys), "快照字段不完整或包含不支持的字段。");
   requireValue(value.version === 1, "不支持的快照版本。");
   requireValue(isIsoDate(value.generatedAt, false), "快照生成时间必须包含时区。");
   requireValue(hasExactKeys(value.run, runKeys), "采集概览字段不完整或包含不支持的字段。");
   const { run, jobs } = value;
   const allowedSources = runSources.get(run.source);
   requireValue(allowedSources !== undefined && snapshotModes.has(run.mode) && isText(run.scope), "采集来源、范围或模式无效。");
+  requireValue(run.mode !== "定时规则初筛 · 累计快照" || scheduled, "定时快照缺少采样与初筛方式说明。");
   for (const key of ["cardsReviewed", "detailsRead", "selectedCount", "newCount"]) {
     requireValue(Number.isSafeInteger(run[key]) && run[key] >= 0, `采集计数 ${key} 无效。`);
   }
@@ -179,6 +181,28 @@ export function validateSnapshot(value) {
   }
   requireValue(jobs.filter((job) => job.isNew).length === run.newCount, "本轮新增数量与岗位标记不一致。");
   requireValue(jobs.filter((job) => job.jdRead).length <= run.detailsRead, "详情阅读数量与岗位标记不一致。");
+  if (scheduled) {
+    const automation = value.automation;
+    requireValue(hasExactKeys(automation, [
+      "version", "enabled", "timeZone", "times", "runId", "startedAt", "completedAt", "status",
+      "freshSources", "retainedSources", "reviewedThisRun", "detailsThisRun",
+    ]), "定时采样说明字段无效。");
+    requireValue(automation.version === 1 && typeof automation.enabled === "boolean"
+      && automation.timeZone === "Asia/Shanghai" && JSON.stringify(automation.times) === '["09:30","12:30"]'
+      && automation.status === "sampled" && typeof automation.runId === "string"
+      && /^[a-z0-9-]{8,90}$/.test(automation.runId), "定时采样标记无效。");
+    requireValue(isIsoDate(automation.startedAt, false) && isIsoDate(automation.completedAt, false)
+      && Date.parse(automation.startedAt) <= Date.parse(automation.completedAt)
+      && automation.completedAt === value.generatedAt, "定时采样时间无效。");
+    requireValue(JSON.stringify(automation.freshSources) === '["BOSS直聘"]'
+      && JSON.stringify(automation.retainedSources) === '["字节跳动招聘官网","猎聘"]', "采样来源说明无效。");
+    requireValue(Number.isSafeInteger(automation.reviewedThisRun) && automation.reviewedThisRun >= 0
+      && automation.reviewedThisRun <= run.cardsReviewed
+      && Number.isSafeInteger(automation.detailsThisRun) && automation.detailsThisRun >= 0
+      && automation.detailsThisRun <= automation.reviewedThisRun, "定时采样计数无效。");
+    requireValue(hasExactKeys(value.assessmentMethods, jobs.map((job) => job.id))
+      && Object.values(value.assessmentMethods).every((method) => ["human-assisted", "rules-v1"].includes(method)), "岗位初筛方式说明无效。");
+  }
   return value;
 }
 

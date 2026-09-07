@@ -42,7 +42,7 @@ test("HTML assets, dependent modules and no-store data share one explicit releas
   for (const url of resolved) {
     assert.equal(url.origin, base.origin);
     assert.ok(url.pathname.startsWith(base.pathname));
-    assert.equal(url.search, "?rev=20260907-2", url.href);
+    assert.equal(url.search, "?rev=20260907-scheduled1", url.href);
     await access(new URL(url.pathname.slice(base.pathname.length), docs));
   }
   for (const file of ["app.mjs", "model.mjs", "styles.css", "favicon.svg", "data/jobs.json"]) {
@@ -99,9 +99,36 @@ test("discovery guidance and counters describe JD-based directions and cumulativ
 test("rendering uses text nodes, no storage or external data services", async () => {
   const app = await readFile(new URL("app.mjs", docs), "utf8");
   assert.ok(app.includes("textContent"));
-  assert.ok(app.includes('new URL("./data/jobs.json?rev=20260907-2", import.meta.url)'));
+  assert.ok(app.includes('new URL("./data/jobs.json?rev=20260907-scheduled1", import.meta.url)'));
   assert.ok(app.includes('credentials: "omit"'));
   assert.ok(!/\b(?:innerHTML|outerHTML|insertAdjacentHTML|localStorage|sessionStorage|indexedDB|eval)\b/.test(app));
   assert.ok(!/document\.(?:write|cookie)/.test(app));
+  assert.ok(!/\b(?:setInterval|setTimeout|WebSocket|EventSource)\b/.test(app));
   assert.equal([...app.matchAll(/\bfetch\(/g)].length, 1);
+});
+
+test("schedule disclosures default hidden and distinguish local configuration from a read-only snapshot", async () => {
+  const html = await readFile(new URL("index.html", docs), "utf8");
+  const app = await readFile(new URL("app.mjs", docs), "utf8");
+  assert.match(html, /<section[^>]*id="automation-panel"[^>]*hidden>/);
+  assert.match(html, /<p[^>]*id="automation-warning"[^>]*role="status"[^>]*hidden>/);
+  assert.ok(html.includes("最近快照 · 上海"));
+  assert.ok(html.includes("上次发布的计划"));
+  assert.ok(html.includes("本轮查看卡片"));
+  assert.ok(html.includes("本轮完整 JD"));
+  assert.ok(html.includes("本机暂停后页面可能仍保留旧计划"));
+  assert.ok(html.includes("并非实时运行状态"));
+  assert.ok(html.includes("准确状态请查看本机"));
+  assert.ok(html.includes("Mac 必须保持唤醒、用户已登录、Chrome 已登录 BOSS直聘且网络可用"));
+  assert.ok(html.includes("睡眠或合盖时不保证执行"));
+  assert.ok(html.includes("仅说明采样完成，不代表任务成功退出"));
+  assert.ok(html.includes("推送与公开页面核验结果请查看本机状态"));
+  assert.ok(html.includes("本页不轮询"));
+  assert.ok(html.includes("页面不自动刷新；刷新页面读取最新已发布数据"));
+  assert.ok(html.includes("时段提示按本次页面读取时间判断"));
+  assert.ok(html.includes("固定规则计算，仅供排序参考；未经人工复核"));
+  assert.ok(html.includes("保留记录 · 沿用原观察日期"));
+  assert.ok(app.includes("规则初筛 · rules-v1"));
+  assert.ok(app.includes("规则初筛岗位由固定规则归类"));
+  assert.ok(app.includes("再次观察到岗位不会改变其初筛方式"));
 });
