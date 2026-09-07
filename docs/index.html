@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#191a17">
+    <meta name="description" content="一份可回溯的岗位精选快照。查看岗位摘要、待确认事项与原始链接，在清晰的信息中缩小选择范围。">
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+    <title>岗位精选 · 一份清晰的岗位快照</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./styles.css">
+    <script type="module" src="./app.mjs"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#shortlist">跳转到岗位列表</a>
+    <header class="site-header shell">
+      <a class="brand" href="./">
+        <img src="./favicon.svg" width="38" height="38" alt="">
+        <span>岗位精选<small>JOB SHORTLIST</small></span>
+      </a>
+      <nav aria-label="页面导航">
+        <a href="#shortlist">精选岗位</a>
+        <a href="#reading-notes">阅读说明</a>
+      </nav>
+      <span class="snapshot-label">只读 · 单次快照</span>
+    </header>
+
+    <main>
+      <section class="hero shell" aria-labelledby="page-title">
+        <div class="hero-copy">
+          <p class="eyebrow"><span aria-hidden="true"></span> 留下值得进一步了解的机会</p>
+          <h1 id="page-title">少一点翻找，<br>多一点<span>清晰的选择。</span></h1>
+          <p class="hero-description">把岗位职责、入选参考和待确认事项放在一起。<br class="desktop-break">先读懂信息，再回到原始页面了解详情。</p>
+          <a class="hero-link" href="#shortlist">浏览本次精选 <span aria-hidden="true">↓</span></a>
+        </div>
+        <div class="snapshot-card" aria-label="本次快照概览">
+          <div class="snapshot-card-top"><span>本次收录</span><span class="small-label">SNAPSHOT</span></div>
+          <p class="total-count"><strong id="total-count">—</strong><span>个岗位</span></p>
+          <p class="new-summary">其中 <strong id="new-count">—</strong> 个为本次首次收录</p>
+          <div class="collection-counts">
+            <div><strong id="reviewed-count">—</strong><span>已查看卡片</span></div>
+            <div><strong id="details-count">—</strong><span>已读详情</span></div>
+          </div>
+          <p class="metric-note">仅代表本次实际查看数量，非平台岗位总量</p>
+        </div>
+      </section>
+
+      <div class="snapshot-meta shell" aria-label="快照信息">
+        <div class="scope-meta"><span class="meta-label">采集范围</span><span id="run-scope">等待读取快照</span></div>
+        <div><span class="meta-label">快照时间 · 上海</span><time id="generated-at">无法获取</time></div>
+        <div><span class="meta-label">资料来源</span><span id="run-source">等待读取快照</span></div>
+      </div>
+
+      <section class="shortlist-section shell" id="shortlist" aria-labelledby="shortlist-title">
+        <div class="section-heading">
+          <div><p class="eyebrow">THE SHORTLIST</p><h2 id="shortlist-title">精选岗位</h2></div>
+          <p>不是实时招聘列表，<a href="#reading-notes">使用前请先了解这份快照</a>。</p>
+        </div>
+        <div class="shortlist-layout">
+          <aside>
+            <details class="filters-panel" id="filters-panel" open>
+              <summary><span>筛选岗位 <span class="filter-indicator" id="filter-indicator" hidden>已筛选</span></span><span class="disclosure-icon" aria-hidden="true">⌄</span></summary>
+              <form id="filter-form" role="search" aria-label="筛选精选岗位">
+                <fieldset id="filter-controls" disabled>
+                  <legend class="sr-only">筛选条件</legend>
+                  <label for="keyword">关键词</label>
+                  <input id="keyword" name="keyword" type="search" placeholder="岗位、公司、职责…" autocomplete="off">
+                  <label for="category">岗位类别</label>
+                  <select id="category" name="category"><option value="">全部类别</option></select>
+                  <label for="priority">了解优先级</label>
+                  <select id="priority" name="priority"><option value="">全部优先级</option></select>
+                  <div class="filter-divider"></div>
+                  <span class="field-label" id="salary-range-label">月薪区间 <span class="muted">K / 月</span></span>
+                  <div class="salary-inputs" role="group" aria-labelledby="salary-range-label">
+                    <label class="sr-only" for="salary-min">最低月薪，千元</label>
+                    <input id="salary-min" name="salaryMin" type="number" min="0" step="any" inputmode="decimal" placeholder="最低" aria-describedby="salary-help salary-error">
+                    <span aria-hidden="true">—</span>
+                    <label class="sr-only" for="salary-max">最高月薪，千元</label>
+                    <input id="salary-max" name="salaryMax" type="number" min="0" step="any" inputmode="decimal" placeholder="最高" aria-describedby="salary-help salary-error">
+                  </div>
+                  <p id="salary-error" class="field-error" role="alert" hidden></p>
+                  <label for="salary-mode">薪资待确认的岗位</label>
+                  <select id="salary-mode" name="salaryMode">
+                    <option value="all">保留在结果中</option>
+                    <option value="known">不显示，只看已知区间</option>
+                    <option value="unknown">只看薪资待确认</option>
+                  </select>
+                  <p class="field-help" id="salary-help">按月薪区间有交集筛选。K 为千元；招聘页标注可能含提成等浮动部分，不推算保底年薪。</p>
+                  <div class="filter-divider"></div>
+                  <label class="checkbox-label" for="new-only"><input id="new-only" name="newOnly" type="checkbox"><span>仅本次新增 <span id="new-filter-count" class="muted"></span></span></label>
+                  <button class="reset-button" id="reset-filters" type="button">重置筛选</button>
+                  <p class="local-note">筛选仅在当前页面运行，不保存选择。</p>
+                </fieldset>
+              </form>
+            </details>
+          </aside>
+
+          <div class="results-area" id="results-area" aria-busy="true">
+            <div class="results-toolbar">
+              <p id="result-count" role="status" aria-live="polite" aria-atomic="true">正在读取快照…</p>
+              <div class="sort-control"><label for="sort-by">排序</label><select id="sort-by" disabled><option value="score">初筛参考分 · 从高到低</option><option value="firstSeen">首次收录 · 从新到旧</option></select></div>
+            </div>
+            <div class="state-panel" id="data-state" role="status" aria-live="polite">
+              <span class="state-symbol" aria-hidden="true">≡</span>
+              <h3 id="state-title">正在读取岗位快照</h3>
+              <p id="state-description">只读取本站的静态数据，不会实时访问招聘平台。</p>
+              <button id="state-action" class="state-action" type="button" hidden>重新读取</button>
+            </div>
+            <div class="job-grid" id="job-list"></div>
+            <p class="results-footnote" id="results-footnote" hidden>已展示全部符合筛选条件的岗位。初筛参考分仅用于排序，不代表已满足全部任职要求，也不是录用概率。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="reading-notes shell" id="reading-notes" aria-labelledby="notes-title">
+        <div class="notes-heading"><span class="eyebrow">BEFORE YOU GO</span><h2 id="notes-title">让信息有用，也让边界清楚。</h2></div>
+        <div class="notes-grid">
+          <div><span class="note-number">01</span><h3>分数只是参考</h3><p>初筛参考分来自本次人工辅助的启发式初筛，仅用于清单排序。这些岗位仍是待了解的线索，分数不代表已满足全部任职要求，也不是录用概率。</p></div>
+          <div><span class="note-number">02</span><h3>收录时间不是发布时间</h3><p>“首次收录”是本次整理首次观察到岗位的时间。源站发布时间无法获取时会明确标注；所有时间按上海时区展示。</p></div>
+          <div><span class="note-number">03</span><h3>最终以原始岗位为准</h3><p>这是单次采集快照，不会自动更新。薪资为招聘页标注，可能含提成、奖金等浮动部分，并非保底收入。岗位有效性与具体条件需向源站或招聘方确认；原始页面可能需要登录。</p></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer shell"><span>岗位精选 <span class="footer-dot">/</span> 把信息看清楚</span><span>只读浏览 · 无账号 · 不代投递</span></footer>
+    <noscript><div class="noscript-notice">请启用 JavaScript 以读取岗位快照和使用筛选。本页不会上传筛选条件，也不会代为投递。</div></noscript>
+
+    <template id="job-card-template">
+      <article class="job-card">
+        <div class="card-kicker">
+          <div class="card-labels"><span class="category-tag" data-field="category"></span><span class="new-tag" data-field="new" hidden>本次新增</span></div>
+          <span class="priority-tag" data-field="priority"></span>
+        </div>
+        <div class="card-heading">
+          <h3 data-field="title"></h3>
+          <div class="match-score" data-field="score-box"><span>初筛参考分</span><div><strong data-field="score"></strong><small data-field="score-total">/100</small></div></div>
+        </div>
+        <p class="company-name" data-field="company"></p>
+        <p class="salary-label">招聘页标注</p>
+        <p class="salary-text" data-field="salary"></p>
+        <p class="salary-unavailable" data-field="salary-note" hidden>月薪区间待确认，不据此推算</p>
+        <dl class="job-facts">
+          <div><dt>地点</dt><dd data-field="location"></dd></div>
+          <div><dt>经验</dt><dd data-field="experience"></dd></div>
+          <div><dt>学历</dt><dd data-field="education"></dd></div>
+        </dl>
+        <section class="card-section"><h4>岗位摘要</h4><ul data-field="summary"></ul></section>
+        <section class="card-section reasons-section"><h4><span aria-hidden="true">＋</span> 入选参考</h4><ul data-field="reasons"></ul></section>
+        <section class="card-section concerns-section"><h4><span aria-hidden="true">·</span> 待确认</h4><ul data-field="concerns"></ul></section>
+        <details class="job-details">
+          <summary><span>任职要求与记录</span><span class="details-toggle" aria-hidden="true">＋</span></summary>
+          <div class="detail-body">
+            <h4>任职要求</h4><ul data-field="requirements"></ul>
+            <dl class="record-facts">
+              <div><dt>工作语言</dt><dd data-field="language"></dd></div>
+              <div><dt>标注薪数</dt><dd data-field="months"></dd></div>
+              <div><dt>详情阅读</dt><dd data-field="jd-read"></dd></div>
+              <div><dt>最近观察</dt><dd><time data-field="last-seen"></time></dd></div>
+              <div><dt>源站发布</dt><dd><time data-field="published"></time></dd></div>
+            </dl>
+          </div>
+        </details>
+        <div class="card-footer">
+          <div><span class="card-source" data-field="source"></span><span class="first-seen">首次收录 <time data-field="first-seen"></time></span></div>
+          <a class="source-link" data-field="link" target="_blank" rel="noopener noreferrer"><span>查看原始岗位</span><span aria-hidden="true">↗</span></a>
+        </div>
+      </article>
+    </template>
+  </body>
+</html>

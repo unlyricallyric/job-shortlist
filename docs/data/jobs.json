@@ -1,0 +1,147 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-07T04:19:36.452Z",
+  "run": {
+    "source": "BOSS直聘",
+    "scope": "上海 · 云计算与企业软件 · 渠道及大客户销售",
+    "mode": "单次采集",
+    "cardsReviewed": 58,
+    "detailsRead": 12,
+    "selectedCount": 3,
+    "newCount": 3
+  },
+  "jobs": [
+    {
+      "id": "boss-777c1f838d8dfa321H172NW1GFBW",
+      "title": "渠道经理（上海）(J10370)",
+      "company": "紫光云",
+      "city": "上海",
+      "location": "上海·闵行区·莘庄",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/777c1f838d8dfa321H172NW1GFBW.html",
+      "salaryText": "15-30K·17薪",
+      "salaryMinK": 15,
+      "salaryMaxK": 30,
+      "salaryMonths": 17,
+      "experienceText": "5-10年",
+      "educationText": "本科",
+      "category": "渠道销售",
+      "matchScore": 85,
+      "priority": "优先了解",
+      "summary": [
+        "负责区域渠道市场拓展，开发、建设和管理合作伙伴，对合作销售业绩负责。",
+        "维护渠道体系，协调不同渠道发展，支持短期和中长期业务目标。",
+        "开展渠道培训、市场活动和项目支持，促进商机转化。"
+      ],
+      "requirements": [
+        "统招本科及以上，五年以上渠道业务拓展、渠道体系建设相关经验。",
+        "精通软件业务渠道销售体系，熟悉云计算和数字化产品的渠道销售。",
+        "具备较强的学习、系统思考、沟通协作及抗压能力。"
+      ],
+      "matchReasons": [
+        "上海区域渠道岗位，伙伴开发、管理和赋能是核心职责。",
+        "国内云计算业务，符合企业软件与云产品的渠道发展方向。",
+        "JD没有把ISV集成开发列为任职要求，重点是渠道经营和业务成果。"
+      ],
+      "concerns": [
+        "要求成熟的软件渠道体系经验，不能仅凭总工作年限认定满足。",
+        "需承担合作销售业绩，具体指标、既有伙伴资源和独立签约职责待确认。",
+        "17薪是招聘页标注，固定与浮动构成、发放条件需向招聘方确认。"
+      ],
+      "languageNote": "JD为中文且未明确英语要求；实际工作语言仍需确认。",
+      "publishedAt": null,
+      "firstSeen": "2026-09-07T04:11:25.682Z",
+      "lastSeen": "2026-09-07T04:11:25.682Z",
+      "jdRead": true,
+      "isNew": true
+    },
+    {
+      "id": "boss-aa5a22dfc85162130nN40t67GFVT",
+      "title": "渠道拓展经理（飞书二级代理方向）",
+      "company": "智书企飞",
+      "city": "上海",
+      "location": "上海·嘉定区·江桥",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/aa5a22dfc85162130nN40t67GFVT.html",
+      "salaryText": "10-15K",
+      "salaryMinK": 10,
+      "salaryMaxK": 15,
+      "salaryMonths": null,
+      "experienceText": "3-5年",
+      "educationText": "本科",
+      "category": "渠道销售",
+      "matchScore": 82,
+      "priority": "优先了解",
+      "summary": [
+        "招募培训、咨询、软件代理和园区服务等合作伙伴，完成筛选、谈判及协议签署。",
+        "组织产品认证与销售赋能，落实商机报备、激励政策和渠道冲突处理机制。",
+        "维护伙伴业务看板与商机漏斗，对渠道收入目标和预测准确性负责。"
+      ],
+      "requirements": [
+        "统招本科及以上，经验丰富可放宽；至少三年ToB渠道拓展经验。",
+        "深入理解飞书、企业微信或钉钉等协同平台；SaaS、软件或云计算渠道体系经验优先。",
+        "具备商务谈判和合作协议撰写能力，能够独立推进伙伴合作从接触到签约。"
+      ],
+      "matchReasons": [
+        "职责明确围绕分销伙伴招募、赋能和商机管理，而不是技术集成开发。",
+        "要求ToB渠道经验，把SaaS、软件和云计算渠道体系经验列为优先项。",
+        "产品方向和伙伴类型清晰，适合重点了解企业协同软件的渠道业务。"
+      ],
+      "concerns": [
+        "招聘方是智书企飞，岗位属于飞书二级代理方向，不是字节跳动或飞书直接招聘。",
+        "需要独立完成合作谈判与签约，并对收入目标负责；具体指标和已有伙伴基础待确认。",
+        "需确认底薪、提成、劳动合同主体及协同办公产品能力要求。"
+      ],
+      "languageNote": "JD为中文且未明确英语要求；实际工作语言仍需确认。",
+      "publishedAt": null,
+      "firstSeen": "2026-09-07T04:15:25.894Z",
+      "lastSeen": "2026-09-07T04:15:25.894Z",
+      "jdRead": true,
+      "isNew": true
+    },
+    {
+      "id": "boss-d401f460cf8874411HNz3ti4FlJQ",
+      "title": "大客户经理",
+      "company": "UCloud",
+      "city": "上海",
+      "location": "上海·杨浦区·五角场",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/d401f460cf8874411HNz3ti4FlJQ.html",
+      "salaryText": "15-25K·20薪",
+      "salaryMinK": 15,
+      "salaryMaxK": 25,
+      "salaryMonths": 20,
+      "experienceText": "3-5年",
+      "educationText": "本科",
+      "category": "大客户销售",
+      "matchScore": 74,
+      "priority": "有条件匹配",
+      "summary": [
+        "面向数字娱乐行业销售云计算产品，拓展新客户并承担销售业绩。",
+        "维护大客户关系，挖掘需求，协调内外部资源推进项目落地。",
+        "向产品研发团队反馈客户需求，协同调研、测试和产品推广。"
+      ],
+      "requirements": [
+        "招聘卡片标注本科、3-5年经验；JD强调销售意愿、学习能力、逻辑思维和客户导向。",
+        "技术背景、云计算或相关IT销售经验、游戏行业背景为优先项。",
+        "对数字娱乐和云计算行业有兴趣，能持续发现商机并推动客户项目。"
+      ],
+      "matchReasons": [
+        "属于国内云厂商的大客户销售备选方向。",
+        "相关IT销售经验被列为优先条件，JD没有为既往云计算经验规定固定年限门槛。",
+        "客户开发、关系维护和跨团队项目推进是主要工作内容。"
+      ],
+      "concerns": [
+        "不是渠道伙伴管理岗，需要直接开拓行业客户并承担销售业绩。",
+        "需了解数字娱乐客户场景和云产品，独立成交要求及业绩指标待确认。",
+        "20薪是招聘页标注，不代表保证收入；固定薪资、奖金和提成构成待确认。"
+      ],
+      "languageNote": "JD为中文且未明确英语要求；实际工作语言仍需确认。",
+      "publishedAt": null,
+      "firstSeen": "2026-09-07T04:11:29.681Z",
+      "lastSeen": "2026-09-07T04:11:29.681Z",
+      "jdRead": true,
+      "isNew": true
+    }
+  ]
+}
