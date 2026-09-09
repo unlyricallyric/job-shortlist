@@ -125,6 +125,22 @@ export function prefilterCard(card, config) {
   return inspectCard(card);
 }
 
+export function cardReadPriority(card, config) {
+  const title = normalize(card.title ?? "");
+  const signals = [
+    ["partnerMarketing", /渠道市场|伙伴营销|渠道营销|生态市场|联合营销/u],
+    ["fieldEvents", /市场活动|区域市场|活动营销|会展/u],
+    ["demandGeneration", /需求生成|增长|市场推广|获客/u],
+    ["marketingOps", /营销运营|销售运营|线索运营/u],
+    ["customerSuccess", /客户成功/u],
+    ["partnerDevelopment", /伙伴发展|伙伴拓展|生态合作/u],
+    ["productMarketing", /产品市场|产品营销/u],
+    ["brandEvents", /品牌活动|品牌营销/u],
+  ];
+  if (signals.some(([capability, pattern]) => config.confirmedCapabilities.includes(capability) && pattern.test(title))) return 2;
+  return /市场|营销|活动|品牌|运营/u.test(title) ? 1 : 0;
+}
+
 function fullTimestamp(value) {
   if (typeof value !== "string") return false;
   const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,3})?(Z|[+-]\d{2}:\d{2})$/u.exec(value);
@@ -138,19 +154,50 @@ function fullTimestamp(value) {
     && Number.isFinite(Date.parse(value));
 }
 
-function sections(record) {
+const DUTY_HEADINGS = ["岗位职责", "工作职责", "职位描述", "岗位基本描述", "岗位描述", "工作内容", "职责描述", "职位职责"];
+const REQUIREMENT_HEADINGS = ["任职要求", "职位要求", "岗位要求", "任职资格", "任职条件", "希望你具备能力", "希望你具备的能力", "我们希望你具备"];
+const PREFERRED_HEADINGS = ["加分技能", "加分项", "优先条件", "优先要求"];
+const REQUIRED_HEADINGS = ["必备条件", "基本要求", "必要条件", "硬性要求"];
+const SECTION_ENDINGS = ["福利待遇", "薪资福利", "职位福利", "公司介绍", "公司简介", "关于我们", "联系方式", "工作地点"];
+
+export function parseJobSections(record) {
   const parts = { duties: [], requirements: [] };
-  const heading = /(?:^|[\r\n。；;])[\t ]*(?:[一二三四五六七八九十\d]+[、.．)）][\t ]*)?[【[(（]?[\t ]*(岗位职责|工作职责|职位描述|任职要求|职位要求|岗位要求|任职资格|福利待遇|薪资福利|职位福利|公司介绍|公司简介|关于我们|联系方式|工作地点)[\t ]*[】\])）]?[\t ]*(?:[:：][\t ]*|(?=\r?\n|$))/gu;
-  const matches = [...record.jd.matchAll(heading)];
+  const text = record.jd.normalize("NFKC").replace(/[\u2028\u2029]/gu, "\n");
+  const names = [...DUTY_HEADINGS, ...REQUIREMENT_HEADINGS, ...PREFERRED_HEADINGS, ...REQUIRED_HEADINGS, ...SECTION_ENDINGS].join("|");
+  const heading = new RegExp(`(?:^|[\\r\\n。；;])[\\t ]*(?:[-*•][\\t ]*)?(?:[一二三四五六七八九十\\d]+[、.)-][\\t ]*)?[【[(]?[\\t ]*(${names})[\\t ]*[】\\])]?[\\t ]*(?:[:：][\\t ]*|(?=\\r?\\n|$))`, "gu");
+  const matches = [...text.matchAll(heading)];
   for (const [index, match] of matches.entries()) {
-    const type = /岗位职责|工作职责|职位描述/u.test(match[1]) ? "duties"
-      : /任职要求|职位要求|岗位要求|任职资格/u.test(match[1]) ? "requirements" : null;
-    if (type) parts[type].push(record.jd.slice(match.index + match[0].length, matches[index + 1]?.index ?? record.jd.length));
+    const name = match[1];
+    const body = text.slice(match.index + match[0].length, matches[index + 1]?.index ?? text.length).trim();
+    if (DUTY_HEADINGS.includes(name)) parts.duties.push(body);
+    else if (REQUIREMENT_HEADINGS.includes(name) || REQUIRED_HEADINGS.includes(name)) {
+      parts.requirements.push(`必备条件：\n${body}`);
+    } else if (PREFERRED_HEADINGS.includes(name)) parts.requirements.push(`加分项：\n${body}`);
+  }
+  const first = matches[0];
+  if (!parts.duties.length && first && REQUIREMENT_HEADINGS.includes(first[1])) {
+    const prefix = text.slice(0, first.index).trim();
+    const lines = prefix.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+    const numbered = /^[\t ]*\d+[、.)-]\s*(.+)$/u;
+    // Only a clearly numbered, action-led block before explicit requirements is a duty section.
+    if (lines.length >= 2 && lines.every((line) => numbered.test(line))) {
+      const items = lines.map((line) => numbered.exec(line)[1]);
+      const duties = items.filter((item) => ACTION.test(normalize(item)) && !PREFERRED.test(normalize(item))
+        && !/^(?:必须|需(?:要)?|须|具备|具有|熟悉|精通|本科|硕士|博士)/u.test(item));
+      if (duties.length >= 2) {
+        parts.duties.push(duties.join("\n"));
+        for (const item of items) {
+          if (!duties.includes(item) || /经验|经历|学历|具备|必须|要求/u.test(item)) {
+            parts.requirements.unshift(`必备条件：\n${item}`);
+          }
+        }
+      }
+    }
   }
   for (const [key, type] of [["responsibilitiesText", "duties"], ["requirementsText", "requirements"]]) {
     if (record[key] !== undefined && record[key] !== null) {
       if (typeof record[key] !== "string" || record[key].length > 60000) return null;
-      if (record[key].trim()) parts[type].push(record[key]);
+      if (record[key].trim()) parts[type].push(record[key].normalize("NFKC").replace(/[\u2028\u2029]/gu, "\n"));
     }
   }
   return { duties: parts.duties.join("\n").trim(), requirements: parts.requirements.join("\n").trim() };
@@ -162,10 +209,10 @@ function clauses(text) {
   const separated = normalize(text).replace(
     /\(\s*(学历不限|不限学历|专业不限|不限专业|经验不限|不限经验)\s*\)/gu, ";$1;");
   for (let line of separated.split(/[\r\n。；;]+/u)) {
-    line = line.replace(/^\s*(?:[-*•]|\d+[、)）]|\d+\.(?!\d))\s*/u, "").trim();
-    if (/^(?:加分项|优先条件|优先要求|preferred qualifications|nice[- ]to[- ]have)\s*[:：]?/u.test(line)) {
+    line = line.replace(/^\s*(?:[-*•]|\d+[、)）]|\d+-(?!\d)|\d+\.(?!\d))\s*/u, "").trim();
+    if (/^(?:加分技能|加分项|优先条件|优先要求|preferred qualifications|nice[- ]to[- ]have)\s*[:：]?/u.test(line)) {
       preferredBlock = true;
-      line = line.replace(/^(?:加分项|优先条件|优先要求|preferred qualifications|nice[- ]to[- ]have)\s*[:：]?/u, "");
+      line = line.replace(/^(?:加分技能|加分项|优先条件|优先要求|preferred qualifications|nice[- ]to[- ]have)\s*[:：]?/u, "");
     } else if (/^(?:必备条件|基本要求|必要条件|硬性要求|required qualifications)\s*[:：]?/u.test(line)) {
       preferredBlock = false;
       line = line.replace(/^(?:必备条件|基本要求|必要条件|硬性要求|required qualifications)\s*[:：]?/u, "");
@@ -420,7 +467,7 @@ export function screenJob(record, config) {
     .map((match) => geography(match[1]));
   if (places.includes("other")) return outcome("reject", ["geography-outside-shanghai"]);
   if (geography(record.location) !== "shanghai" && !places.includes("shanghai")) return outcome("review", ["geography-unconfirmed"]);
-  const parsed = sections(record);
+  const parsed = parseJobSections(record);
   if (!parsed) return outcome("review", ["sections-invalid"]);
   if (!parsed.duties || !parsed.requirements) return outcome("review", ["requirements-unseparated"]);
   const duties = clauses(parsed.duties), requirements = clauses(parsed.requirements);

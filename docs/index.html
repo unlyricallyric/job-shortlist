@@ -9,15 +9,15 @@
     <meta name="referrer" content="no-referrer">
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
     <title>岗位精选 · 一份清晰的岗位快照</title>
-    <link rel="icon" href="./favicon.svg?rev=20260908-daily1" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles.css?rev=20260908-daily1">
-    <script type="module" src="./app.mjs?rev=20260908-daily1"></script>
+    <link rel="icon" href="./favicon.svg?rev=20260909-coverage1" type="image/svg+xml">
+    <link rel="stylesheet" href="./styles.css?rev=20260909-coverage1">
+    <script type="module" src="./app.mjs?rev=20260909-coverage1"></script>
   </head>
   <body>
     <a class="skip-link" href="#shortlist">跳转到岗位列表</a>
     <header class="site-header shell">
       <a class="brand" href="./">
-        <img src="./favicon.svg?rev=20260908-daily1" width="38" height="38" alt="">
+        <img src="./favicon.svg?rev=20260909-coverage1" width="38" height="38" alt="">
         <span>岗位精选<small>JOB SHORTLIST</small></span>
       </a>
       <nav aria-label="页面导航">
@@ -64,6 +64,8 @@
           <div><dt>本轮完整 JD</dt><dd><strong id="run-details-count">—</strong> 份</dd></div>
         </dl>
         <p class="automation-sources" id="automation-sources"></p>
+        <p class="automation-sources" id="review-queue-summary" hidden></p>
+        <p class="automation-note">每轮只做有限采样，不代表平台全部岗位；没有已入选新增，不代表市场没有机会。待复核队列不会自动变成已入选岗位。</p>
         <p class="automation-warning" id="automation-warning" role="status" aria-live="polite" hidden>本时段尚未确认新快照，可能未运行或更新失败；请查看本机状态</p>
         <p class="automation-note">这里显示上次发布的计划配置，并非实时运行状态；本机暂停后页面可能仍保留旧计划，准确状态请查看本机。</p>
         <p class="automation-note">采样由本机定时任务执行：Mac 必须保持唤醒、用户已登录、Chrome 已登录 BOSS直聘且网络可用；睡眠或合盖时不保证执行。</p>

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { validateSnapshot } from "../docs/model.mjs";
-import { prefilterCard, screenJob, validateMatchingConfig } from "../scheduler/screening.mjs";
+import { cardReadPriority, parseJobSections, prefilterCard, screenJob, validateMatchingConfig } from "../scheduler/screening.mjs";
 
 const TEST_ONLY_DIRECTIONS = [
   "区域市场", "伙伴营销", "需求生成", "伙伴发展", "生态商业化", "销售开发",
@@ -182,6 +182,73 @@ test("Chinese heading variants and separately collected sections are supported",
   assertSelected(screenJob(testRecord({
     jd: "工作职责：负责合作伙伴联合营销。\n任职资格：具备伙伴营销经验。\n福利待遇：TEST_ONLY 无关福利内容。",
   }), testConfig()));
+});
+
+test("observed descriptive and capability headings normalize presentation glyphs without mutating evidence", () => {
+  for (const [duty, requirement] of [
+    ["岗位基本描述", "希望你具备能力"],
+    ["⼯作职责", "任职资格"],
+    ["工作内容", "希望你具备的能力"],
+  ]) {
+    const record = testRecord({
+      jd: `公司介绍：TEST_ONLY介绍。\n【${duty}】：\n１-负责企业软件合作伙伴联合营销。\n２-组织伙伴活动与赋能。\n【${requirement}】：\n１-具备伙伴营销经验。\n加分技能：\n有SEO经验。\n必备条件：\n必须具备团队管理经验。`,
+    });
+    const before = structuredClone(record);
+    const parts = parseJobSections(record);
+    assert.match(parts.duties, /负责企业软件合作伙伴联合营销/);
+    assert.doesNotMatch(parts.duties, /TEST_ONLY介绍/);
+    assert.match(parts.requirements, /加分项：\n有SEO/);
+    const result = screenJob(record, testConfig());
+    assert.equal(result.decision, "review");
+    assert.ok(result.reasons.includes("capability-unconfirmed"));
+    assert.ok(!result.reasons.includes("requirements-unseparated"));
+    assert.deepEqual(record, before);
+  }
+});
+
+test("numbered responsibilities before an explicit requirement heading preserve all qualification bullets", () => {
+  const record = testRecord({
+    jd: "1、负责企业软件合作伙伴联合营销。\n2.组织伙伴市场活动。\n3-参与渠道赋能。\n4.医疗行业经验优先。\n5.必须具备团队管理经验。\n任职要求\n1.具备伙伴营销经验。",
+  });
+  const parts = parseJobSections(record);
+  assert.match(parts.duties, /组织伙伴市场活动/);
+  assert.doesNotMatch(parts.duties, /医疗行业经验/);
+  assert.match(parts.requirements, /医疗行业经验优先/);
+  assert.match(parts.requirements, /必须具备团队管理经验/);
+  const result = screenJob(record, testConfig());
+  assert.equal(result.decision, "review");
+  assert.ok(result.reasons.includes("capability-unconfirmed"));
+  assert.ok(!result.reasons.includes("requirements-unseparated"));
+  assertSelected(screenJob({ ...record, jd: record.jd.replace("5.必须具备团队管理经验。\n", "") }, testConfig()));
+  for (const prefix of [
+    "负责企业软件伙伴营销，具备丰富行业资源。",
+    "1.具备伙伴营销经验。\n2.团队管理优先。",
+    "1.负责伙伴联合营销。",
+  ]) {
+    assert.equal(screenJob(testRecord({ jd: `${prefix}\n任职要求：具备伙伴营销经验。` }), testConfig()).decision, "review");
+  }
+});
+
+test("new section variants do not bypass revenue, specialist or engineering requirements", () => {
+  for (const requirement of ["必须具备FPGA研发经验", "必须独立承担销售额指标", "必须具备医疗器械行业伙伴营销能力"]) {
+    const result = screenJob(testRecord({
+      jd: `岗位基本描述：负责合作伙伴联合营销。\n希望你具备能力：具备伙伴营销经验；${requirement}。`,
+    }), testConfig());
+    assert.equal(result.decision, "review");
+    assert.ok(!result.reasons.includes("requirements-unseparated"));
+  }
+});
+
+test("card reading priority favors configured duty families without changing eligibility or assigning a category", () => {
+  const config = testConfig();
+  const generic = testRecord({ title: "市场经理" });
+  const specific = testRecord({ title: "渠道市场经理" });
+  const sales = testRecord({ title: "行业客户经理" });
+  assert.ok(cardReadPriority(specific, config) > cardReadPriority(generic, config));
+  assert.ok(cardReadPriority(generic, config) > cardReadPriority(sales, config));
+  assert.ok(prefilterCard(generic, config).eligible);
+  assert.ok(prefilterCard(sales, config).eligible);
+  assert.equal(generic.category, undefined);
 });
 
 test("missing, unseparated or merely soft requirements cannot produce success", () => {

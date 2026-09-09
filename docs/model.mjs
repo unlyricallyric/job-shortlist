@@ -7,7 +7,7 @@ export class SnapshotError extends Error {
 
 const rootKeys = ["version", "generatedAt", "run", "jobs"];
 const runKeys = ["source", "scope", "mode", "cardsReviewed", "detailsRead", "selectedCount", "newCount"];
-const snapshotModes = new Set(["单次采集", "累计精选 · 第二轮快照", "定时规则初筛 · 累计快照"]);
+const snapshotModes = new Set(["单次采集", "累计精选 · 第二轮快照", "定时规则初筛 · 累计快照", "人工扩展复核 · 累计快照"]);
 const runSources = new Map([
   ["BOSS直聘", ["BOSS直聘"]],
   ["字节跳动招聘官网", ["字节跳动招聘官网"]],
@@ -52,6 +52,7 @@ const roleAliases = new Map([
   ["客户成功", ["customer success", "csm"]],
   ["产品市场", ["产品营销", "product marketing", "pmm"]],
   ["品牌活动", ["品牌活动", "活动营销", "活动策划", "event marketing"]],
+  ["内容营销", ["内容市场", "内容营销", "content marketing"]],
   ["渠道销售", ["channel sales"]],
   ["大客户销售", ["account executive", "key account", "ae"]],
 ]);
@@ -191,7 +192,9 @@ function observationOrder(first, last) {
 
 export function validateSnapshot(value) {
   const scheduled = value !== null && typeof value === "object" && Object.hasOwn(value, "automation");
-  requireValue(hasExactKeys(value, scheduled ? [...rootKeys, "automation", "assessmentMethods"] : rootKeys), "快照字段不完整或包含不支持的字段。");
+  const hasMethods = value !== null && typeof value === "object" && Object.hasOwn(value, "assessmentMethods");
+  requireValue(hasExactKeys(value, [...rootKeys, ...(scheduled ? ["automation"] : []), ...(hasMethods ? ["assessmentMethods"] : [])])
+    && (!scheduled || hasMethods), "快照字段不完整或包含不支持的字段。");
   requireValue(value.version === 1, "不支持的快照版本。");
   requireValue(isIsoDate(value.generatedAt, false), "快照生成时间必须包含时区。");
   requireValue(hasExactKeys(value.run, runKeys), "采集概览字段不完整或包含不支持的字段。");
@@ -237,9 +240,13 @@ export function validateSnapshot(value) {
   requireValue(jobs.filter((job) => job.jdRead).length <= run.detailsRead, "详情阅读数量与岗位标记不一致。");
   if (scheduled) {
     const automation = value.automation;
+    const reviewFields = ["reviewPendingThisRun", "parsePendingThisRun"];
+    const hasReviewCounts = automation && typeof automation === "object"
+      && reviewFields.some((field) => Object.hasOwn(automation, field));
     requireValue(hasExactKeys(automation, [
       "version", "enabled", "timeZone", "times", "runId", "startedAt", "completedAt", "status",
       "freshSources", "retainedSources", "reviewedThisRun", "detailsThisRun",
+      ...(hasReviewCounts ? reviewFields : []),
     ]), "定时采样说明字段无效。");
     requireValue(automation.version === 1 && typeof automation.enabled === "boolean"
       && automation.timeZone === "Asia/Shanghai" && JSON.stringify(automation.times) === '["09:30","12:30"]'
@@ -254,9 +261,15 @@ export function validateSnapshot(value) {
       && automation.reviewedThisRun <= run.cardsReviewed
       && Number.isSafeInteger(automation.detailsThisRun) && automation.detailsThisRun >= 0
       && automation.detailsThisRun <= automation.reviewedThisRun, "定时采样计数无效。");
-    requireValue(hasExactKeys(value.assessmentMethods, jobs.map((job) => job.id))
-      && Object.values(value.assessmentMethods).every((method) => ["human-assisted", "rules-v1"].includes(method)), "岗位初筛方式说明无效。");
+    if (hasReviewCounts) {
+      requireValue(reviewFields.every((field) => Number.isSafeInteger(automation[field]) && automation[field] >= 0)
+        && automation.reviewPendingThisRun <= automation.reviewedThisRun
+        && automation.parsePendingThisRun <= automation.reviewPendingThisRun
+        && automation.parsePendingThisRun <= automation.detailsThisRun, "待复核计数无效。");
+    }
   }
+  if (hasMethods) requireValue(hasExactKeys(value.assessmentMethods, jobs.map((job) => job.id))
+    && Object.values(value.assessmentMethods).every((method) => ["human-assisted", "rules-v1"].includes(method)), "岗位初筛方式说明无效。");
   return value;
 }
 

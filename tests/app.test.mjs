@@ -460,6 +460,38 @@ test("rules-based cards keep missing scalars, unread details and zero run counts
   assert.equal(app.get("schedule-times").textContent, "每天 09:30 / 12:30（Asia/Shanghai）");
 });
 
+test("public generic pending counts do not present structural parsing failures as rejected or selected jobs", async (t) => {
+  const data = scheduledSnapshot(testJobs);
+  data.automation.reviewPendingThisRun = 4;
+  data.automation.parsePendingThisRun = 2;
+  const app = await boot(t, { responses: [data] });
+  assert.equal(app.get("review-queue-summary").hidden, false);
+  assert.match(app.get("review-queue-summary").textContent, /待复核 4 个.*结构解析待复核 2 个/);
+  assert.match(app.get("review-queue-summary").textContent, /待复核不等于不适合/);
+  assert.equal(app.get("total-count").textContent, "03");
+  assert.equal(app.get("new-count").textContent, "2");
+  assert.equal(app.cards().length, 3);
+});
+
+test("legacy snapshots without review counters do not imply a zero-length queue", async (t) => {
+  const app = await boot(t, { responses: [scheduledSnapshot(testJobs)] });
+  assert.match(app.get("review-queue-summary").textContent, /待复核数未记录/);
+  assert.doesNotMatch(app.get("review-queue-summary").textContent, /待复核 0/);
+});
+
+test("human expansion can retain earlier automatic assessments without claiming fresh automatic sampling", async (t) => {
+  const data = snapshotOf(testJobs);
+  data.run.mode = "人工扩展复核 · 累计快照";
+  data.assessmentMethods = Object.fromEntries(testJobs.map((record, index) => [record.id, index === 0 ? "rules-v1" : "human-assisted"]));
+  const app = await boot(t, { responses: [data] });
+  assert.equal(app.get("automation-panel").hidden, true);
+  assert.equal(app.get("review-queue-summary").hidden, true);
+  assert.equal(app.cards()[0].querySelector('[data-field="assessment"]').textContent, "规则初筛 · rules-v1");
+  assert.equal(app.cards()[1].querySelector('[data-field="assessment"]').textContent, "人工辅助初筛");
+  assert.match(app.get("assessment-description").textContent, /初筛方式以各卡片标记为准/);
+  assert.match(app.get("category-help").textContent, /规则初筛岗位由固定规则归类/);
+});
+
 test("scheduled freshness uses Shanghai slots, a 30-minute grace and a generic snapshot-only warning", async (t) => {
   const cases = [
     ["previous noon covered before morning slot", "2026-09-06T12:45:00+08:00", "2026-09-07T09:29:59+08:00", false],
@@ -511,7 +543,7 @@ test("real card rendering preserves literal strings, safe links, nulls and obser
   assert.equal(app.get("new-count").textContent, "2");
   assert.equal(app.requests.length, 1);
   assert.ok(app.requests[0].url.pathname.endsWith("/docs/data/jobs.json"));
-  assert.equal(app.requests[0].url.search, "?rev=20260908-daily1");
+  assert.equal(app.requests[0].url.search, "?rev=20260909-coverage1");
   assert.equal(app.requests[0].options.credentials, "omit");
   assert.equal(app.requests[0].options.cache, "no-store");
 });

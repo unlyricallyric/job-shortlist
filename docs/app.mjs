@@ -2,7 +2,7 @@ import {
   SnapshotError, filterOptions, formatShanghaiTime, hasSalaryRange,
   parseSalaryRange, safeJobUrl, selectJobs, validateSnapshot,
   shanghaiDateKey, nextShanghaiMidnight, selectArrivalView, groupJobsByFirstSeen,
-} from "./model.mjs?rev=20260908-daily1";
+} from "./model.mjs?rev=20260909-coverage1";
 
 const sourceLinkLabels = new Map([
   ["BOSS直聘", "查看原始岗位"],
@@ -83,13 +83,15 @@ function isScheduleOverdue(data, now = Date.now()) {
 
 function renderAutomation() {
   const automation = snapshot.automation;
+  const hasRulesAssessment = Boolean(automation) || Object.values(snapshot.assessmentMethods ?? {}).includes("rules-v1");
   byId("automation-panel").hidden = !automation;
+  byId("review-queue-summary").hidden = !automation;
   byId("automation-warning").hidden = !isScheduleOverdue(snapshot);
   byId("snapshot-label").textContent = automation ? "只读 · 定时采样快照" : "只读 · 人工辅助快照";
-  byId("assessment-description").textContent = automation
+  byId("assessment-description").textContent = hasRulesAssessment
     ? "初筛方式以各卡片标记为准：人工辅助初筛沿用原有判断；规则初筛由固定规则计算，未经人工复核。再次观察到岗位不会改变其初筛方式。分数与优先级仅用于清单排序，不代表已满足全部任职要求，也不是录用概率。"
     : manualGuidance.assessment;
-  byId("category-help").textContent = automation
+  byId("category-help").textContent = hasRulesAssessment
     ? "原标题保留，方向按 JD 实际职责归类；规则初筛岗位由固定规则归类，仍需核实具体职责。同一岗位名可能做不同工作。"
     : manualGuidance.category;
   if (!automation) return;
@@ -98,6 +100,9 @@ function renderAutomation() {
   byId("run-reviewed-count").textContent = automation.reviewedThisRun;
   byId("run-details-count").textContent = automation.detailsThisRun;
   byId("automation-sources").textContent = `本轮仅对 ${automation.freshSources.join("、")} 进行新采样；${automation.retainedSources.join("、")} 为保留记录，沿用原始收录与最近观察日期，未在本轮重新核验。`;
+  byId("review-queue-summary").textContent = automation.reviewPendingThisRun === undefined
+    ? "本轮初筛待复核数未记录，不能由“新增 0”推断没有其他机会。"
+    : `本轮初筛待复核 ${automation.reviewPendingThisRun} 个，其中结构解析待复核 ${automation.parsePendingThisRun} 个。待复核不等于不适合，也不等于已入选新增；本页不公开这些记录的内容。`;
 }
 
 function createCard(job, index) {
@@ -270,7 +275,7 @@ function setFilterOptions(id, key, defaultText) {
 async function fetchSnapshot() {
   let response;
   try {
-    response = await fetch(new URL("./data/jobs.json?rev=20260908-daily1", import.meta.url), {
+    response = await fetch(new URL("./data/jobs.json?rev=20260909-coverage1", import.meta.url), {
       cache: "no-store", credentials: "omit", redirect: "error",
     });
   } catch (error) {

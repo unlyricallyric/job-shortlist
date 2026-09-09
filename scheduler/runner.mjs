@@ -6,9 +6,10 @@ import { acquireLock, atomicJson, readJson, appendLog, RunError, privateDirector
 import { dueSlot, nextSlots, latestSlot } from "./clock.mjs";
 import { loadConfiguration, rotatingQueries } from "./config.mjs";
 import { collectBoss, discoverBoss, evaluatePage, cardsInPage } from "./browser.mjs";
-import { validateLedger, updateLedger, buildSnapshot } from "./snapshot.mjs";
+import { validateLedger, updateLedger, buildSnapshot, pendingReviewCounts } from "./snapshot.mjs";
 import { preflightGithub, prepareClone, publishSnapshot } from "./publish.mjs";
 import { notifyFailure } from "./process.mjs";
+import { emptyReadHistory, validateReadHistory, updateReadHistory } from "./coverage.mjs";
 
 export function initialState(now = new Date()) {
   return { version: 1, activatedAt: latestSlot(now).at, lastScheduledSlot: null, queryCursor: 0, lastRun: null, lastPublished: null };
@@ -115,8 +116,9 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
     let publication = null, failure = null, summary = null;
     try {
       const { runtime, matching } = await operations.loadConfiguration(root);
-      const { screenJob, prefilterCard } = services.rules ?? await import("./screening.mjs");
+      const { screenJob, prefilterCard, cardReadPriority } = services.rules ?? await import("./screening.mjs");
       let ledger = validateLedger(await readJson(join(root, "ledger.json")));
+      let readHistory = validateReadHistory(await readJson(join(root, "read-history.json"), emptyReadHistory()));
       clearTimeout(timer);
       timer = setTimeout(() => controller.abort(new RunError("run-timeout", "The bounded run deadline was reached.")), runtime.limits.timeoutMinutes * 60000);
       await operations.preflightGithub(runtime, signal);
@@ -128,10 +130,14 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
       await atomicJson(join(root, "state.json"), state);
       const evidence = await operations.collectBoss({
         root, queries, limits: runtime.limits, signal, prefilter: (card) => prefilterCard(card, matching),
+        knownDetailIds: ledger.detailIds, readHistory,
+        priorityFor: cardReadPriority ? (card) => cardReadPriority(card, matching) : () => 0,
         onEvidence: async (partial) => {
           await atomicJson(join(runDirectory, "evidence.json"), partial);
           ledger = updateLedger(ledger, partial);
           await atomicJson(join(root, "ledger.json"), ledger);
+          readHistory = updateReadHistory(readHistory, partial.details);
+          await atomicJson(join(root, "read-history.json"), readHistory);
         },
       });
       if (!evidence.complete || (!evidence.details.length && evidence.cards.some((card) => prefilterCard(card, matching).eligible))) {
@@ -151,6 +157,9 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
         reviewed: evidence.cards.length, details: evidence.details.length, selected: snapshot.jobs.length,
         new: snapshot.run.newCount, review: decisions.filter((decision) => decision.decision === "review").length + detailConflicts.length,
         detailConflicts: detailConflicts.length,
+        ...pendingReviewCounts(decisions, detailConflicts),
+        coverage: evidence.queries.map(({ term, industry, position, count, detailsRead, unreadDetails, recheckedDetails }) =>
+          ({ term, industry, position: position ?? null, cards: count, details: detailsRead ?? 0, unread: unreadDetails ?? 0, rechecked: recheckedDetails ?? 0 })),
         rejected: decisions.filter((decision) => decision.decision === "reject").length,
       };
       signal.throwIfAborted();

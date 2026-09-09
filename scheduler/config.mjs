@@ -11,6 +11,8 @@ export const defaultQueries = [
   { term: "市场推广", industry: "100021" }, { term: "市场营销", industry: "100029" },
   { term: "伙伴赋能", industry: "100021" }, { term: "市场", industry: "100016" },
   { term: "生态合作", industry: "100029" }, { term: "渠道运营", industry: "100021" },
+  { term: "市场经理", industry: "100023" },
+  { term: "市场", industry: "100021", position: "140101" },
 ];
 export const defaultLimits = Object.freeze({
   queriesPerRun: 3, cardsPerQuery: 15, maxCards: 45, maxDetails: 8, maxNewJobs: 3, timeoutMinutes: 30,

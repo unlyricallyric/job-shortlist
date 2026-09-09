@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { command } from "./process.mjs";
 import { RunError, atomicJson, readJson } from "./io.mjs";
+import { emptyReadHistory, planDetailReads, isDueRecheck } from "./coverage.mjs";
 
 const searchOrigin = "https://www.zhipin.com";
 const searchPath = "/web/geek/jobs";
@@ -15,8 +16,14 @@ export function searchUrl(query) {
   url.searchParams.set("query", query.term);
   url.searchParams.set("city", "101020100");
   if (query.industry !== null && query.industry !== undefined) {
-    if (!["100021", "100029", "100016"].includes(query.industry)) throw new RunError("invalid-query", "Unsupported industry filter.");
+    if (!["100021", "100029", "100016", "100023"].includes(query.industry)) throw new RunError("invalid-query", "Unsupported industry filter.");
     url.searchParams.set("industry", query.industry);
+  }
+  if (query.position !== null && query.position !== undefined) {
+    if (!["140101", "140109", "140506", "140505", "140111"].includes(query.position)) {
+      throw new RunError("invalid-query", "Unsupported native position filter.");
+    }
+    url.searchParams.set("position", query.position);
   }
   return url.href;
 }
@@ -27,7 +34,7 @@ export function pageGuard(expectedUrl) {
   }
   if (expectedUrl) {
     const wanted = new URL(expectedUrl);
-    if (["query", "city", "industry"].some((key) => new URL(location.href).searchParams.get(key) !== wanted.searchParams.get(key))) {
+    if (["query", "city", "industry", "position"].some((key) => new URL(location.href).searchParams.get(key) !== wanted.searchParams.get(key))) {
       return { state: "waiting", code: "navigation-pending" };
     }
   }
@@ -223,39 +230,101 @@ export async function waitPage(read, timeoutMs, signal, { allowIdentityConflict 
   throw new RunError("source-timeout", "No complete public result became readable; previous data is retained.", { blocked: true });
 }
 
-export async function collectBoss({ root, queries, limits, prefilter, signal, onEvidence }) {
-  const tab = await ownedTab(root, searchUrl(queries[0]), signal);
+export async function collectBoss({
+  root, queries, limits, prefilter, signal, onEvidence,
+  knownDetailIds = [], readHistory = emptyReadHistory(), priorityFor = () => 0, services = {},
+}) {
+  const operations = {
+    ownedTab,
+    search: async (tab, url) => {
+      await apple([...tabLines(tab), `set URL of targetTab to ${JSON.stringify(url)}`], signal);
+      await delay(1800, undefined, { signal });
+      return waitPage(() => evaluatePage(tab, url, cardsInPage, [], signal), 45000, signal);
+    },
+    detail: async (tab, url, card) => {
+      await evaluatePage(tab, url, openCardInPage, [card.id, card.title], signal);
+      return waitPage(() => evaluatePage(tab, url, detailInPage, [card.id, card.title], signal), 40000, signal,
+        { allowIdentityConflict: true });
+    },
+    pause: () => delay(1500, undefined, { signal }),
+    ...services,
+  };
+  const tab = await operations.ownedTab(root, searchUrl(queries[0]), signal);
   const cards = new Map(), details = new Map(), detailConflicts = new Map(), queryResults = [];
+  const querySeen = queries.map(() => new Set());
+  const pools = [];
+  const knownIds = new Set(knownDetailIds);
+  const now = Date.now();
+  let recheckDone = false;
   const progress = (complete) => ({ cards: [...cards.values()], details: [...details.values()],
     detailConflicts: [...detailConflicts.values()], queries: queryResults, complete });
-  for (const query of queries) {
-    signal.throwIfAborted();
-    const url = searchUrl(query);
-    await apple([...tabLines(tab), `set URL of targetTab to ${JSON.stringify(url)}`], signal);
-    await delay(1800, undefined, { signal });
-    const result = await waitPage(() => evaluatePage(tab, url, cardsInPage, [], signal), 45000, signal);
-    const inspected = result.cards.slice(0, Math.min(limits.cardsPerQuery, Math.max(0, limits.maxCards - cards.size)));
-    for (const card of inspected) cards.set(card.id, { ...card, retrievedAt: result.retrievedAt });
-    queryResults.push({ term: query.term, industry: query.industry ?? null, count: inspected.length, empty: result.empty === true });
-    await onEvidence(progress(false));
-    for (const card of inspected) {
-      if (details.size >= limits.maxDetails) break;
-      if (details.has(card.id) || detailConflicts.has(card.id) || !prefilter(card).eligible) continue;
-      await evaluatePage(tab, url, openCardInPage, [card.id, card.title], signal);
-      const detail = await waitPage(() => evaluatePage(tab, url, detailInPage, [card.id, card.title], signal), 40000, signal,
-        { allowIdentityConflict: true });
-      if (detail.state === "identity-conflict") {
-        detailConflicts.set(card.id, { id: card.id, code: detail.code });
-        await onEvidence(progress(false));
-        await delay(1500, undefined, { signal });
-        continue;
-      }
-      details.set(card.id, { ...card, jd: detail.jd, retrievedAt: detail.retrievedAt });
-      await onEvidence(progress(false));
-      await delay(1500, undefined, { signal });
+  const inspect = (result, index) => {
+    if (result.state !== "ready" || !Array.isArray(result.cards) || (!result.cards.length && result.empty !== true)) {
+      throw new RunError("source-not-ready", "A query did not reach a verified cards or explicit empty state.", { blocked: true });
     }
-    if (cards.size >= limits.maxCards) break;
-    await delay(1800, undefined, { signal });
+    const inspected = [];
+    for (const card of result.cards.slice(0, limits.cardsPerQuery)) {
+      if (!querySeen[index].has(card.id) && querySeen[index].size >= limits.cardsPerQuery) continue;
+      if (!cards.has(card.id) && cards.size >= limits.maxCards) continue;
+      querySeen[index].add(card.id);
+      const observation = { ...card, retrievedAt: result.retrievedAt };
+      cards.set(card.id, observation);
+      inspected.push(observation);
+    }
+    return inspected;
+  };
+  for (const [index, query] of queries.entries()) {
+    signal.throwIfAborted();
+    const result = await operations.search(tab, searchUrl(query));
+    const inspected = inspect(result, index);
+    pools.push(inspected.filter((card) => prefilter(card).eligible));
+    queryResults.push({ term: query.term, industry: query.industry ?? null, position: query.position ?? null, count: inspected.length,
+      empty: result.empty === true, allocated: 0, detailsRead: 0, unreadDetails: 0, recheckedDetails: 0, detailConflicts: 0, visits: 1 });
+    await onEvidence(progress(false));
+    await operations.pause();
+  }
+  // Visit every query before assigning the shared budget. One bounded refill pass borrows unused allocations.
+  for (let pass = 0; pass < 2 && details.size < limits.maxDetails; pass++) {
+    const plan = planDetailReads(pools, limits.maxDetails - details.size, {
+      knownIds, history: readHistory, now, priorityFor, recheckDone,
+      readCounts: queryResults.map((query) => query.detailsRead),
+      excluded: new Set([...details.keys(), ...detailConflicts.keys()]),
+    });
+    if (plan.every((pool) => !pool.length)) break;
+    for (const [index, assigned] of plan.entries()) {
+      if (!assigned.length) continue;
+      signal.throwIfAborted();
+      const url = searchUrl(queries[index]);
+      const fresh = inspect(await operations.search(tab, url), index);
+      pools[index] = fresh.filter((card) => prefilter(card).eligible);
+      const available = new Map(fresh.map((card) => [card.id, card]));
+      const queryResult = queryResults[index];
+      queryResult.count = querySeen[index].size;
+      queryResult.visits++;
+      queryResult.allocated += assigned.length;
+      for (const planned of assigned) {
+        if (details.size >= limits.maxDetails) break;
+        const card = available.get(planned.id);
+        const detail = card && card.title === planned.title
+          ? await operations.detail(tab, url, card)
+          : { state: "identity-conflict", code: "card-changed-on-revisit" };
+        if (detail.state === "identity-conflict") {
+          detailConflicts.set(planned.id, { id: planned.id, code: detail.code });
+          queryResult.detailConflicts++;
+        } else if (detail.state === "ready") {
+          details.set(card.id, { ...card, jd: detail.jd, retrievedAt: detail.retrievedAt });
+          queryResult.detailsRead++;
+          if (knownIds.has(card.id)) queryResult.recheckedDetails++;
+          else queryResult.unreadDetails++;
+          if (isDueRecheck(card, knownIds, readHistory, now)) recheckDone = true;
+        } else {
+          throw new RunError("source-not-ready", "A full JD did not pass the exact identity/readiness checks.", { blocked: true });
+        }
+        await onEvidence(progress(false));
+        await operations.pause();
+      }
+      await onEvidence(progress(false));
+    }
   }
   const result = progress(true);
   await onEvidence(result);

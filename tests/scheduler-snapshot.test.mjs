@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildSnapshot, updateLedger, validateLedger } from "../scheduler/snapshot.mjs";
+import { buildSnapshot, updateLedger, validateLedger, pendingReviewCounts } from "../scheduler/snapshot.mjs";
 import { validateSnapshot } from "../docs/model.mjs";
 import { fixture, bytedanceFixture, liepinFixture, snapshotOf } from "./helpers/fixtures.mjs";
 
@@ -40,6 +40,7 @@ test("unique evidence counts do not accumulate duplicates and new selections alo
     [{ decision: "select", job: newJob }], ledger, {
       runId: "2026-09-07-1230", startedAt: "2026-09-07T04:30:00Z", generatedAt: "2026-09-07T12:00:01Z",
     });
+
   assert.equal(result.run.newCount, 1);
   assert.equal(result.assessmentMethods[old.id], "human-assisted");
   assert.equal(result.assessmentMethods[newJob.id], "rules-v1");
@@ -51,4 +52,37 @@ test("unique evidence counts do not accumulate duplicates and new selections alo
   assert.throws(() => validateSnapshot({ ...result, automation: { ...result.automation, status: "succeeded" } }));
   assert.throws(() => validateSnapshot({ ...result, assessmentMethods: { ...result.assessmentMethods, privateProfile: "data" } }));
   assert.throws(() => validateLedger({ version: 1, reviewedIds: [old.id], detailIds: [newJob.id] }));
+});
+
+test("generic pending counts distinguish parsing failures, unresolved qualifications and identity conflicts", () => {
+  const decisions = [
+    { id: "boss-test-parse", decision: "review", reasons: ["requirements-unseparated"] },
+    { id: "boss-test-capability", decision: "review", reasons: ["capability-unconfirmed"] },
+    { id: "boss-test-rejected", decision: "reject", reasons: ["geography-outside-shanghai"] },
+    { id: "boss-test-selected", decision: "select", reasons: ["requirements-assessed"] },
+  ];
+  assert.deepEqual(pendingReviewCounts(decisions, [{ id: "boss-test-conflict", code: "detail-title-conflict" }]),
+    { reviewPendingThisRun: 3, parsePendingThisRun: 1 });
+  const old = fixture();
+  const result = buildSnapshot(snapshotOf([old]), {
+    cards: [old], details: [old], detailConflicts: [],
+  }, [{ id: old.id, decision: "review", reasons: ["requirements-unseparated"] }],
+  { version: 1, reviewedIds: [old.id], detailIds: [old.id] }, {
+    runId: "manual-test-counts", startedAt: "2026-09-07T10:00:00Z", generatedAt: "2026-09-07T12:00:00Z",
+  });
+  assert.equal(result.automation.reviewPendingThisRun, 1);
+  assert.equal(result.automation.parsePendingThisRun, 1);
+  assert.equal(validateSnapshot(result), result);
+  const legacy = structuredClone(result);
+  delete legacy.automation.reviewPendingThisRun;
+  delete legacy.automation.parsePendingThisRun;
+  assert.equal(validateSnapshot(legacy), legacy);
+  for (const invalid of [
+    { reviewPendingThisRun: 2, parsePendingThisRun: 1 },
+    { reviewPendingThisRun: 0, parsePendingThisRun: 1 },
+    { reviewPendingThisRun: 1, parsePendingThisRun: -1 },
+    { reviewPendingThisRun: 1, parsePendingThisRun: "1" },
+  ]) assert.throws(() => validateSnapshot({ ...result, automation: { ...result.automation, ...invalid } }));
+  delete result.automation.parsePendingThisRun;
+  assert.throws(() => validateSnapshot(result), /字段无效/);
 });

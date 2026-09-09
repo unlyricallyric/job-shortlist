@@ -84,7 +84,8 @@ try {
         const evidence = await readJson(join(root, "runs", failed.id, "evidence.json"), null);
         const first = evidence?.queries?.[0];
         cursor = first ? runtime.queries.findIndex((query) => query.term === first.term
-          && (query.industry ?? null) === (first.industry ?? null)) : -1;
+          && (query.industry ?? null) === (first.industry ?? null)
+          && (query.position ?? null) === (first.position ?? null)) : -1;
       }
       if (!Number.isSafeInteger(cursor) || cursor < 0 || cursor >= runtime.queries.length) {
         throw new RunError("retry-query-unknown", "The failed slot's exact query rotation cannot be confirmed.");

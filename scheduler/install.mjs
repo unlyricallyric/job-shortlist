@@ -44,7 +44,7 @@ export async function installAccessProbe({ root = defaultRoot(), runtime, tab })
   const source = resolve(dirname(fileURLToPath(import.meta.url)), "..");
   await privateDirectory(join(root, "app", "scheduler"));
   await privateDirectory(join(root, "app", "docs"));
-  for (const name of ["access-probe.mjs", "browser.mjs", "publish.mjs", "process.mjs", "io.mjs"]) {
+  for (const name of ["access-probe.mjs", "browser.mjs", "coverage.mjs", "publish.mjs", "process.mjs", "io.mjs"]) {
     await cp(join(source, "scheduler", name), join(root, "app", "scheduler", name));
   }
   await cp(join(source, "docs", "model.mjs"), join(root, "app", "docs", "model.mjs"));

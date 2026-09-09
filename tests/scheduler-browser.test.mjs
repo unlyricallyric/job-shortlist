@@ -18,8 +18,30 @@ test("Chinese searches have the exact city/industry restrictions and never an ex
   assert.equal(url.origin, "https://www.zhipin.com");
   assert.equal(url.searchParams.get("city"), "101020100");
   assert.equal(url.searchParams.get("experience"), null);
+  assert.equal(new URL(searchUrl({ term: "市场经理", industry: "100023" })).searchParams.get("industry"), "100023");
+  assert.throws(() => searchUrl({ term: "市场经理", industry: "101404" }), /Unsupported industry/);
   for (const query of [{ term: "Field Marketing" }, { term: "市场", industry: "123456" }, { term: "" }]) {
     assert.throws(() => searchUrl(query));
+  }
+});
+
+test("native position filters are limited to observed codes and verified as part of exact page identity", () => {
+  const query = { term: "市场", industry: "100021", position: "140101" };
+  const expected = searchUrl(query);
+  const filtered = new URL(expected);
+  assert.equal(filtered.searchParams.get("position"), "140101");
+  assert.equal(filtered.searchParams.get("experience"), null);
+  const document = { querySelectorAll: () => [] };
+  assert.equal(evaluate(pageGuard, { document, location: filtered }, expected).state, "ok");
+  const missing = new URL(expected);
+  missing.searchParams.delete("position");
+  assert.equal(evaluate(pageGuard, { document, location: missing }, expected).state, "waiting");
+  const wrong = new URL(expected);
+  wrong.searchParams.set("position", "140109");
+  assert.equal(evaluate(pageGuard, { document, location: wrong }, expected).state, "waiting");
+  assert.equal(evaluate(pageGuard, { document, location: filtered }, searchUrl({ term: "市场", industry: "100021" })).state, "waiting");
+  for (const position of ["999999", "140101,140109", "14010", 140101, ""]) {
+    assert.throws(() => searchUrl({ ...query, position }), /Unsupported native position/);
   }
 });
 

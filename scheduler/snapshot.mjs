@@ -3,6 +3,20 @@ import { schedule } from "./clock.mjs";
 import { RunError } from "./io.mjs";
 
 const idPattern = /^(?:boss-[A-Za-z0-9_~-]+|bytedance-[0-9]+|liepin-[0-9]+)$/;
+const parsingReasons = new Set([
+  "requirements-unseparated", "sections-invalid", "sections-too-complex", "requirements-unreadable", "full-jd-missing-or-invalid",
+]);
+
+export function pendingReviewCounts(decisions, detailConflicts = []) {
+  const pending = new Set(detailConflicts.map((item) => item.id));
+  const parsing = new Set();
+  for (const item of decisions) {
+    if (item.decision !== "review") continue;
+    pending.add(item.id);
+    if (item.reasons.some((reason) => parsingReasons.has(reason))) parsing.add(item.id);
+  }
+  return { reviewPendingThisRun: pending.size, parsePendingThisRun: parsing.size };
+}
 
 export function validateLedger(ledger) {
   if (!ledger || ledger.version !== 1 || !Array.isArray(ledger.reviewedIds) || !Array.isArray(ledger.detailIds)) {
@@ -66,6 +80,7 @@ export function buildSnapshot(previous, evidence, decisions, ledger, {
       freshSources: ["BOSS直聘"], retainedSources: ["字节跳动招聘官网", "猎聘"],
       reviewedThisRun: new Set(evidence.cards.map((card) => card.id)).size,
       detailsThisRun: new Set(evidence.details.map((detail) => detail.id)).size,
+      ...pendingReviewCounts(decisions, evidence.detailConflicts),
     },
   };
   return validateSnapshot(result);

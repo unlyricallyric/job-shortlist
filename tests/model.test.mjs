@@ -23,12 +23,24 @@ test("empty and complete snapshots are valid without inventing unknown fields", 
 });
 
 test("legacy and cumulative snapshot modes are explicit and remain schema version one", () => {
-  for (const mode of ["单次采集", "累计精选 · 第二轮快照"]) {
+  for (const mode of ["单次采集", "累计精选 · 第二轮快照", "人工扩展复核 · 累计快照"]) {
     const data = snapshotOf([fixture()]);
     data.run.mode = mode;
     assert.equal(validateSnapshot(data), data);
     assert.equal(data.version, 1);
   }
+});
+
+test("a human expansion preserves per-job provenance without claiming automatic sampling coverage", () => {
+  const data = snapshotOf([fixture()]);
+  data.run.mode = "人工扩展复核 · 累计快照";
+  data.assessmentMethods = { [data.jobs[0].id]: "human-assisted" };
+  assert.equal(validateSnapshot(data), data);
+  assert.equal(Object.hasOwn(data, "automation"), false);
+  data.assessmentMethods[data.jobs[0].id] = "rules-v1";
+  assert.equal(validateSnapshot(data), data, "Retained automatic assessments must not be relabeled manual.");
+  data.assessmentMethods["boss-unrelated"] = "human-assisted";
+  assert.throws(() => validateSnapshot(data), /初筛方式/);
 });
 
 test("invalid schema, missing fields, extraneous fields and contradictory counts are rejected", () => {
@@ -286,6 +298,7 @@ test("role aliases find generic original titles by the reviewed direction", () =
     ["客户成功", ["Customer Success", "CSM"]],
     ["产品市场", ["产品营销", "Product Marketing", "PMM"]],
     ["品牌活动", ["品牌活动", "活动营销", "活动策划", "Event Marketing"]],
+    ["内容营销", ["内容营销", "内容市场", "Content Marketing"]],
     ["渠道销售", ["Channel Sales"]],
     ["大客户销售", ["Account Executive", "Key Account", "AE"]],
   ];
