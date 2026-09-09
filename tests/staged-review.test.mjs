@@ -192,6 +192,25 @@ test("sequential human publications reset only isNew and preserve honest observa
   assert.throws(() => buildReviewedSnapshot(baseline, queue, [a.id], ledger, new Set()), { code: "manual-approval-required" });
 });
 
+test("explicit reviewed additions preserve the existing collection-only or paused notice", () => {
+  const item = record("notice");
+  const queue = queued([item]), approved = approveReviews(queue, approval(queue));
+  const ledger = { version: 1, reviewedIds: [item.id], detailIds: [item.id] };
+  for (const scheduler of ["collection-only", "paused"]) {
+    const baseline = snapshotOf([]);
+    baseline.run.mode = "人工维护 · 已保存快照";
+    baseline.publication = { version: 1, type: "manual-maintenance", scheduler, publishedAt: "2026-09-10T00:00:00Z" };
+    const now = "2026-09-11T03:00:00Z";
+    const result = buildReviewedSnapshot(baseline, approved, [item.id], ledger, new Set(), now);
+    assert.equal(result.run.mode, "人工扩展复核 · 累计快照");
+    assert.deepEqual(result.publication, { ...baseline.publication, publishedAt: now });
+    assert.equal(result.automation, undefined);
+    assert.equal(result.firstPublishedAtById[item.id], now);
+    assert.equal(validateSnapshot(result), result);
+    assert.equal(baseline.publication.publishedAt, "2026-09-10T00:00:00Z");
+  }
+});
+
 test("private review queue is durable, bounded in list output and rejects unsafe permissions or selectors", async (t) => {
   const root = await mkdtemp(join(tmpdir(), "shortlist-staged-test-"));
   t.after(() => rm(root, { recursive: true, force: true }));

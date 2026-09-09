@@ -214,6 +214,7 @@ export function buildReviewedSnapshot(previous, queue, ids, ledger, excludedIds,
       newCount: jobs.filter((job) => job.isNew).length, cardsReviewed: ledger.reviewedIds.length, detailsRead: ledger.detailIds.length },
     jobs, assessmentMethods: { ...previous.assessmentMethods, ...Object.fromEntries(added.map((job) => [job.id, "human-assisted"])) },
     firstPublishedAtById: { ...(previous.firstPublishedAtById ?? {}), ...Object.fromEntries(added.map((job) => [job.id, now])) },
+    ...(previous.publication ? { publication: { ...previous.publication, publishedAt: now } } : {}),
   });
 }
 

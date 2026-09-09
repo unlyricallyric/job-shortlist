@@ -42,7 +42,7 @@ test("HTML assets, dependent modules and no-store data share one explicit releas
   for (const url of resolved) {
     assert.equal(url.origin, base.origin);
     assert.ok(url.pathname.startsWith(base.pathname));
-    assert.equal(url.search, "?rev=20260910-review1", url.href);
+    assert.equal(url.search, "?rev=20260910-approved1", url.href);
     await access(new URL(url.pathname.slice(base.pathname.length), docs));
   }
   for (const file of ["app.mjs", "model.mjs", "styles.css", "favicon.svg", "data/jobs.json"]) {
@@ -113,7 +113,7 @@ test("exclusive date views are accessible and chronology, counts and run-new sem
 test("rendering uses text nodes, no storage or external data services", async () => {
   const app = await readFile(new URL("app.mjs", docs), "utf8");
   assert.ok(app.includes("textContent"));
-  assert.ok(app.includes('new URL("./data/jobs.json?rev=20260910-review1", import.meta.url)'));
+  assert.ok(app.includes('new URL("./data/jobs.json?rev=20260910-approved1", import.meta.url)'));
   assert.ok(app.includes('credentials: "omit"'));
   assert.ok(!/\b(?:innerHTML|outerHTML|insertAdjacentHTML|localStorage|sessionStorage|indexedDB|eval)\b/.test(app));
   assert.ok(!/document\.(?:write|cookie)/.test(app));

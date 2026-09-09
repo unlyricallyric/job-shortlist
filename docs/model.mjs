@@ -208,7 +208,7 @@ export function validateSnapshot(value) {
   requireValue(run.mode !== "定时规则初筛 · 累计快照" || scheduled, "定时快照缺少采样与初筛方式说明。");
   if (manualPublication) {
     const publication = value.publication;
-    requireValue(!scheduled && run.mode === "人工维护 · 已保存快照"
+    requireValue(!scheduled && ["人工维护 · 已保存快照", "人工扩展复核 · 累计快照"].includes(run.mode)
       && hasExactKeys(publication, ["version", "type", "publishedAt", "scheduler"])
       && publication.version === 1 && publication.type === "manual-maintenance"
       && ["paused", "collection-only"].includes(publication.scheduler) && isIsoDate(publication.publishedAt, false)
