@@ -125,6 +125,36 @@ test("same-ID conflicting detail title never exposes the JD and needs repeated s
     { allowIdentityConflict: true, intervalMs: 1 }), { code: "source-timeout" });
 });
 
+test("stable short matching detail is private incomplete content, never a full JD or blank-page success", async () => {
+  const documentFor = (text) => ({
+    querySelector: (selector) => ({
+      ".job-detail-body a.more-job-btn": { href: "https://www.zhipin.com/job_detail/test-short.html" },
+      ".job-detail-body .desc": { innerText: text },
+      ".job-detail-info": { innerText: "TEST_ONLY_TITLE" },
+    })[selector],
+  });
+  const result = evaluate(detailInPage, { document: documentFor("TEST_ONLY_SHORT_DESCRIPTION") }, "boss-test-short", "TEST_ONLY_TITLE");
+  assert.equal(result.state, "incomplete-detail");
+  assert.equal(result.jd, undefined);
+  let reads = 0;
+  const stable = await waitPage(async () => { reads++; return result; }, 500, undefined,
+    { allowIncompleteDetail: true, intervalMs: 1 });
+  assert.equal(reads, 3);
+  assert.deepEqual(stable, { state: "incomplete-detail", code: "jd-content-incomplete" });
+  let changing = 0;
+  const updated = await waitPage(async () => ++changing < 4
+    ? { ...result, incompleteText: changing % 2 ? "TEST_ONLY_A" : "TEST_ONLY_B" }
+    : { state: "ready", jd: "TEST_ONLY_FULL_DESCRIPTION" }, 500, undefined,
+  { allowIncompleteDetail: true, intervalMs: 1 });
+  assert.equal(updated.state, "ready", "Changing same-length content must not be quarantined as stable.");
+  await assert.rejects(waitPage(async () => { throw new RunError("captcha", "TEST_ONLY", { blocked: true }); }, 500,
+    undefined, { allowIncompleteDetail: true, intervalMs: 1 }), { code: "captcha" });
+  for (const text of ["", "正在加载，请稍候"]) {
+    assert.equal(evaluate(detailInPage, { document: documentFor(text) }, "boss-test-short", "TEST_ONLY_TITLE").state, "waiting");
+  }
+  assert.equal(evaluate(detailInPage, { document: documentFor("TEST_ONLY_SHORT_DESCRIPTION") }, "boss-wrong-id", "TEST_ONLY_TITLE").state, "waiting");
+});
+
 test("a legitimate empty result differs from an unknown or broken page", () => {
   assert.equal(evaluate(cardsInPage, { document: { querySelectorAll: () => [] } }).state, "waiting");
   const result = evaluate(cardsInPage, {

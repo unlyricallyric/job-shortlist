@@ -145,9 +145,11 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
       }
       const decisions = evidence.details.map((record) => ({ id: record.id, ...screenJob(record, matching) }));
       const detailConflicts = evidence.detailConflicts ?? [];
+      const incompleteDetails = evidence.incompleteDetails ?? [];
       await atomicJson(join(runDirectory, "review.json"), [
         ...decisions.filter((item) => item.decision !== "select").map(({ id: recordId, decision, reasons }) => ({ id: recordId, decision, reasons })),
         ...detailConflicts.map(({ id: recordId, code }) => ({ id: recordId, decision: "review", reasons: [code] })),
+        ...incompleteDetails.map(({ id: recordId, code }) => ({ id: recordId, decision: "review", reasons: [code] })),
       ]);
       const snapshot = buildSnapshot(prepared.snapshot, evidence, decisions, ledger, {
         runId: id, startedAt: active.startedAt, generatedAt: new Date().toISOString(), maxNewJobs: runtime.limits.maxNewJobs,
@@ -155,9 +157,9 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
       await atomicJson(join(runDirectory, "candidate.json"), snapshot);
       summary = {
         reviewed: evidence.cards.length, details: evidence.details.length, selected: snapshot.jobs.length,
-        new: snapshot.run.newCount, review: decisions.filter((decision) => decision.decision === "review").length + detailConflicts.length,
-        detailConflicts: detailConflicts.length,
-        ...pendingReviewCounts(decisions, detailConflicts),
+        new: snapshot.run.newCount, review: decisions.filter((decision) => decision.decision === "review").length + detailConflicts.length + incompleteDetails.length,
+        detailConflicts: detailConflicts.length, incompleteDetails: incompleteDetails.length,
+        ...pendingReviewCounts(decisions, [...detailConflicts, ...incompleteDetails]),
         coverage: evidence.queries.map(({ term, industry, position, count, detailsRead, unreadDetails, recheckedDetails }) =>
           ({ term, industry, position: position ?? null, cards: count, details: detailsRead ?? 0, unread: unreadDetails ?? 0, rechecked: recheckedDetails ?? 0 })),
         rejected: decisions.filter((decision) => decision.decision === "reject").length,

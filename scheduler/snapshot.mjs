@@ -80,7 +80,7 @@ export function buildSnapshot(previous, evidence, decisions, ledger, {
       freshSources: ["BOSS直聘"], retainedSources: ["字节跳动招聘官网", "猎聘"],
       reviewedThisRun: new Set(evidence.cards.map((card) => card.id)).size,
       detailsThisRun: new Set(evidence.details.map((detail) => detail.id)).size,
-      ...pendingReviewCounts(decisions, evidence.detailConflicts),
+      ...pendingReviewCounts(decisions, [...(evidence.detailConflicts ?? []), ...(evidence.incompleteDetails ?? [])]),
     },
   };
   return validateSnapshot(result);

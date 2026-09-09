@@ -106,7 +106,8 @@ export function detailInPage(id, title) {
     || !actualTitle) return { state: "waiting" };
   if (actualTitle !== title) return { state: "identity-conflict", code: "detail-title-conflict", actualTitle };
   const jd = description.innerText.trim();
-  if (jd.length < 80) return { state: "waiting" };
+  if (!jd || /^(?:正在)?加载|请稍(?:候|等)/u.test(jd)) return { state: "waiting" };
+  if (jd.length < 80) return { state: "incomplete-detail", code: "jd-content-incomplete", incompleteText: jd };
   if (jd.length > 60000) return { state: "error", code: "jd-too-large" };
   return { state: "ready", jd, retrievedAt: new Date().toISOString() };
 }
@@ -210,17 +211,21 @@ export async function evaluatePage(tab, expectedUrl, fn, args = [], signal) {
   return result;
 }
 
-export async function waitPage(read, timeoutMs, signal, { allowIdentityConflict = false, intervalMs = 1200 } = {}) {
+export async function waitPage(read, timeoutMs, signal, {
+  allowIdentityConflict = false, allowIncompleteDetail = false, intervalMs = 1200,
+} = {}) {
   const deadline = Date.now() + timeoutMs;
   let conflictTitle = null, conflicts = 0;
   while (Date.now() < deadline) {
     signal?.throwIfAborted();
     const result = await read();
     if (result.state === "ready") return result;
-    if (allowIdentityConflict && result.state === "identity-conflict") {
-      conflicts = result.actualTitle === conflictTitle ? conflicts + 1 : 1;
-      conflictTitle = result.actualTitle;
-      if (conflicts >= 3) return { state: "identity-conflict", code: result.code };
+    if ((allowIdentityConflict && result.state === "identity-conflict")
+      || (allowIncompleteDetail && result.state === "incomplete-detail")) {
+      const key = `${result.state}:${result.actualTitle ?? result.incompleteText}`;
+      conflicts = key === conflictTitle ? conflicts + 1 : 1;
+      conflictTitle = key;
+      if (conflicts >= 3) return { state: result.state, code: result.code };
     } else {
       conflictTitle = null;
       conflicts = 0;
@@ -244,20 +249,20 @@ export async function collectBoss({
     detail: async (tab, url, card) => {
       await evaluatePage(tab, url, openCardInPage, [card.id, card.title], signal);
       return waitPage(() => evaluatePage(tab, url, detailInPage, [card.id, card.title], signal), 40000, signal,
-        { allowIdentityConflict: true });
+        { allowIdentityConflict: true, allowIncompleteDetail: true });
     },
     pause: () => delay(1500, undefined, { signal }),
     ...services,
   };
   const tab = await operations.ownedTab(root, searchUrl(queries[0]), signal);
-  const cards = new Map(), details = new Map(), detailConflicts = new Map(), queryResults = [];
+  const cards = new Map(), details = new Map(), detailConflicts = new Map(), incompleteDetails = new Map(), queryResults = [];
   const querySeen = queries.map(() => new Set());
   const pools = [];
   const knownIds = new Set(knownDetailIds);
   const now = Date.now();
   let recheckDone = false;
   const progress = (complete) => ({ cards: [...cards.values()], details: [...details.values()],
-    detailConflicts: [...detailConflicts.values()], queries: queryResults, complete });
+    detailConflicts: [...detailConflicts.values()], incompleteDetails: [...incompleteDetails.values()], queries: queryResults, complete });
   const inspect = (result, index) => {
     if (result.state !== "ready" || !Array.isArray(result.cards) || (!result.cards.length && result.empty !== true)) {
       throw new RunError("source-not-ready", "A query did not reach a verified cards or explicit empty state.", { blocked: true });
@@ -279,7 +284,8 @@ export async function collectBoss({
     const inspected = inspect(result, index);
     pools.push(inspected.filter((card) => prefilter(card).eligible));
     queryResults.push({ term: query.term, industry: query.industry ?? null, position: query.position ?? null, count: inspected.length,
-      empty: result.empty === true, allocated: 0, detailsRead: 0, unreadDetails: 0, recheckedDetails: 0, detailConflicts: 0, visits: 1 });
+      empty: result.empty === true, allocated: 0, detailsRead: 0, unreadDetails: 0, recheckedDetails: 0,
+      detailConflicts: 0, incompleteDetails: 0, visits: 1 });
     await onEvidence(progress(false));
     await operations.pause();
   }
@@ -288,7 +294,7 @@ export async function collectBoss({
     const plan = planDetailReads(pools, limits.maxDetails - details.size, {
       knownIds, history: readHistory, now, priorityFor, recheckDone,
       readCounts: queryResults.map((query) => query.detailsRead),
-      excluded: new Set([...details.keys(), ...detailConflicts.keys()]),
+      excluded: new Set([...details.keys(), ...detailConflicts.keys(), ...incompleteDetails.keys()]),
     });
     if (plan.every((pool) => !pool.length)) break;
     for (const [index, assigned] of plan.entries()) {
@@ -311,6 +317,9 @@ export async function collectBoss({
         if (detail.state === "identity-conflict") {
           detailConflicts.set(planned.id, { id: planned.id, code: detail.code });
           queryResult.detailConflicts++;
+        } else if (detail.state === "incomplete-detail") {
+          incompleteDetails.set(planned.id, { id: planned.id, code: detail.code });
+          queryResult.incompleteDetails++;
         } else if (detail.state === "ready") {
           details.set(card.id, { ...card, jd: detail.jd, retrievedAt: detail.retrievedAt });
           queryResult.detailsRead++;

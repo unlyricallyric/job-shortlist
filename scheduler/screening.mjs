@@ -154,7 +154,7 @@ function fullTimestamp(value) {
     && Number.isFinite(Date.parse(value));
 }
 
-const DUTY_HEADINGS = ["岗位职责", "工作职责", "职位描述", "岗位基本描述", "岗位描述", "工作内容", "职责描述", "职位职责"];
+const DUTY_HEADINGS = ["岗位职责", "岗位核心职责", "工作职责", "职位描述", "岗位基本描述", "岗位描述", "工作内容", "职责描述", "职位职责"];
 const REQUIREMENT_HEADINGS = ["任职要求", "职位要求", "岗位要求", "任职资格", "任职条件", "希望你具备能力", "希望你具备的能力", "我们希望你具备"];
 const PREFERRED_HEADINGS = ["加分技能", "加分项", "优先条件", "优先要求"];
 const REQUIRED_HEADINGS = ["必备条件", "基本要求", "必要条件", "硬性要求"];

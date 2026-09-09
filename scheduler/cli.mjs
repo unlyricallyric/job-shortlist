@@ -90,7 +90,7 @@ try {
       if (!Number.isSafeInteger(cursor) || cursor < 0 || cursor >= runtime.queries.length) {
         throw new RunError("retry-query-unknown", "The failed slot's exact query rotation cannot be confirmed.");
       }
-      request = { id: `retry-${new Date().toISOString().replace(/\D/g, "")}-${randomUUID().slice(0, 8)}`, dryRun: false,
+      request = { id: `retry-${new Date().toISOString().replace(/\D/g, "")}-${randomUUID().slice(0, 8)}`, dryRun: flags.has("dry-run"),
         retryOf: failed.id, queryCursor: cursor, requestedAt: new Date().toISOString() };
     } else {
       request = { id: `manual-${new Date().toISOString().replace(/\D/g, "")}-${randomUUID().slice(0, 8)}`,

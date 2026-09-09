@@ -141,6 +141,24 @@ test("collector borrows conflict allocations, never counts mismatched or duplica
     root: "/TEST_ONLY", queries, limits: defaultLimits, prefilter: () => ({ eligible: true }),
     signal: new AbortController().signal, onEvidence: async () => {}, services: source.services,
   });
+
+  test("collector refills short-detail quota without treating incomplete descriptions as full reads", async () => {
+    const groups = [pool("a", 5), pool("b", 5), pool("c", 5)];
+    const source = sourceServices(groups);
+    const detail = source.services.detail;
+    const shortId = groups[2][0].id;
+    source.services.detail = async (tab, url, record) => record.id === shortId
+      ? { state: "incomplete-detail", code: "jd-content-incomplete" } : detail(tab, url, record);
+    const evidence = await collectBoss({
+      root: "/TEST_ONLY", queries, limits: defaultLimits, prefilter: () => ({ eligible: true }),
+      signal: new AbortController().signal, onEvidence: async () => {}, services: source.services,
+    });
+    assert.equal(evidence.details.length, 8);
+    assert.deepEqual(evidence.queries.map((query) => query.detailsRead), [3, 3, 2]);
+    assert.equal(evidence.incompleteDetails.length, 1);
+    assert.equal(evidence.incompleteDetails[0].id, shortId);
+    assert.ok(!evidence.details.some((record) => record.id === shortId));
+  });
   assert.equal(evidence.details.length, 8);
   assert.equal(evidence.detailConflicts.length, 1);
   assert.ok(!evidence.details.some((record) => record.id === groups[0][0].id));

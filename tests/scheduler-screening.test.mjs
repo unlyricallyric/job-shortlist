@@ -187,6 +187,7 @@ test("Chinese heading variants and separately collected sections are supported",
 test("observed descriptive and capability headings normalize presentation glyphs without mutating evidence", () => {
   for (const [duty, requirement] of [
     ["岗位基本描述", "希望你具备能力"],
+    ["岗位核心职责", "任职要求"],
     ["⼯作职责", "任职资格"],
     ["工作内容", "希望你具备的能力"],
   ]) {
