@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-07T16:21:15.239Z",
+  "generatedAt": "2026-09-09T00:42:05.169Z",
   "run": {
     "source": "BOSS直聘 + 字节跳动招聘官网 + 猎聘",
     "scope": "上海 · 企业级科技 · 伙伴营销、需求生成、品牌活动及商业化转型备选",
     "mode": "定时规则初筛 · 累计快照",
-    "cardsReviewed": 207,
-    "detailsRead": 49,
+    "cardsReviewed": 211,
+    "detailsRead": 54,
     "selectedCount": 7,
     "newCount": 0
   },
@@ -337,9 +337,9 @@
       "09:30",
       "12:30"
     ],
-    "runId": "retry-20260907162025551-9a9a73ca",
-    "startedAt": "2026-09-07T16:20:25.725Z",
-    "completedAt": "2026-09-07T16:21:15.239Z",
+    "runId": "retry-20260909004114827-cd677edf",
+    "startedAt": "2026-09-09T00:41:19.075Z",
+    "completedAt": "2026-09-09T00:42:05.169Z",
     "status": "sampled",
     "freshSources": [
       "BOSS直聘"
@@ -348,7 +348,7 @@
       "字节跳动招聘官网",
       "猎聘"
     ],
-    "reviewedThisRun": 39,
+    "reviewedThisRun": 30,
     "detailsThisRun": 8
   }
 }
