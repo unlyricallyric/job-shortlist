@@ -346,7 +346,8 @@ test("the public snapshot renders all source records and counts without changing
   assert.equal(app.get("run-source").textContent, `${data.run.source} · ${data.run.mode}`);
   assert.equal(app.get("generated-at").textContent, formatShanghaiTime(data.generatedAt));
   assert.equal(app.get("automation-panel").hidden, !data.automation);
-  assert.equal(app.get("snapshot-label").textContent, data.publication?.scheduler === "paused" ? "只读 · 采集已暂停"
+  assert.equal(app.get("snapshot-label").textContent, data.publication?.scheduler === "collection-only" ? "只读 · 采集待人工复核"
+    : data.publication?.scheduler === "paused" ? "只读 · 采集已暂停"
     : data.automation ? "只读 · 定时采样快照" : "只读 · 人工辅助快照");
   if (!data.automation) {
     assert.equal(app.get("automation-warning").hidden, true);

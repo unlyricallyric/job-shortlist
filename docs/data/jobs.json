@@ -332,7 +332,7 @@
   "publication": {
     "version": 1,
     "type": "manual-maintenance",
-    "publishedAt": "2026-09-09T03:58:15.654Z",
-    "scheduler": "paused"
+    "publishedAt": "2026-09-09T18:53:18.196Z",
+    "scheduler": "collection-only"
   }
 }

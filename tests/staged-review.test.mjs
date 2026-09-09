@@ -83,6 +83,19 @@ test("partner coordination can match intent without satisfying domain or experie
   assert.ok(result.qualification.reasons.includes("specialist-domain-needs-review"));
 });
 
+test("required and preferred qualifications remain separate from matching the career direction", () => {
+  const configured = { ...matching, years: { ...matching.years, partner: 3, marketing: 3, b2b: 3 } };
+  const base = "岗位职责：负责拓展渠道伙伴，建立商机互荐机制，管理伙伴分级经营。\n任职要求：具备渠道销售经验；";
+  const required = assessForReview(record("required", { jd: `${base}至少十年渠道业务经验。` }), configured, policy);
+  const preferred = assessForReview(record("preferred", { jd: `${base}十年渠道业务经验优先。` }), configured, policy);
+  assert.equal(required.intent.decision, "primary");
+  assert.equal(preferred.intent.decision, "primary");
+  assert.equal(required.qualification.status, "not-met");
+  assert.equal(preferred.qualification.status, "pending");
+  assert.ok(required.qualification.reasons.includes("years-insufficient"));
+  assert.ok(!preferred.qualification.reasons.includes("years-insufficient"));
+});
+
 test("incidental partners do not relabel a marketing-led role, and true unrelated jobs stay outside", () => {
   const market = record("market", { jd: "岗位职责：负责品牌传播、内容营销和文案；拓展渠道伙伴并开展联合市场活动。\n任职要求：具备市场营销经验。" });
   assert.equal(assessIntent(market, policy).decision, "outside");
@@ -218,8 +231,11 @@ test("unapproved publication is blocked before Git, and stale approvals prevent 
     version: 1, ids: [record().id], sha: "a".repeat(40), digest: "b".repeat(64),
     approvalHashes: { [record().id]: queue.entries[0].evidenceHash },
   });
+  await assert.rejects(retryReviewedPublication(root, new AbortController().signal, { git: never, verifyPublication: never }),
+    { code: "manual-approval-required" });
+});
 
-  test("an explicitly approved publication can be recovered after a Pages timeout without automatic retries", async (t) => {
+test("an explicitly approved publication can be recovered after a Pages timeout without automatic retries", async (t) => {
     const root = await mkdtemp(join(tmpdir(), "shortlist-review-recovery-test-"));
     t.after(() => rm(root, { recursive: true, force: true }));
     const item = record("pending"), queue = queued([item]), approved = approveReviews(queue, approval(queue));
@@ -256,7 +272,7 @@ test("unapproved publication is blocked before Git, and stale approvals prevent 
     assert.ok(!calls.some((args) => args[0] === "push"));
   });
 
-  test("actual private CLI lists/shows review data and refuses publication without approval", async (t) => {
+test("actual private CLI lists/shows review data and refuses publication without approval", async (t) => {
     const root = await mkdtemp(join(tmpdir(), "shortlist-review-cli-test-"));
     t.after(() => rm(root, { recursive: true, force: true }));
     const item = record(), queue = queued([item]);
@@ -273,7 +289,7 @@ test("unapproved publication is blocked before Git, and stale approvals prevent 
       (error) => error.stderr.includes("manual-approval-required"));
   });
 
-  test("collection configuration validates intent without depending on deploy keys or GitHub credentials", async (t) => {
+test("collection configuration validates intent without depending on deploy keys or GitHub credentials", async (t) => {
     const root = await mkdtemp(join(tmpdir(), "shortlist-collection-config-test-"));
     t.after(() => rm(root, { recursive: true, force: true }));
     await atomicJson(join(root, "matching.json"), matching);
@@ -287,6 +303,11 @@ test("unapproved publication is blocked before Git, and stale approvals prevent 
     await atomicJson(join(root, "runtime.json"), { ...runtime, queries: [{ term: "市场活动", industry: "100021" }] });
     await assert.rejects(loadConfiguration(root), { code: "invalid-config" });
   });
-  await assert.rejects(retryReviewedPublication(root, new AbortController().signal, { git: never, verifyPublication: never }),
-    { code: "manual-approval-required" });
-});
+
+test("the collection worker has no publisher or notification dependency and daemon results are silent", async () => {
+    const runner = await readFile(new URL("../scheduler/runner.mjs", import.meta.url), "utf8");
+    const cli = await readFile(new URL("../scheduler/cli.mjs", import.meta.url), "utf8");
+    assert.doesNotMatch(runner, /preflightGithub|prepareClone|publishSnapshot|verifyPublication|notifyFailure|from "\.\/publish/);
+    assert.match(cli, /if \(action !== "tick"\) console\.log/);
+    assert.match(cli, /if \(action !== "tick"\) console\.error/);
+  });
