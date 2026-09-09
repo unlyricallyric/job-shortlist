@@ -60,6 +60,8 @@ python3 -m http.server 8000 --directory docs
 
 `automation` 可选地同时提供 `reviewPendingThisRun` 与 `parsePendingThisRun`，仅表示本轮待复核总数及其中的结构解析待复核数。老快照没有这两个数值时会显示未记录，而不是假定为零。待复核不等于不适合或已入选，“新增 0”也不代表平台没有其他机会。
 
+暂停期间的人工维护使用 `人工维护 · 已保存快照`，保留原 `generatedAt` 与所有保留岗位的观察时间；另以严格的 `publication` 状态记录人工发布时间和 `scheduler: "paused"`。页面会明确说明采集已暂停，不将维护发布当作重新采集。私人反馈和手动排除记录不进入公开快照。
+
 ## 检查
 
 无需安装包，使用支持内置测试运行器的 Node.js：

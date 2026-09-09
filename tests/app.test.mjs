@@ -13,6 +13,20 @@ const job = (name, overrides) => fixture({
   url: `https://www.zhipin.com/job_detail/unit-test-${name}.html`,
   ...overrides,
 });
+
+test("manual paused publication displays saved data without presenting maintenance as a fresh sample", async (t) => {
+  const data = snapshotOf(testJobs);
+  data.run.mode = "人工维护 · 已保存快照";
+  data.publication = { version: 1, type: "manual-maintenance", publishedAt: "2026-09-09T03:00:00Z", scheduler: "paused" };
+  const app = await boot(t, { responses: [data] });
+  assert.equal(app.get("paused-notice").hidden, false);
+  assert.match(app.get("paused-notice").textContent, /定时采集已暂停，当前显示已保存岗位/);
+  assert.equal(app.get("maintenance-at").textContent, "2026.09.09 11:00");
+  assert.equal(app.get("generated-at").getAttribute("datetime"), data.generatedAt);
+  assert.equal(app.get("automation-panel").hidden, true);
+  assert.equal(app.get("snapshot-label").textContent, "只读 · 采集已暂停");
+  assert.equal(app.cards().length, 3);
+});
 const testJobs = [
   job("literal", {
     title: '<img src="x" onerror="alert(1)">', summary: ["<script>TEST_ONLY_TEXT</script>"],
@@ -305,7 +319,8 @@ test("the public snapshot renders all source records and counts without changing
   assert.equal(app.get("run-source").textContent, `${data.run.source} · ${data.run.mode}`);
   assert.equal(app.get("generated-at").textContent, formatShanghaiTime(data.generatedAt));
   assert.equal(app.get("automation-panel").hidden, !data.automation);
-  assert.equal(app.get("snapshot-label").textContent, data.automation ? "只读 · 定时采样快照" : "只读 · 人工辅助快照");
+  assert.equal(app.get("snapshot-label").textContent, data.publication?.scheduler === "paused" ? "只读 · 采集已暂停"
+    : data.automation ? "只读 · 定时采样快照" : "只读 · 人工辅助快照");
   if (!data.automation) {
     assert.equal(app.get("automation-warning").hidden, true);
     assert.equal(app.get("schedule-times").textContent, "");
@@ -543,7 +558,7 @@ test("real card rendering preserves literal strings, safe links, nulls and obser
   assert.equal(app.get("new-count").textContent, "2");
   assert.equal(app.requests.length, 1);
   assert.ok(app.requests[0].url.pathname.endsWith("/docs/data/jobs.json"));
-  assert.equal(app.requests[0].url.search, "?rev=20260909-coverage1");
+  assert.equal(app.requests[0].url.search, "?rev=20260909-paused1");
   assert.equal(app.requests[0].options.credentials, "omit");
   assert.equal(app.requests[0].options.cache, "no-store");
 });

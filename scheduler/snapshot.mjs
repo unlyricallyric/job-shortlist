@@ -45,21 +45,23 @@ export function updateLedger(ledger, evidence) {
 }
 
 export function buildSnapshot(previous, evidence, decisions, ledger, {
-  runId, startedAt, generatedAt, maxNewJobs = 3, enabled = true,
+  runId, startedAt, generatedAt, maxNewJobs = 3, enabled = true, excludedIds = new Set(),
 }) {
   validateSnapshot(previous);
   validateLedger(ledger);
+  if (!(excludedIds instanceof Set)) throw new RunError("invalid-manual-exclusions", "Manual exclusions must be validated before merging.");
   const seen = new Map(evidence.cards.map((card) => [card.id, card.retrievedAt]));
   for (const detail of evidence.details) seen.set(detail.id, detail.retrievedAt);
-  const ids = new Set(previous.jobs.map((job) => job.id));
-  const methods = { ...(previous.assessmentMethods ?? Object.fromEntries(previous.jobs.map((job) => [job.id, "human-assisted"]))) };
-  const jobs = previous.jobs.map((job) => ({
+  const retained = previous.jobs.filter((job) => !excludedIds.has(job.id));
+  const ids = new Set(retained.map((job) => job.id));
+  const methods = Object.fromEntries(retained.map((job) => [job.id, previous.assessmentMethods?.[job.id] ?? "human-assisted"]));
+  const jobs = retained.map((job) => ({
     ...job, isNew: false, lastSeen: seen.has(job.id) && Date.parse(seen.get(job.id)) > Date.parse(job.lastSeen)
       ? seen.get(job.id) : job.lastSeen,
   }));
   for (const decision of decisions) {
-    if (jobs.length - previous.jobs.length >= maxNewJobs) break;
-    if (decision.decision !== "select" || !decision.job || ids.has(decision.job.id)) continue;
+    if (jobs.length - retained.length >= maxNewJobs) break;
+    if (decision.decision !== "select" || !decision.job || ids.has(decision.job.id) || excludedIds.has(decision.job.id)) continue;
     ids.add(decision.job.id);
     jobs.push(decision.job);
     methods[decision.job.id] = "rules-v1";

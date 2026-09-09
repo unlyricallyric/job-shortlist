@@ -50,6 +50,28 @@ test("dry run has collection evidence but zero publication, and terminal success
   assert.throws(() => finalStatus({ dryRun: false, publication: null }), /cannot succeed/);
 });
 
+test("private manual exclusions are applied before detailed screening and again at publication merge", async (t) => {
+  const { root, services } = await setup(t);
+  const excluded = fixture();
+  await atomicJson(join(root, "manual-exclusions.json"), { version: 1, entries: [{
+    id: excluded.id, excludedAt: "2026-09-09T03:00:00Z", reasonCode: "user-direction-rejection",
+  }] });
+  services.rules = {
+    prefilterCard: () => ({ eligible: true }),
+    screenJob: () => assert.fail("Explicitly excluded records must not be screened for readmission."),
+  };
+  services.collectBoss = async ({ prefilter }) => {
+    assert.deepEqual(prefilter(excluded), { eligible: false, reason: "manual-excluded" });
+    return { cards: [{ ...excluded, retrievedAt: new Date().toISOString() }], details: [], queries: [], complete: true };
+  };
+  const result = await run(root, { dryRun: true, services });
+  assert.equal(result.status, "dry-run");
+  const candidate = await readJson(join(root, "runs", result.id, "candidate.json"));
+  assert.equal(candidate.jobs.length, 0);
+  assert.ok(!JSON.stringify(candidate).includes(excluded.id));
+  assert.ok(!JSON.stringify(candidate).includes("user-direction-rejection"));
+});
+
 test("late first installation has only the latest noon catch-up, while an explicit run consumes that slot", async (t) => {
   const initialized = initialState(new Date("2026-09-07T15:00:00Z"));
   assert.equal(dueSlot(initialized, new Date("2026-09-07T15:00:00Z")).id, "2026-09-07-1230");

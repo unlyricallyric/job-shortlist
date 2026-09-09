@@ -42,7 +42,7 @@ test("HTML assets, dependent modules and no-store data share one explicit releas
   for (const url of resolved) {
     assert.equal(url.origin, base.origin);
     assert.ok(url.pathname.startsWith(base.pathname));
-    assert.equal(url.search, "?rev=20260909-coverage1", url.href);
+    assert.equal(url.search, "?rev=20260909-paused1", url.href);
     await access(new URL(url.pathname.slice(base.pathname.length), docs));
   }
   for (const file of ["app.mjs", "model.mjs", "styles.css", "favicon.svg", "data/jobs.json"]) {
@@ -113,7 +113,7 @@ test("exclusive date views are accessible and chronology, counts and run-new sem
 test("rendering uses text nodes, no storage or external data services", async () => {
   const app = await readFile(new URL("app.mjs", docs), "utf8");
   assert.ok(app.includes("textContent"));
-  assert.ok(app.includes('new URL("./data/jobs.json?rev=20260909-coverage1", import.meta.url)'));
+  assert.ok(app.includes('new URL("./data/jobs.json?rev=20260909-paused1", import.meta.url)'));
   assert.ok(app.includes('credentials: "omit"'));
   assert.ok(!/\b(?:innerHTML|outerHTML|insertAdjacentHTML|localStorage|sessionStorage|indexedDB|eval)\b/.test(app));
   assert.ok(!/document\.(?:write|cookie)/.test(app));
@@ -133,6 +133,8 @@ test("schedule disclosures default hidden and distinguish local configuration fr
   assert.ok(html.includes("本轮查看卡片"));
   assert.ok(html.includes("本轮完整 JD"));
   assert.ok(html.includes('id="review-queue-summary"'));
+  assert.ok(html.includes('id="paused-notice"'));
+  assert.ok(html.includes("定时采集已暂停，当前显示已保存岗位"));
   assert.ok(html.includes("没有已入选新增，不代表市场没有机会"));
   assert.ok(html.includes("本机暂停后页面可能仍保留旧计划"));
   assert.ok(html.includes("并非实时运行状态"));

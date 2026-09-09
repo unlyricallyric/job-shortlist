@@ -2,7 +2,7 @@ import {
   SnapshotError, filterOptions, formatShanghaiTime, hasSalaryRange,
   parseSalaryRange, safeJobUrl, selectJobs, validateSnapshot,
   shanghaiDateKey, nextShanghaiMidnight, selectArrivalView, groupJobsByFirstSeen,
-} from "./model.mjs?rev=20260909-coverage1";
+} from "./model.mjs?rev=20260909-paused1";
 
 const sourceLinkLabels = new Map([
   ["BOSS直聘", "查看原始岗位"],
@@ -83,11 +83,15 @@ function isScheduleOverdue(data, now = Date.now()) {
 
 function renderAutomation() {
   const automation = snapshot.automation;
+  const pausedPublication = snapshot.publication?.scheduler === "paused";
+  byId("paused-notice").hidden = !pausedPublication;
+  if (pausedPublication) setTime(byId("maintenance-at"), snapshot.publication.publishedAt);
   const hasRulesAssessment = Boolean(automation) || Object.values(snapshot.assessmentMethods ?? {}).includes("rules-v1");
   byId("automation-panel").hidden = !automation;
   byId("review-queue-summary").hidden = !automation;
   byId("automation-warning").hidden = !isScheduleOverdue(snapshot);
-  byId("snapshot-label").textContent = automation ? "只读 · 定时采样快照" : "只读 · 人工辅助快照";
+  byId("snapshot-label").textContent = pausedPublication ? "只读 · 采集已暂停"
+    : automation ? "只读 · 定时采样快照" : "只读 · 人工辅助快照";
   byId("assessment-description").textContent = hasRulesAssessment
     ? "初筛方式以各卡片标记为准：人工辅助初筛沿用原有判断；规则初筛由固定规则计算，未经人工复核。再次观察到岗位不会改变其初筛方式。分数与优先级仅用于清单排序，不代表已满足全部任职要求，也不是录用概率。"
     : manualGuidance.assessment;
@@ -275,7 +279,7 @@ function setFilterOptions(id, key, defaultText) {
 async function fetchSnapshot() {
   let response;
   try {
-    response = await fetch(new URL("./data/jobs.json?rev=20260909-coverage1", import.meta.url), {
+    response = await fetch(new URL("./data/jobs.json?rev=20260909-paused1", import.meta.url), {
       cache: "no-store", credentials: "omit", redirect: "error",
     });
   } catch (error) {
@@ -301,6 +305,7 @@ async function loadSnapshot() {
   stateAction.disabled = true;
   byId("results-area").setAttribute("aria-busy", "true");
   byId("automation-panel").hidden = true;
+  byId("paused-notice").hidden = true;
   byId("automation-warning").hidden = true;
   byId("snapshot-label").textContent = "只读 · 岗位快照";
   setState("正在读取岗位快照", "只读取本站的静态数据，不会实时访问招聘平台。");
@@ -328,6 +333,7 @@ async function loadSnapshot() {
     window.clearTimeout(calendarTimer);
     clearResults();
     byId("automation-panel").hidden = true;
+    byId("paused-notice").hidden = true;
     byId("automation-warning").hidden = true;
     byId("snapshot-label").textContent = "只读 · 岗位快照";
     byId("results-footnote").hidden = true;

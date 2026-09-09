@@ -10,6 +10,7 @@ import { validateLedger, updateLedger, buildSnapshot, pendingReviewCounts } from
 import { preflightGithub, prepareClone, publishSnapshot } from "./publish.mjs";
 import { notifyFailure } from "./process.mjs";
 import { emptyReadHistory, validateReadHistory, updateReadHistory } from "./coverage.mjs";
+import { loadManualExclusions, manualExcludedIds } from "./exclusions.mjs";
 
 export function initialState(now = new Date()) {
   return { version: 1, activatedAt: latestSlot(now).at, lastScheduledSlot: null, queryCursor: 0, lastRun: null, lastPublished: null };
@@ -117,6 +118,9 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
     try {
       const { runtime, matching } = await operations.loadConfiguration(root);
       const { screenJob, prefilterCard, cardReadPriority } = services.rules ?? await import("./screening.mjs");
+      const excludedIds = manualExcludedIds(await loadManualExclusions(root));
+      const eligibleCard = (card) => excludedIds.has(card.id)
+        ? { eligible: false, reason: "manual-excluded" } : prefilterCard(card, matching);
       let ledger = validateLedger(await readJson(join(root, "ledger.json")));
       let readHistory = validateReadHistory(await readJson(join(root, "read-history.json"), emptyReadHistory()));
       clearTimeout(timer);
@@ -129,7 +133,7 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
       if (!request?.retryOf) state.queryCursor = (queryCursor + queries.length) % runtime.queries.length;
       await atomicJson(join(root, "state.json"), state);
       const evidence = await operations.collectBoss({
-        root, queries, limits: runtime.limits, signal, prefilter: (card) => prefilterCard(card, matching),
+        root, queries, limits: runtime.limits, signal, prefilter: eligibleCard,
         knownDetailIds: ledger.detailIds, readHistory,
         priorityFor: cardReadPriority ? (card) => cardReadPriority(card, matching) : () => 0,
         onEvidence: async (partial) => {
@@ -140,10 +144,11 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
           await atomicJson(join(root, "read-history.json"), readHistory);
         },
       });
-      if (!evidence.complete || (!evidence.details.length && evidence.cards.some((card) => prefilterCard(card, matching).eligible))) {
+      if (!evidence.complete || (!evidence.details.length && evidence.cards.some((card) => eligibleCard(card).eligible))) {
         throw new RunError("no-complete-jds", "No full matching JD was read; the dataset is unchanged.", { blocked: true });
       }
-      const decisions = evidence.details.map((record) => ({ id: record.id, ...screenJob(record, matching) }));
+      const decisions = evidence.details.filter((record) => !excludedIds.has(record.id))
+        .map((record) => ({ id: record.id, ...screenJob(record, matching) }));
       const detailConflicts = evidence.detailConflicts ?? [];
       const incompleteDetails = evidence.incompleteDetails ?? [];
       await atomicJson(join(runDirectory, "review.json"), [
@@ -152,7 +157,7 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
         ...incompleteDetails.map(({ id: recordId, code }) => ({ id: recordId, decision: "review", reasons: [code] })),
       ]);
       const snapshot = buildSnapshot(prepared.snapshot, evidence, decisions, ledger, {
-        runId: id, startedAt: active.startedAt, generatedAt: new Date().toISOString(), maxNewJobs: runtime.limits.maxNewJobs,
+        runId: id, startedAt: active.startedAt, generatedAt: new Date().toISOString(), maxNewJobs: runtime.limits.maxNewJobs, excludedIds,
       });
       await atomicJson(join(runDirectory, "candidate.json"), snapshot);
       summary = {

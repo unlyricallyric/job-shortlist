@@ -43,6 +43,19 @@ test("a human expansion preserves per-job provenance without claiming automatic 
   assert.throws(() => validateSnapshot(data), /初筛方式/);
 });
 
+test("a manual maintenance status is separate from original collection freshness and cannot claim resumed sampling", () => {
+  const data = snapshotOf([fixture()]);
+  data.run.mode = "人工维护 · 已保存快照";
+  data.publication = { version: 1, type: "manual-maintenance", publishedAt: "2026-09-09T03:00:00Z", scheduler: "paused" };
+  assert.equal(validateSnapshot(data), data);
+  for (const changes of [{ scheduler: "enabled" }, { publishedAt: "2026-01-01T00:00:00Z" }, { reason: "TEST_ONLY_PRIVATE" }]) {
+    assert.throws(() => validateSnapshot({ ...data, publication: { ...data.publication, ...changes } }), /发布状态/);
+  }
+  const missingStatus = { ...data };
+  delete missingStatus.publication;
+  assert.throws(() => validateSnapshot(missingStatus), /人工维护/);
+});
+
 test("invalid schema, missing fields, extraneous fields and contradictory counts are rejected", () => {
   const mutations = [
     (data) => { data.version = 2; },

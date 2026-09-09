@@ -4,6 +4,7 @@ import { RunError } from "./io.mjs";
 export async function command(executable, args, { cwd, input, timeout = 30000, signal, env = {}, maxBytes = 4 * 1024 * 1024 } = {}) {
   signal?.throwIfAborted();
   return new Promise((resolve, reject) => {
+    const ownProcessGroup = process.platform !== "win32";
     const environment = { ...process.env, GIT_TERMINAL_PROMPT: "0", GH_PROMPT_DISABLED: "1", ...env };
     for (const name of ["GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN", "SSH_AUTH_SOCK", "SSH_AGENT_PID"]) delete environment[name];
     for (const name of Object.keys(environment)) {
@@ -11,19 +12,28 @@ export async function command(executable, args, { cwd, input, timeout = 30000, s
     }
     const child = spawn(executable, args, {
       cwd, env: environment,
-      stdio: ["pipe", "pipe", "pipe"], signal, killSignal: "SIGTERM",
+      stdio: ["pipe", "pipe", "pipe"], signal, killSignal: "SIGTERM", detached: ownProcessGroup,
     });
+    // Keep task subprocess descendants from holding inherited pipes after their parent exits.
+    const terminate = (terminationSignal) => {
+      if (!child.pid) return;
+      try {
+        process.kill(ownProcessGroup ? -child.pid : child.pid, terminationSignal);
+      } catch (error) {
+        if (error.code !== "ESRCH") throw error;
+      }
+    };
     const out = [], err = [];
     let bytes = 0, killed = false, abortError = null, escalation = null;
     const timer = setTimeout(() => {
       killed = true;
-      child.kill("SIGKILL");
+      terminate("SIGKILL");
     }, timeout);
     const collect = (target) => (chunk) => {
       bytes += chunk.length;
       if (bytes > maxBytes) {
         killed = true;
-        child.kill("SIGKILL");
+        terminate("SIGKILL");
       } else target.push(chunk);
     };
     child.stdout.on("data", collect(out));
@@ -31,8 +41,9 @@ export async function command(executable, args, { cwd, input, timeout = 30000, s
     child.on("error", (error) => {
       if (error.name === "AbortError" && child.pid) {
         abortError = error;
+        terminate("SIGTERM");
         escalation = setTimeout(() => {
-          if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
+          if (ownProcessGroup || (child.exitCode === null && child.signalCode === null)) terminate("SIGKILL");
         }, 1500);
         escalation.unref();
       } else {

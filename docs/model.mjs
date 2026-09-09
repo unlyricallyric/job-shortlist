@@ -7,7 +7,7 @@ export class SnapshotError extends Error {
 
 const rootKeys = ["version", "generatedAt", "run", "jobs"];
 const runKeys = ["source", "scope", "mode", "cardsReviewed", "detailsRead", "selectedCount", "newCount"];
-const snapshotModes = new Set(["单次采集", "累计精选 · 第二轮快照", "定时规则初筛 · 累计快照", "人工扩展复核 · 累计快照"]);
+const snapshotModes = new Set(["单次采集", "累计精选 · 第二轮快照", "定时规则初筛 · 累计快照", "人工扩展复核 · 累计快照", "人工维护 · 已保存快照"]);
 const runSources = new Map([
   ["BOSS直聘", ["BOSS直聘"]],
   ["字节跳动招聘官网", ["字节跳动招聘官网"]],
@@ -193,7 +193,9 @@ function observationOrder(first, last) {
 export function validateSnapshot(value) {
   const scheduled = value !== null && typeof value === "object" && Object.hasOwn(value, "automation");
   const hasMethods = value !== null && typeof value === "object" && Object.hasOwn(value, "assessmentMethods");
-  requireValue(hasExactKeys(value, [...rootKeys, ...(scheduled ? ["automation"] : []), ...(hasMethods ? ["assessmentMethods"] : [])])
+  const manualPublication = value !== null && typeof value === "object" && Object.hasOwn(value, "publication");
+  requireValue(hasExactKeys(value, [...rootKeys, ...(scheduled ? ["automation"] : []), ...(hasMethods ? ["assessmentMethods"] : []),
+    ...(manualPublication ? ["publication"] : [])])
     && (!scheduled || hasMethods), "快照字段不完整或包含不支持的字段。");
   requireValue(value.version === 1, "不支持的快照版本。");
   requireValue(isIsoDate(value.generatedAt, false), "快照生成时间必须包含时区。");
@@ -202,6 +204,15 @@ export function validateSnapshot(value) {
   const allowedSources = runSources.get(run.source);
   requireValue(allowedSources !== undefined && snapshotModes.has(run.mode) && isText(run.scope), "采集来源、范围或模式无效。");
   requireValue(run.mode !== "定时规则初筛 · 累计快照" || scheduled, "定时快照缺少采样与初筛方式说明。");
+  if (manualPublication) {
+    const publication = value.publication;
+    requireValue(!scheduled && run.mode === "人工维护 · 已保存快照"
+      && hasExactKeys(publication, ["version", "type", "publishedAt", "scheduler"])
+      && publication.version === 1 && publication.type === "manual-maintenance"
+      && publication.scheduler === "paused" && isIsoDate(publication.publishedAt, false)
+      && Date.parse(publication.publishedAt) >= Date.parse(value.generatedAt), "人工发布状态无效。");
+  }
+  requireValue(run.mode !== "人工维护 · 已保存快照" || manualPublication, "人工维护缺少发布状态说明。");
   for (const key of ["cardsReviewed", "detailsRead", "selectedCount", "newCount"]) {
     requireValue(Number.isSafeInteger(run[key]) && run[key] >= 0, `采集计数 ${key} 无效。`);
   }
