@@ -1,14 +1,14 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-09T01:31:30.545Z",
+  "generatedAt": "2026-09-09T23:43:40.700Z",
   "run": {
     "source": "BOSS直聘 + 字节跳动招聘官网 + 猎聘",
     "scope": "上海 · 企业级科技 · 伙伴营销、区域市场、内容营销、需求生成及商业化转型备选",
-    "mode": "人工维护 · 已保存快照",
-    "cardsReviewed": 319,
-    "detailsRead": 90,
-    "selectedCount": 7,
-    "newCount": 0
+    "mode": "人工扩展复核 · 累计快照",
+    "cardsReviewed": 352,
+    "detailsRead": 108,
+    "selectedCount": 10,
+    "newCount": 3
   },
   "jobs": [
     {
@@ -318,6 +318,138 @@
       "lastSeen": "2026-09-07T04:11:29.681Z",
       "jdRead": true,
       "isNew": false
+    },
+    {
+      "id": "boss-463eb089798936380nN52N25FlFY",
+      "title": "生态合作经理",
+      "company": "鼎捷数智",
+      "city": "上海",
+      "location": "上海·静安区·汶水路",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/463eb089798936380nN52N25FlFY.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "3-5年",
+      "educationText": "本科",
+      "category": "伙伴发展",
+      "matchScore": null,
+      "priority": "有条件匹配",
+      "summary": [
+        "梳理区域软件代理商、咨询实施伙伴和系统集成商，推进伙伴拜访、合作洽谈、签约准入及档案建设。",
+        "建立商机互荐与利益分配机制，协调售前、产品等资源联合推进客户项目，并管理区域商机池。",
+        "组织伙伴产品培训、销售赋能和联合市场活动，跟踪伙伴销售管道、经营计划及转售业绩。"
+      ],
+      "requirements": [
+        "本科及以上；正文要求2年以上B2B软件销售、渠道或伙伴管理、生态运营相关经验。",
+        "理解伙伴合作的利益分配，有商机协同与联合打单实操，具备独立商务拓展和谈判能力。",
+        "能承担伙伴赋能培训并适应区域出差；ERP、MES、SaaS或制造业数字化经历及软件伙伴资源为优先项。"
+      ],
+      "matchReasons": [
+        "核心是商业伙伴招募、准入、联合销售与经营，属于伙伴发展和渠道生态方向。",
+        "联合市场活动用于推进伙伴业务，不是纯活动执行或内容营销岗位。",
+        "作为经确认可先了解的条件候选收录，不代表独立谈判、伙伴业绩等要求已经满足。"
+      ],
+      "concerns": [
+        "需要核对主导伙伴商务谈判、合作签约和联合打单的具体经历，不能以协助活动代替。",
+        "岗位对伙伴转售业绩负责，具体配额、收入归属和独立终端成交边界需向招聘方确认。",
+        "卡片经验写3-5年，正文写2年以上；实际职级、薪资、区域出差频率及开放名额尚待确认。"
+      ],
+      "languageNote": "JD为中文，未单独说明工作语言。",
+      "publishedAt": null,
+      "firstSeen": "2026-09-09T16:13:07.307Z",
+      "lastSeen": "2026-09-09T16:13:07.307Z",
+      "jdRead": true,
+      "isNew": true
+    },
+    {
+      "id": "boss-71435a911d5849d40nF93N-0FlBS",
+      "title": "资深渠道销售",
+      "company": "飞络信息",
+      "city": "上海",
+      "location": "上海·徐汇区·漕河泾",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/71435a911d5849d40nF93N-0FlBS.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "5-10年",
+      "educationText": "学历不限",
+      "category": "渠道销售",
+      "matchScore": null,
+      "priority": "有条件匹配",
+      "summary": [
+        "拓展M365、Azure及相关云和安全产品业务，承接原厂、合作伙伴商机并经营多品牌渠道关系。",
+        "自主开发客户，推进需求沟通、方案推介、商务谈判、合同签署与回款，协同售前和交付团队。",
+        "跟进微软合作项目流程，管理CRM商机和销售进度，定期进行伙伴业务回顾与联合销售。"
+      ],
+      "requirements": [
+        "招聘卡片标注5-10年、学历不限；正文主要描述职责，未提供完整独立任职资格清单。",
+        "工作明确包括独立新客户开发、谈判、签约及回款，不能将其等同于只做线索或伙伴赋能。",
+        "业务涉及M365、Azure及微软Program流程，相关产品能力和所需历史业绩门槛需补充确认。"
+      ],
+      "matchReasons": [
+        "围绕企业技术产品的原厂与渠道关系开展销售，包含伙伴联合业务推进。",
+        "可作为渠道协同向全周期销售发展的条件候选，不是纯市场或活动岗位。",
+        "经确认先收录供进一步了解，尚未证明已满足独立成交及产品领域要求。"
+      ],
+      "concerns": [
+        "卡片地点是上海，正文业务写北京及全国SMB/SMC市场；必须确认是否可长期上海办公及出差覆盖范围。",
+        "独立客户开发、合同签署、回款和相关收入指标的既往经历与接受程度需确认。",
+        "应向招聘方索取完整任职要求，核对微软Program经验、岗位实际级别及薪资构成。"
+      ],
+      "languageNote": "JD为中文，涉及微软及其他厂商业务；实际工作语言未单独说明。",
+      "publishedAt": null,
+      "firstSeen": "2026-09-09T18:49:22.415Z",
+      "lastSeen": "2026-09-09T18:49:22.415Z",
+      "jdRead": true,
+      "isNew": true
+    },
+    {
+      "id": "boss-bf081a989d1ea8140nJ73du9ElVZ",
+      "title": "生态咨询专家（集团战略与高管支持）",
+      "company": "金仕达",
+      "city": "上海",
+      "location": "上海",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/bf081a989d1ea8140nJ73du9ElVZ.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "1-3年",
+      "educationText": "本科",
+      "category": "生态商业化",
+      "matchScore": null,
+      "priority": "有条件匹配",
+      "summary": [
+        "围绕金融科技业务拓展硬件厂商、云平台、ISV、渠道代理及系统集成伙伴，推进商务合作和联合业务落地。",
+        "开展行业、企业与合作机会研究，形成生态布局建议、商业方案和管理层决策材料。",
+        "协助集团总经理推进跨部门重点项目、对外合作与阶段性风险跟进，连接产品、商务和管理层资源。"
+      ],
+      "requirements": [
+        "本科及以上、专业不限；正文要求3年以上咨询、生态合作、战略规划、商业分析、金融科技、企业服务或相关总经理办公室经验。",
+        "理解企业软件、云计算或相关解决方案，熟悉渠道分销、ISV合作与系统集成业务模式。",
+        "具备结构化分析和商务判断，能独立完成商业方案、研究报告、项目建议及高管汇报PPT，并适应必要商务活动和短期出差。"
+      ],
+      "matchReasons": [
+        "实际包含企业技术生态拓展和商业合作，可作为生态方向的条件候选。",
+        "岗位同时承担战略研究与高管支持，应与纯渠道经营岗位分开比较。",
+        "经确认先上架了解，不将跨团队协同经验自动等同于已经具备全部战略或研究能力。"
+      ],
+      "concerns": [
+        "需核对商业研究、合作方案和高管汇报材料的真实案例，以及是否接受这类复合岗位定位。",
+        "需要理解ISV、金融科技及软硬件方案生态，不能仅凭一般渠道关系维护认定满足。",
+        "卡片经验为1-3年，正文要求3年以上；实际职级、工作分工、出差与薪资尚待招聘方确认。"
+      ],
+      "languageNote": "JD为中文，未单独说明工作语言。",
+      "publishedAt": null,
+      "firstSeen": "2026-09-09T20:14:27.431Z",
+      "lastSeen": "2026-09-09T20:14:27.431Z",
+      "jdRead": true,
+      "isNew": true
     }
   ],
   "assessmentMethods": {
@@ -327,12 +459,20 @@
     "liepin-1983838723": "human-assisted",
     "boss-777c1f838d8dfa321H172NW1GFBW": "human-assisted",
     "boss-aa5a22dfc85162130nN40t67GFVT": "human-assisted",
-    "boss-d401f460cf8874411HNz3ti4FlJQ": "human-assisted"
+    "boss-d401f460cf8874411HNz3ti4FlJQ": "human-assisted",
+    "boss-463eb089798936380nN52N25FlFY": "human-assisted",
+    "boss-71435a911d5849d40nF93N-0FlBS": "human-assisted",
+    "boss-bf081a989d1ea8140nJ73du9ElVZ": "human-assisted"
+  },
+  "firstPublishedAtById": {
+    "boss-463eb089798936380nN52N25FlFY": "2026-09-09T23:43:40.700Z",
+    "boss-71435a911d5849d40nF93N-0FlBS": "2026-09-09T23:43:40.700Z",
+    "boss-bf081a989d1ea8140nJ73du9ElVZ": "2026-09-09T23:43:40.700Z"
   },
   "publication": {
     "version": 1,
     "type": "manual-maintenance",
-    "publishedAt": "2026-09-09T18:53:18.196Z",
+    "publishedAt": "2026-09-09T23:43:40.700Z",
     "scheduler": "collection-only"
   }
 }
