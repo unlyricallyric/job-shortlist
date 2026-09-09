@@ -1,14 +1,14 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-09T01:17:30.394Z",
+  "generatedAt": "2026-09-09T01:31:30.545Z",
   "run": {
     "source": "BOSS直聘 + 字节跳动招聘官网 + 猎聘",
     "scope": "上海 · 企业级科技 · 伙伴营销、区域市场、内容营销、需求生成及商业化转型备选",
-    "mode": "人工扩展复核 · 累计快照",
-    "cardsReviewed": 316,
-    "detailsRead": 86,
+    "mode": "定时规则初筛 · 累计快照",
+    "cardsReviewed": 319,
+    "detailsRead": 90,
     "selectedCount": 14,
-    "newCount": 7
+    "newCount": 0
   },
   "jobs": [
     {
@@ -139,7 +139,7 @@
       "languageNote": "JD为中文，未单独说明工作语言。",
       "publishedAt": null,
       "firstSeen": "2026-09-07T05:42:42.535Z",
-      "lastSeen": "2026-09-07T05:42:42.535Z",
+      "lastSeen": "2026-09-09T01:31:26.732Z",
       "jdRead": true,
       "isNew": false
     },
@@ -359,9 +359,9 @@
       "languageNote": "JD为中文并提及LinkedIn等平台；具体工作语言未单独说明。",
       "publishedAt": null,
       "firstSeen": "2026-09-09T01:03:32.375Z",
-      "lastSeen": "2026-09-09T01:03:32.375Z",
+      "lastSeen": "2026-09-09T01:31:25.948Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-168afafc2e0b7cd90nJ809u0FlRR",
@@ -403,9 +403,9 @@
       "languageNote": "JD为中文，未单独说明工作语言。",
       "publishedAt": null,
       "firstSeen": "2026-09-09T01:03:38.729Z",
-      "lastSeen": "2026-09-09T01:03:38.729Z",
+      "lastSeen": "2026-09-09T01:31:25.948Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-98d5f5e0c65a8b6b0nd82ti7FFZS",
@@ -447,9 +447,9 @@
       "languageNote": "JD为中文，未单独说明工作语言。",
       "publishedAt": null,
       "firstSeen": "2026-09-09T01:03:36.590Z",
-      "lastSeen": "2026-09-09T01:03:36.590Z",
+      "lastSeen": "2026-09-09T01:31:25.948Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-a89519ddafe18e090nJ709y_FVFV",
@@ -491,9 +491,9 @@
       "languageNote": "JD为中文，未单独说明工作语言。",
       "publishedAt": null,
       "firstSeen": "2026-09-09T01:03:40.841Z",
-      "lastSeen": "2026-09-09T01:03:40.841Z",
+      "lastSeen": "2026-09-09T01:31:25.948Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-3eeb34505ab37fd30nN52N-5F1dU",
@@ -537,7 +537,7 @@
       "firstSeen": "2026-09-09T00:55:46.513Z",
       "lastSeen": "2026-09-09T00:55:46.513Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-2ce38e28aa4dc7190nF909q9FVVW",
@@ -581,7 +581,7 @@
       "firstSeen": "2026-09-09T00:57:47.047Z",
       "lastSeen": "2026-09-09T00:57:47.047Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "liepin-1984961045",
@@ -625,7 +625,7 @@
       "firstSeen": "2026-09-09T01:09:29.000Z",
       "lastSeen": "2026-09-09T01:09:29.000Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     }
   ],
   "assessmentMethods": {
@@ -643,5 +643,29 @@
     "boss-3eeb34505ab37fd30nN52N-5F1dU": "human-assisted",
     "boss-2ce38e28aa4dc7190nF909q9FVVW": "human-assisted",
     "liepin-1984961045": "human-assisted"
+  },
+  "automation": {
+    "version": 1,
+    "enabled": true,
+    "timeZone": "Asia/Shanghai",
+    "times": [
+      "09:30",
+      "12:30"
+    ],
+    "runId": "2026-09-09-0930",
+    "startedAt": "2026-09-09T01:30:28.935Z",
+    "completedAt": "2026-09-09T01:31:30.545Z",
+    "status": "sampled",
+    "freshSources": [
+      "BOSS直聘"
+    ],
+    "retainedSources": [
+      "字节跳动招聘官网",
+      "猎聘"
+    ],
+    "reviewedThisRun": 31,
+    "detailsThisRun": 8,
+    "reviewPendingThisRun": 6,
+    "parsePendingThisRun": 1
   }
 }
