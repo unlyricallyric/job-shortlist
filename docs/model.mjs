@@ -125,16 +125,17 @@ export function nextShanghaiMidnight(now = Date.now()) {
   return Date.parse(`${shanghaiDateKey(referenceTimestamp(now))}T00:00:00+08:00`) + 86400000;
 }
 
-export function selectArrivalView(jobs, view = "all", now = Date.now()) {
+export function selectArrivalView(jobs, view = "all", now = Date.now(), firstPublishedAtById = {}) {
   if (!["today", "week", "all"].includes(view)) throw new RangeError("不支持的收录日期视图。");
   if (view === "all") return [...jobs];
   const timestamp = referenceTimestamp(now);
   const today = shanghaiDateKey(timestamp);
   const earliest = view === "today" ? today : shanghaiDateKey(nextShanghaiMidnight(timestamp) - 7 * 86400000);
   return jobs.filter((job) => {
-    const day = shanghaiDateKey(job.firstSeen);
+    const arrival = firstPublishedAtById[job.id] ?? job.firstSeen;
+    const day = shanghaiDateKey(arrival);
     return day >= earliest && day <= today
-      && (job.firstSeen.length === 10 || Date.parse(job.firstSeen) <= timestamp);
+      && (arrival.length === 10 || Date.parse(arrival) <= timestamp);
   });
 }
 
@@ -150,10 +151,10 @@ export function firstSeenGroupLabel(day, now = Date.now()) {
   return fullDate;
 }
 
-export function groupJobsByFirstSeen(jobs, { sortBy = "score", now = Date.now() } = {}) {
+export function groupJobsByFirstSeen(jobs, { sortBy = "score", now = Date.now(), firstPublishedAtById = {} } = {}) {
   const groups = new Map();
   for (const job of selectJobs(jobs, { sortBy })) {
-    const day = shanghaiDateKey(job.firstSeen);
+    const day = shanghaiDateKey(firstPublishedAtById[job.id] ?? job.firstSeen);
     if (!groups.has(day)) groups.set(day, []);
     groups.get(day).push(job);
   }
@@ -194,8 +195,9 @@ export function validateSnapshot(value) {
   const scheduled = value !== null && typeof value === "object" && Object.hasOwn(value, "automation");
   const hasMethods = value !== null && typeof value === "object" && Object.hasOwn(value, "assessmentMethods");
   const manualPublication = value !== null && typeof value === "object" && Object.hasOwn(value, "publication");
+  const hasAdmissionDates = value !== null && typeof value === "object" && Object.hasOwn(value, "firstPublishedAtById");
   requireValue(hasExactKeys(value, [...rootKeys, ...(scheduled ? ["automation"] : []), ...(hasMethods ? ["assessmentMethods"] : []),
-    ...(manualPublication ? ["publication"] : [])])
+    ...(manualPublication ? ["publication"] : []), ...(hasAdmissionDates ? ["firstPublishedAtById"] : [])])
     && (!scheduled || hasMethods), "快照字段不完整或包含不支持的字段。");
   requireValue(value.version === 1, "不支持的快照版本。");
   requireValue(isIsoDate(value.generatedAt, false), "快照生成时间必须包含时区。");
@@ -209,7 +211,7 @@ export function validateSnapshot(value) {
     requireValue(!scheduled && run.mode === "人工维护 · 已保存快照"
       && hasExactKeys(publication, ["version", "type", "publishedAt", "scheduler"])
       && publication.version === 1 && publication.type === "manual-maintenance"
-      && publication.scheduler === "paused" && isIsoDate(publication.publishedAt, false)
+      && ["paused", "collection-only"].includes(publication.scheduler) && isIsoDate(publication.publishedAt, false)
       && Date.parse(publication.publishedAt) >= Date.parse(value.generatedAt), "人工发布状态无效。");
   }
   requireValue(run.mode !== "人工维护 · 已保存快照" || manualPublication, "人工维护缺少发布状态说明。");
@@ -281,6 +283,13 @@ export function validateSnapshot(value) {
   }
   if (hasMethods) requireValue(hasExactKeys(value.assessmentMethods, jobs.map((job) => job.id))
     && Object.values(value.assessmentMethods).every((method) => ["human-assisted", "rules-v1"].includes(method)), "岗位初筛方式说明无效。");
+  if (hasAdmissionDates) {
+    const dates = value.firstPublishedAtById;
+    requireValue(dates !== null && typeof dates === "object" && !Array.isArray(dates)
+      && Object.entries(dates).every(([id, date]) => ids.has(id) && isIsoDate(date, false)
+        && Date.parse(date) >= Date.parse(jobs.find((job) => job.id === id).firstSeen)
+        && Date.parse(date) <= Date.parse(value.publication?.publishedAt ?? value.generatedAt)), "首次入选发布时间无效。");
+  }
   return value;
 }
 

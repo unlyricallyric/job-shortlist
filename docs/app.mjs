@@ -2,7 +2,7 @@ import {
   SnapshotError, filterOptions, formatShanghaiTime, hasSalaryRange,
   parseSalaryRange, safeJobUrl, selectJobs, validateSnapshot,
   shanghaiDateKey, nextShanghaiMidnight, selectArrivalView, groupJobsByFirstSeen,
-} from "./model.mjs?rev=20260909-paused1";
+} from "./model.mjs?rev=20260910-review1";
 
 const sourceLinkLabels = new Map([
   ["BOSS直聘", "查看原始岗位"],
@@ -84,13 +84,15 @@ function isScheduleOverdue(data, now = Date.now()) {
 function renderAutomation() {
   const automation = snapshot.automation;
   const pausedPublication = snapshot.publication?.scheduler === "paused";
+  const collectionOnly = snapshot.publication?.scheduler === "collection-only";
   byId("paused-notice").hidden = !pausedPublication;
+  byId("collection-only-notice").hidden = !collectionOnly;
   if (pausedPublication) setTime(byId("maintenance-at"), snapshot.publication.publishedAt);
   const hasRulesAssessment = Boolean(automation) || Object.values(snapshot.assessmentMethods ?? {}).includes("rules-v1");
   byId("automation-panel").hidden = !automation;
   byId("review-queue-summary").hidden = !automation;
   byId("automation-warning").hidden = !isScheduleOverdue(snapshot);
-  byId("snapshot-label").textContent = pausedPublication ? "只读 · 采集已暂停"
+  byId("snapshot-label").textContent = collectionOnly ? "只读 · 采集待人工复核" : pausedPublication ? "只读 · 采集已暂停"
     : automation ? "只读 · 定时采样快照" : "只读 · 人工辅助快照";
   byId("assessment-description").textContent = hasRulesAssessment
     ? "初筛方式以各卡片标记为准：人工辅助初筛沿用原有判断；规则初筛由固定规则计算，未经人工复核。再次观察到岗位不会改变其初筛方式。分数与优先级仅用于清单排序，不代表已满足全部任职要求，也不是录用概率。"
@@ -153,6 +155,8 @@ function createCard(job, index) {
   setTime(field("first-seen"), job.firstSeen);
   setTime(field("last-seen"), job.lastSeen);
   setTime(field("published"), job.publishedAt);
+  field("admission-row").hidden = !snapshot.firstPublishedAtById?.[job.id];
+  if (snapshot.firstPublishedAtById?.[job.id]) setTime(field("admitted"), snapshot.firstPublishedAtById[job.id]);
   const url = safeJobUrl(job.url, job.source);
   const linkLabel = sourceLinkLabels.get(job.source);
   if (url === null || linkLabel === undefined) throw new SnapshotError("岗位来源链接无效。");
@@ -197,9 +201,9 @@ function renderResults(now = Date.now(), { preserveCards = false } = {}) {
   renderedDay = shanghaiDateKey(now);
   byId("arrival-date").textContent = renderedDay.replaceAll("-", ".");
   byId("arrival-date").setAttribute("datetime", renderedDay);
-  const viewJobs = selectArrivalView(snapshot.jobs, arrivalView, now);
+  const viewJobs = selectArrivalView(snapshot.jobs, arrivalView, now, snapshot.firstPublishedAtById);
   for (const view of dateInputs.keys()) {
-    byId(`view-${view}-count`).textContent = selectArrivalView(snapshot.jobs, view, now).length;
+    byId(`view-${view}-count`).textContent = selectArrivalView(snapshot.jobs, view, now, snapshot.firstPublishedAtById).length;
   }
   byId("view-count").textContent = `${viewLabels[arrivalView]} ${viewJobs.length} 个 · 不含其他筛选条件`;
   byId("results-footnote").hidden = true;
@@ -235,7 +239,7 @@ function renderResults(now = Date.now(), { preserveCards = false } = {}) {
     return;
   }
   byId("data-state").hidden = true;
-  const groups = groupJobsByFirstSeen(jobs, { sortBy: filters.sortBy, now });
+  const groups = groupJobsByFirstSeen(jobs, { sortBy: filters.sortBy, now, firstPublishedAtById: snapshot.firstPublishedAtById });
   const ids = groups.flatMap((group) => group.jobs.map((job) => job.id));
   if (preserveCards && ids.length === renderedJobIds.length && ids.every((id, index) => id === renderedJobIds[index])) {
     for (const [index, group] of groups.entries()) list.children[index].querySelector("h3").textContent = group.label;
@@ -279,7 +283,7 @@ function setFilterOptions(id, key, defaultText) {
 async function fetchSnapshot() {
   let response;
   try {
-    response = await fetch(new URL("./data/jobs.json?rev=20260909-paused1", import.meta.url), {
+    response = await fetch(new URL("./data/jobs.json?rev=20260910-review1", import.meta.url), {
       cache: "no-store", credentials: "omit", redirect: "error",
     });
   } catch (error) {
@@ -306,6 +310,7 @@ async function loadSnapshot() {
   byId("results-area").setAttribute("aria-busy", "true");
   byId("automation-panel").hidden = true;
   byId("paused-notice").hidden = true;
+  byId("collection-only-notice").hidden = true;
   byId("automation-warning").hidden = true;
   byId("snapshot-label").textContent = "只读 · 岗位快照";
   setState("正在读取岗位快照", "只读取本站的静态数据，不会实时访问招聘平台。");
@@ -334,6 +339,7 @@ async function loadSnapshot() {
     clearResults();
     byId("automation-panel").hidden = true;
     byId("paused-notice").hidden = true;
+    byId("collection-only-notice").hidden = true;
     byId("automation-warning").hidden = true;
     byId("snapshot-label").textContent = "只读 · 岗位快照";
     byId("results-footnote").hidden = true;

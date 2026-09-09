@@ -14,6 +14,33 @@ const job = (name, overrides) => fixture({
   ...overrides,
 });
 
+test("collection-only publication describes manual review without claiming a new source sample or known queue count", async (t) => {
+  const data = snapshotOf(testJobs);
+  data.run.mode = "人工维护 · 已保存快照";
+  data.publication = { version: 1, type: "manual-maintenance", publishedAt: "2026-09-10T00:00:00Z", scheduler: "collection-only" };
+  const app = await boot(t, { responses: [data] });
+  assert.equal(app.get("collection-only-notice").hidden, false);
+  assert.equal(app.get("paused-notice").hidden, true);
+  assert.equal(app.get("automation-panel").hidden, true);
+  assert.match(app.get("collection-only-notice").textContent, /新候选待人工复核后发布/);
+  assert.match(app.get("collection-only-notice").textContent, /不自动发布岗位/);
+  assert.equal(app.get("generated-at").getAttribute("datetime"), data.generatedAt);
+});
+
+test("delayed human admission appears today while original firstSeen remains unchanged on the card", async (t) => {
+  const data = snapshotOf(testJobs);
+  data.generatedAt = "2026-09-10T02:00:00+08:00";
+  data.firstPublishedAtById = { [testJobs[0].id]: data.generatedAt };
+  const app = await boot(t, { responses: [data], now: "2026-09-10T03:00:00+08:00" });
+  assert.equal(app.cards().length, 1);
+  assert.equal(app.get("view-today-count").textContent, "1");
+  const card = app.cards()[0];
+  assert.equal(card.querySelector('[data-field="first-seen"]').getAttribute("datetime"), testJobs[0].firstSeen);
+  assert.equal(card.querySelector('[data-field="admitted"]').getAttribute("datetime"), data.generatedAt);
+  assert.equal(card.querySelector('[data-field="admission-row"]').hidden, false);
+  assert.equal(app.groups()[0].querySelector("h3").textContent, "今天 · 09月10日");
+});
+
 test("manual paused publication displays saved data without presenting maintenance as a fresh sample", async (t) => {
   const data = snapshotOf(testJobs);
   data.run.mode = "人工维护 · 已保存快照";
@@ -558,7 +585,7 @@ test("real card rendering preserves literal strings, safe links, nulls and obser
   assert.equal(app.get("new-count").textContent, "2");
   assert.equal(app.requests.length, 1);
   assert.ok(app.requests[0].url.pathname.endsWith("/docs/data/jobs.json"));
-  assert.equal(app.requests[0].url.search, "?rev=20260909-paused1");
+  assert.equal(app.requests[0].url.search, "?rev=20260910-review1");
   assert.equal(app.requests[0].options.credentials, "omit");
   assert.equal(app.requests[0].options.cache, "no-store");
 });

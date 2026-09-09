@@ -4,21 +4,24 @@ import { randomUUID } from "node:crypto";
 import { defaultRoot, label, awakeLabel } from "./config.mjs";
 import { RunError, atomicJson, readJson, appendLog, acquireLock } from "./io.mjs";
 import { loadConfiguration } from "./config.mjs";
-import { retryPending } from "./publish.mjs";
-import { unlink } from "node:fs/promises";
 import { run, status, preflight } from "./runner.mjs";
 import { install, pause, resume, uninstall, isLoaded, serviceDomain } from "./install.mjs";
 import { command } from "./process.mjs";
+import { assertCollectionMode, collectionMode } from "./intent.mjs";
+import { reviewContext, reviewCounts, listReviews, showReview, approveReviews, rejectReview, saveReviewQueue } from "./review.mjs";
+import { publishReviewed, retryReviewedPublication } from "./publish-reviewed.mjs";
+import { loadManualExclusions, validateManualExclusions } from "./exclusions.mjs";
 
 process.umask(0o077);
 const [action, ...args] = process.argv.slice(2);
 const values = new Map();
 const flags = new Set();
-const known = new Set(["root", "matching", "ledger", "ssh-key", "known-hosts", "repository", "node", "git", "adopt-window", "adopt-tab"]);
+const known = new Set(["root", "matching", "ledger", "ssh-key", "known-hosts", "repository", "node", "git", "adopt-window", "adopt-tab",
+  "mode", "file", "id", "ids", "evidence-hash", "limit", "status"]);
 for (let index = 0; index < args.length; index++) {
   const name = args[index].replace(/^--/, "");
   if (!args[index].startsWith("--")) throw new Error("Expected a named command option.");
-  if (name === "dry-run" || name === "no-browser") flags.add(name);
+  if (name === "dry-run" || name === "no-browser" || name === "controlled") flags.add(name);
   else if (known.has(name) && args[index + 1] && !args[index + 1].startsWith("--")) values.set(name, args[++index]);
   else throw new Error("Unknown or missing command option.");
 }
@@ -33,6 +36,7 @@ try {
       gitPath: values.get("git") ?? "/usr/bin/git",
       adoptWindow: values.has("adopt-window") ? Number(values.get("adopt-window")) : undefined,
       adoptTab: values.has("adopt-tab") ? Number(values.get("adopt-tab")) : undefined,
+      mode: values.get("mode"),
     });
   } else if (action === "status") {
     const power = await command("/usr/bin/pmset", ["-g", "batt"]);
@@ -43,19 +47,36 @@ try {
   else if (action === "uninstall") result = await uninstall(root);
   else if (action === "preflight") result = await preflight(root, { browser: !flags.has("no-browser") });
   else if (action === "retry-publication") {
-    const release = await acquireLock(root, "retry-publication");
+    throw new RunError("manual-approval-required", "Legacy automatic publication recovery is disabled; use current human review approvals.");
+  } else if (["review-list", "review-show"].includes(action)) {
+    const { queue, excludedIds } = await reviewContext(root);
+    result = action === "review-list" ? { counts: reviewCounts(queue, excludedIds), entries: listReviews(queue, {
+      limit: values.has("limit") ? Number(values.get("limit")) : 20, status: values.get("status") ?? "pending", excludedIds,
+    }) } : showReview(queue, values.get("id"));
+  } else if (["review-approve", "review-reject", "publish-reviewed", "retry-reviewed-publication"].includes(action)) {
+    const release = await acquireLock(root, action);
     try {
-      const control = await readJson(join(root, "control.json"));
-      if (control.paused) throw new RunError("paused", "Resume before explicitly retrying a publication.", { blocked: true });
-      const { runtime } = await loadConfiguration(root);
-      const recovered = await retryPending(root, runtime, AbortSignal.any([release.signal, AbortSignal.timeout(300000)]));
-      const state = await readJson(join(root, "state.json"));
-      state.lastPublished = recovered;
-      // Preserve the old run's failed/cancelled state; recovery is a separate explicit action.
-      state.lastRecovery = { status: "verified", ...recovered };
-      await atomicJson(join(root, "state.json"), state);
-      await unlink(join(root, "pending.json"));
-      result = state.lastRecovery;
+      assertCollectionMode(await readJson(join(root, "runtime.json")));
+      const { queue, excludedIds } = await reviewContext(root);
+      if (action === "retry-reviewed-publication") {
+        result = await retryReviewedPublication(root, AbortSignal.any([release.signal, AbortSignal.timeout(300000)]));
+      } else if (action === "review-approve") {
+        const payload = await readJson(values.get("file"));
+        const updated = approveReviews(queue, payload, excludedIds);
+        await saveReviewQueue(root, updated);
+        result = { approved: payload.approvals.map((item) => item.id), published: false };
+      } else if (action === "review-reject") {
+        const id = values.get("id"), now = new Date().toISOString();
+        const updated = rejectReview(queue, id, values.get("evidence-hash"), now);
+        const exclusions = await loadManualExclusions(root);
+        if (!exclusions.entries.some((entry) => entry.id === id)) exclusions.entries.push({ id, excludedAt: now, reasonCode: "user-direction-rejection" });
+        await atomicJson(join(root, "manual-exclusions.json"), validateManualExclusions(exclusions));
+        await saveReviewQueue(root, updated);
+        result = { rejected: id, published: false };
+      } else {
+        const ids = (values.get("ids") ?? "").split(",").filter(Boolean);
+        result = await publishReviewed(root, ids, AbortSignal.any([release.signal, AbortSignal.timeout(300000)]));
+      }
     } finally {
       await release();
     }
@@ -65,11 +86,20 @@ try {
     if (["failed", "blocked", "cancelled"].includes(result.status)) process.exitCode = 1;
   } else if (action === "request-run" || action === "retry-slot" || action === "retry-run") {
     if (!await isLoaded(label)) throw new RunError("service-not-loaded", "The installed LaunchAgent is not loaded.", { blocked: true });
+    const requestLock = await acquireLock(root, "request-collection");
+    let request;
+    try {
+    const { runtime } = await loadConfiguration(root);
+    assertCollectionMode(runtime);
     const state = await readJson(join(root, "state.json"));
+    const control = await readJson(join(root, "control.json"));
+    if (await readJson(join(root, "request.json"), null)) throw new RunError("request-pending", "A run request is already pending.");
+    if (control.paused && !flags.has("controlled") && !flags.has("dry-run")) {
+      throw new RunError("paused", "Use an explicit controlled run while collection is paused.", { blocked: true });
+    }
     if (state.lastRun?.status === "running") {
       throw new RunError("locked", "A scheduled run is already active.", { blocked: true });
     }
-    let request;
     if (action === "retry-slot" || action === "retry-run") {
       const failed = state.lastRun;
       if (!failed || !["failed", "blocked"].includes(failed.status)
@@ -78,7 +108,6 @@ try {
         || await readJson(join(root, "pending.json"), null)) {
         throw new RunError("retry-not-available", "Only the last failed run without a pending publication can be explicitly retried; retry-slot requires its scheduled slot.");
       }
-      const { runtime } = await loadConfiguration(root);
       let cursor = failed.queryCursor;
       if (!Number.isSafeInteger(cursor)) {
         const evidence = await readJson(join(root, "runs", failed.id, "evidence.json"), null);
@@ -96,16 +125,21 @@ try {
       request = { id: `manual-${new Date().toISOString().replace(/\D/g, "")}-${randomUUID().slice(0, 8)}`,
         dryRun: flags.has("dry-run"), requestedAt: new Date().toISOString() };
     }
+    request.controlled = flags.has("controlled");
     await atomicJson(join(root, "request.json"), request);
+    } finally {
+      await requestLock();
+    }
     await command("/bin/launchctl", ["kickstart", `${serviceDomain()}/${label}`]);
-    result = { requested: request.id, retryOf: request.retryOf ?? null, via: "installed-launchd", dryRun: request.dryRun };
+    result = { requested: request.id, retryOf: request.retryOf ?? null, via: "installed-launchd", dryRun: request.dryRun,
+      mode: collectionMode, autoPublish: false, controlled: request.controlled };
   } else {
-    throw new RunError("usage", "Use install, preflight, run-once [--dry-run], request-run [--dry-run], retry-slot, retry-run, retry-publication, status, pause, resume, or uninstall.");
+    throw new RunError("usage", "Use install --mode collection-only, preflight, request-run [--controlled], run-once, status, review-list, review-show --id, review-approve --file, review-reject --id --evidence-hash, publish-reviewed --ids, pause, resume, or uninstall.");
   }
-  if (action !== "tick" || !["idle", "paused"].includes(result.status)) console.log(JSON.stringify(result, null, 2));
+  if (action !== "tick") console.log(JSON.stringify(result, null, 2));
 } catch (error) {
   const code = error instanceof RunError ? error.code : "internal-error";
-  console.error(JSON.stringify({ status: error.blocked ? "blocked" : "failed", code, message: error instanceof RunError ? error.message : "Scheduler command failed; inspect task configuration and local logs." }));
+  if (action !== "tick") console.error(JSON.stringify({ status: error.blocked ? "blocked" : "failed", code, message: error instanceof RunError ? error.message : "Scheduler command failed; inspect task configuration and local logs." }));
   if (action === "tick") await appendLog(root, { event: "tick-failed", code });
   process.exitCode = 1;
 }

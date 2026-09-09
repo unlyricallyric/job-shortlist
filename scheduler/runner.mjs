@@ -1,24 +1,29 @@
 import { join } from "node:path";
 import { spawn } from "node:child_process";
+import { once } from "node:events";
 import { unlink } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { acquireLock, atomicJson, readJson, appendLog, RunError, privateDirectory, pruneEvidence } from "./io.mjs";
 import { dueSlot, nextSlots, latestSlot } from "./clock.mjs";
 import { loadConfiguration, rotatingQueries } from "./config.mjs";
 import { collectBoss, discoverBoss, evaluatePage, cardsInPage } from "./browser.mjs";
-import { validateLedger, updateLedger, buildSnapshot, pendingReviewCounts } from "./snapshot.mjs";
-import { preflightGithub, prepareClone, publishSnapshot } from "./publish.mjs";
-import { notifyFailure } from "./process.mjs";
+import { validateLedger, updateLedger } from "./snapshot.mjs";
 import { emptyReadHistory, validateReadHistory, updateReadHistory } from "./coverage.mjs";
 import { loadManualExclusions, manualExcludedIds } from "./exclusions.mjs";
+import { assertCollectionMode, collectionMode, assessForReview, prefilterIntentCard, intentCardPriority } from "./intent.mjs";
+import { loadReviewQueue, updateReviewQueue, saveReviewQueue, reviewCounts } from "./review.mjs";
 
 export function initialState(now = new Date()) {
   return { version: 1, activatedAt: latestSlot(now).at, lastScheduledSlot: null, queryCursor: 0, lastRun: null, lastPublished: null };
 }
 
-export function finalStatus({ error, dryRun, publication }) {
+export function finalStatus({ error, dryRun, publication, mode }) {
   if (error) return error.code === "cancelled" || error.name === "AbortError" ? "cancelled" : error.blocked ? "blocked" : "failed";
   if (dryRun) return "dry-run";
+  if (mode === collectionMode) {
+    if (publication !== null) throw new RunError("unexpected-publication", "A collection-only run must never publish.");
+    return "collected";
+  }
   if (!publication?.sha) throw new RunError("publication-unconfirmed", "A run cannot succeed without a verified publication.");
   return "succeeded";
 }
@@ -27,6 +32,7 @@ export function validateRunRequest(request) {
   if (!request || typeof request !== "object" || Array.isArray(request)
     || typeof request.id !== "string" || !/^[a-z0-9-]{8,90}$/.test(request.id)
     || typeof request.dryRun !== "boolean"
+    || (request.controlled !== undefined && typeof request.controlled !== "boolean")
     || (request.retryOf !== undefined && (typeof request.retryOf !== "string" || !/^[a-z0-9-]{8,90}$/.test(request.retryOf)))
     || (request.queryCursor !== undefined && (!Number.isSafeInteger(request.queryCursor) || request.queryCursor < 0))) {
     throw new RunError("invalid-request", "Manual run request is invalid.", { blocked: true });
@@ -41,15 +47,22 @@ function sanitizeCode(error) {
 export async function status(root) {
   const state = await readJson(join(root, "state.json"));
   const control = await readJson(join(root, "control.json"));
-  return { enabled: !control.paused, next: nextSlots(), lastRun: state.lastRun, lastPublished: state.lastPublished,
+  const runtime = await readJson(join(root, "runtime.json"));
+  const modeReady = runtime.mode === collectionMode && runtime.autoPublish === false && runtime.reviewRequired === true;
+  const excludedIds = manualExcludedIds(await loadManualExclusions(root));
+  return { enabled: !control.paused && modeReady, mode: modeReady ? collectionMode : "migration-required",
+    autoPublish: false, reviewRequired: true, next: nextSlots(), activationBoundary: state.collectionActivatedAt ?? null,
+    reviewQueue: reviewCounts(await loadReviewQueue(root), excludedIds),
+    lastRun: state.lastRun, lastCollection: state.lastCollection ?? null, lastPublished: state.lastPublished,
     lastRecovery: state.lastRecovery ?? null,
+    pendingReviewedPublication: await readJson(join(root, "review-publication-pending.json"), null),
     pending: await readJson(join(root, "pending.json"), null), prerequisite: "Logged-in macOS session and ordinary Chrome; AC for idle awake helper. Manual sleep, closed lid and logout are not bypassed." };
 }
 
 export async function preflight(root, { browser = true } = {}) {
   const { runtime } = await loadConfiguration(root);
   validateLedger(await readJson(join(root, "ledger.json")));
-  const github = await preflightGithub(runtime);
+  await loadReviewQueue(root);
   let source = "not-probed";
   if (browser) {
     const tab = await readJson(join(root, "browser.json"), null) ?? await discoverBoss();
@@ -57,12 +70,12 @@ export async function preflight(root, { browser = true } = {}) {
     if (page.state !== "ready") throw new RunError("source-not-ready", "The BOSS search tab has no readable result state.", { blocked: true });
     source = `ready:${page.cards.length}`;
   }
-  return { github: "ready", pagesUrl: github.pagesUrl, browser: source, publicationAttempted: false };
+  return { mode: runtime.mode, autoPublish: false, browser: source, publicationAttempted: false, gitAccessed: false };
 }
 
 export async function run(root, { tick = false, dryRun = false, signal: outerSignal, services = {} } = {}) {
   const operations = {
-    loadConfiguration, preflightGithub, prepareClone, collectBoss, publishSnapshot, notifyFailure,
+    loadConfiguration, collectBoss, assessForReview, prefilterIntentCard,
     caffeinate: () => spawn("/usr/bin/caffeinate", ["-i", "-w", String(process.pid)], { stdio: "ignore" }),
     ...services,
   };
@@ -85,18 +98,20 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
     const slot = dueSlot({ ...state, paused: control.paused });
     if (tick && !request && !slot) return { status: "idle" };
     if (request) dryRun = request.dryRun === true;
-    if (control.paused && !dryRun) {
+    const controlled = request?.controlled === true;
+    if (control.paused && !dryRun && !controlled) {
       if (request) await unlink(join(root, "request.json"));
       if (tick) return { status: "paused" };
-      throw new RunError("paused", "Scheduler is paused; resume before starting a publication.", { blocked: true });
+      throw new RunError("paused", "Collection is paused. Use an explicitly controlled acceptance run or resume collection-only.", { blocked: true });
     }
     const scheduled = tick && !request;
     const id = scheduled ? slot.id : request?.id ?? `manual-${new Date().toISOString().replace(/\D/g, "")}-${randomUUID().slice(0, 8)}`;
-    active = { id, trigger: scheduled ? "scheduled" : request?.retryOf ? "launchd-retry" : request ? "launchd-manual" : "manual",
-      pid: process.pid, startedAt: new Date().toISOString(), status: "running", dryRun };
+    active = { id, trigger: scheduled ? "scheduled" : controlled ? "launchd-controlled" : request?.retryOf ? "launchd-retry" : request ? "launchd-manual" : "manual",
+      pid: process.pid, startedAt: new Date().toISOString(), status: "running", dryRun, mode: collectionMode,
+      autoPublish: false, controlled };
     if (request?.retryOf) active.retryOf = request.retryOf;
     state.lastRun = active;
-    if (!dryRun && slot) state.lastScheduledSlot = slot.id;
+    if (scheduled && !dryRun && slot) state.lastScheduledSlot = slot.id;
     if (request) await unlink(join(root, "request.json"));
     await atomicJson(join(root, "state.json"), state);
     await appendLog(root, { runId: id, event: "started", trigger: active.trigger, dryRun });
@@ -107,26 +122,26 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
     const signal = AbortSignal.any([controller.signal, release.signal]);
     monitor = setInterval(() => {
       readJson(join(root, "control.json")).then((latest) => {
-        if (latest.cancelRunId === id || (latest.paused && !dryRun)) controller.abort(new RunError("cancelled", "Scheduler paused or run cancelled."));
+        if (latest.cancelRunId === id || (latest.paused && !dryRun && !controlled)) controller.abort(new RunError("cancelled", "Scheduler paused or run cancelled."));
       }, (error) => controller.abort(error));
     }, 1000);
     caffeine = operations.caffeinate();
     caffeine?.once("error", (error) => controller.abort(error));
     const runDirectory = join(root, "runs", id);
     await privateDirectory(runDirectory);
-    let publication = null, failure = null, summary = null;
+    const publication = null;
+    let failure = null, summary = null;
     try {
-      const { runtime, matching } = await operations.loadConfiguration(root);
-      const { screenJob, prefilterCard, cardReadPriority } = services.rules ?? await import("./screening.mjs");
+      const { runtime, matching, intent } = await operations.loadConfiguration(root);
+      assertCollectionMode(runtime);
       const excludedIds = manualExcludedIds(await loadManualExclusions(root));
-      const eligibleCard = (card) => excludedIds.has(card.id)
-        ? { eligible: false, reason: "manual-excluded" } : prefilterCard(card, matching);
+      const eligibleCard = (card) => excludedIds.has(card.id) ? { eligible: false, reason: "manual-excluded" }
+        : operations.prefilterIntentCard(card, matching, intent, excludedIds);
       let ledger = validateLedger(await readJson(join(root, "ledger.json")));
       let readHistory = validateReadHistory(await readJson(join(root, "read-history.json"), emptyReadHistory()));
+      const queue = await loadReviewQueue(root);
       clearTimeout(timer);
       timer = setTimeout(() => controller.abort(new RunError("run-timeout", "The bounded run deadline was reached.")), runtime.limits.timeoutMinutes * 60000);
-      await operations.preflightGithub(runtime, signal);
-      const prepared = await operations.prepareClone(root, runtime, signal);
       const queryCursor = request?.queryCursor ?? state.queryCursor;
       active.queryCursor = queryCursor;
       const queries = rotatingQueries(runtime.queries, queryCursor, runtime.limits.queriesPerRun);
@@ -135,7 +150,7 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
       const evidence = await operations.collectBoss({
         root, queries, limits: runtime.limits, signal, prefilter: eligibleCard,
         knownDetailIds: ledger.detailIds, readHistory,
-        priorityFor: cardReadPriority ? (card) => cardReadPriority(card, matching) : () => 0,
+        priorityFor: intentCardPriority,
         onEvidence: async (partial) => {
           await atomicJson(join(runDirectory, "evidence.json"), partial);
           ledger = updateLedger(ledger, partial);
@@ -147,58 +162,57 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
       if (!evidence.complete || (!evidence.details.length && evidence.cards.some((card) => eligibleCard(card).eligible))) {
         throw new RunError("no-complete-jds", "No full matching JD was read; the dataset is unchanged.", { blocked: true });
       }
-      const decisions = evidence.details.filter((record) => !excludedIds.has(record.id))
-        .map((record) => ({ id: record.id, ...screenJob(record, matching) }));
+      const records = evidence.details.filter((record) => !excludedIds.has(record.id));
+      const decisions = records.map((record) => ({ id: record.id, ...operations.assessForReview(record, matching, intent) }));
       const detailConflicts = evidence.detailConflicts ?? [];
       const incompleteDetails = evidence.incompleteDetails ?? [];
       await atomicJson(join(runDirectory, "review.json"), [
-        ...decisions.filter((item) => item.decision !== "select").map(({ id: recordId, decision, reasons }) => ({ id: recordId, decision, reasons })),
+        ...decisions,
         ...detailConflicts.map(({ id: recordId, code }) => ({ id: recordId, decision: "review", reasons: [code] })),
         ...incompleteDetails.map(({ id: recordId, code }) => ({ id: recordId, decision: "review", reasons: [code] })),
       ]);
-      const snapshot = buildSnapshot(prepared.snapshot, evidence, decisions, ledger, {
-        runId: id, startedAt: active.startedAt, generatedAt: new Date().toISOString(), maxNewJobs: runtime.limits.maxNewJobs, excludedIds,
-      });
-      await atomicJson(join(runDirectory, "candidate.json"), snapshot);
+      const updatedQueue = updateReviewQueue(queue, records, decisions, id, excludedIds);
+      signal.throwIfAborted();
+      const latestControl = await readJson(join(root, "control.json"));
+      if (latestControl.cancelRunId === id || (latestControl.paused && !dryRun && !controlled)) {
+        throw new RunError("cancelled", "Collection was paused before saving the review queue.");
+      }
+      await saveReviewQueue(root, updatedQueue);
       summary = {
-        reviewed: evidence.cards.length, details: evidence.details.length, selected: snapshot.jobs.length,
-        new: snapshot.run.newCount, review: decisions.filter((decision) => decision.decision === "review").length + detailConflicts.length + incompleteDetails.length,
+        reviewed: evidence.cards.length, details: evidence.details.length, publicAdmissions: 0,
+        intentPrimary: decisions.filter((item) => item.intent.decision === "primary").length,
+        intentSecondary: decisions.filter((item) => item.intent.decision === "secondary").length,
+        intentOutside: decisions.filter((item) => item.intent.decision === "outside").length,
+        intentUnclear: decisions.filter((item) => item.intent.decision === "unclear").length,
+        qualificationPending: decisions.filter((item) => item.qualification.status === "pending").length,
+        queue: reviewCounts(updatedQueue, excludedIds),
         detailConflicts: detailConflicts.length, incompleteDetails: incompleteDetails.length,
-        ...pendingReviewCounts(decisions, [...detailConflicts, ...incompleteDetails]),
         coverage: evidence.queries.map(({ term, industry, position, count, detailsRead, unreadDetails, recheckedDetails }) =>
           ({ term, industry, position: position ?? null, cards: count, details: detailsRead ?? 0, unread: unreadDetails ?? 0, rechecked: recheckedDetails ?? 0 })),
-        rejected: decisions.filter((decision) => decision.decision === "reject").length,
       };
       signal.throwIfAborted();
-      if (!dryRun) {
-        const latestControl = await readJson(join(root, "control.json"));
-        if (latestControl.paused || latestControl.cancelRunId === id) throw new RunError("cancelled", "Publication cancelled before writing.");
-        publication = await operations.publishSnapshot(root, runtime, snapshot, prepared, signal,
-          (pending) => atomicJson(join(root, "pending.json"), pending));
-        signal.throwIfAborted();
-        await unlink(join(root, "pending.json"));
-        state.lastPublished = { runId: id, at: new Date().toISOString(), ...publication, generatedAt: snapshot.generatedAt };
-      }
     } catch (error) {
       failure = signal.aborted ? signal.reason : error;
     }
     const outcome = {
-      ...active, status: finalStatus({ error: failure, dryRun, publication }), finishedAt: new Date().toISOString(),
+      ...active, status: finalStatus({ error: failure, dryRun, publication, mode: collectionMode }), finishedAt: new Date().toISOString(),
       code: failure ? sanitizeCode(failure) : null, summary, publication,
     };
     state.lastRun = outcome;
+    if (outcome.status === "collected") state.lastCollection = outcome;
     await atomicJson(join(root, "state.json"), state);
     await atomicJson(join(runDirectory, "result.json"), outcome);
     await appendLog(root, { event: "finished", runId: id, status: outcome.status, code: outcome.code, summary });
-    if (failure) {
-      await operations.notifyFailure(outcome.code).catch((error) => appendLog(root, { event: "notification-failed", code: sanitizeCode(error) }));
-    }
     await pruneEvidence(root);
     return outcome;
   } finally {
     clearInterval(monitor);
     clearTimeout(timer);
-    if (caffeine && caffeine.exitCode === null) caffeine.kill("SIGTERM");
+    if (caffeine && caffeine.exitCode === null && caffeine.signalCode === null) {
+      const stopped = once(caffeine, "close");
+      caffeine.kill("SIGTERM");
+      await stopped;
+    }
     process.removeListener("SIGTERM", stopFromSignal);
     process.removeListener("SIGINT", stopFromSignal);
     await release();

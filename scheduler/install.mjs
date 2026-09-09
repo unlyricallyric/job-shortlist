@@ -8,6 +8,9 @@ import { defaultRoot, defaultQueries, defaultLimits, label, awakeLabel } from ".
 import { validateLedger } from "./snapshot.mjs";
 import { initialState } from "./runner.mjs";
 import { git } from "./publish.mjs";
+import { defaultIntentPolicy, validateIntentPolicy, assertCollectionMode, collectionMode } from "./intent.mjs";
+import { emptyReviewQueue } from "./review.mjs";
+import { activateNextSlot } from "./clock.mjs";
 
 const xml = (value) => String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;")
   .replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&apos;");
@@ -76,7 +79,8 @@ async function bootstrap(name) {
 }
 
 export async function install({ root = defaultRoot(), matchingPath, ledgerPath, sshKeyPath, knownHostsPath, repository,
-  nodePath = process.execPath, gitPath = "/usr/bin/git", adoptWindow, adoptTab }) {
+  nodePath = process.execPath, gitPath = "/usr/bin/git", adoptWindow, adoptTab, mode }) {
+  if (mode !== collectionMode) throw new RunError("collection-mode-required", "Installation requires explicit mode collection-only.");
   process.umask(0o077);
   root = resolve(root);
   await privateDirectory(root);
@@ -86,9 +90,14 @@ export async function install({ root = defaultRoot(), matchingPath, ledgerPath, 
     if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository ?? "")) throw new RunError("install-arguments", "A GitHub owner/repository is required.");
     const matching = validateMatchingConfig(await readJson(matchingPath));
     const ledger = validateLedger(await readJson(ledgerPath));
+    const previousRuntime = await readJson(join(root, "runtime.json"), null);
+    const intent = validateIntentPolicy(await readJson(join(root, "intent-policy.json"), defaultIntentPolicy()));
     const runtime = {
+      ...(previousRuntime ?? {}),
       version: 1, repository, branch: "main", nodePath: resolve(nodePath), gitPath: await realpath(gitPath),
-      sshKeyPath: resolve(sshKeyPath), knownHostsPath: resolve(knownHostsPath), queries: defaultQueries, limits: defaultLimits,
+      sshKeyPath: resolve(sshKeyPath), knownHostsPath: resolve(knownHostsPath), queries: intent.queries,
+      limits: { ...(previousRuntime?.limits ?? defaultLimits), maxNewJobs: 0 },
+      mode: collectionMode, autoPublish: false, reviewRequired: true,
     };
     for (const path of [runtime.sshKeyPath, runtime.knownHostsPath]) {
       const info = await lstat(path);
@@ -108,11 +117,17 @@ export async function install({ root = defaultRoot(), matchingPath, ledgerPath, 
     await privateDirectory(join(installed, "docs"));
     await cp(join(source, "docs", "model.mjs"), join(installed, "docs", "model.mjs"));
     await atomicJson(join(root, "runtime.json"), runtime);
+    await atomicJson(join(root, "intent-policy.json"), intent);
     const previousMatching = await readJson(join(root, "matching.json"), null);
     if (!previousMatching) await atomicJson(join(root, "matching.json"), matching);
     const previousLedger = await readJson(join(root, "ledger.json"), null);
     if (!previousLedger) await atomicJson(join(root, "ledger.json"), ledger);
-    if (!await readJson(join(root, "state.json"), null)) await atomicJson(join(root, "state.json"), initialState());
+    const oldState = await readJson(join(root, "state.json"), initialState());
+    await atomicJson(join(root, "state.json"), oldState.collectionActivatedAt
+      ? oldState : activateNextSlot(oldState));
+    if (!await readJson(join(root, "review-queue.json"), null)) {
+      await atomicJson(join(root, "review-queue.json"), emptyReviewQueue());
+    }
     await atomicJson(join(root, "control.json"), { paused: true, cancelRunId: null });
     if (adoptWindow !== undefined || adoptTab !== undefined) {
       if (!Number.isSafeInteger(adoptWindow) || !Number.isSafeInteger(adoptTab)) throw new RunError("install-tab", "Both task-owned browser IDs are required.");
@@ -140,7 +155,8 @@ export async function install({ root = defaultRoot(), matchingPath, ledgerPath, 
     });
     await bootout(label);
     await bootstrap(label);
-    return { root, label, installed: true, paused: true, authentication: "task-repository-deploy-key" };
+    return { root, label, installed: true, paused: true, mode: collectionMode, autoPublish: false,
+      collectionNeedsCredentials: false, explicitPublishingAuthentication: "task-repository-deploy-key" };
   } finally {
     await release();
   }
@@ -154,11 +170,22 @@ export async function pause(root) {
 }
 
 export async function resume(root) {
-  await atomicJson(join(root, "control.json"), { paused: false, cancelRunId: null });
+  const release = await acquireLock(root, "resume-collection-only");
+  try {
+    const runtime = await readJson(join(root, "runtime.json"));
+    assertCollectionMode(runtime);
+    validateIntentPolicy(await readJson(join(root, "intent-policy.json")));
+    const state = await readJson(join(root, "state.json"));
+    await atomicJson(join(root, "state.json"), activateNextSlot(state));
+    await atomicJson(join(root, "control.json"), { paused: false, cancelRunId: null });
+  } finally {
+    await release();
+  }
   await bootstrap(label);
   await bootstrap(awakeLabel);
   await command("/bin/launchctl", ["kickstart", `${serviceDomain()}/${label}`]);
-  return { enabled: true, acOnlyAwakeHelper: true };
+  return { enabled: true, mode: collectionMode, autoPublish: false, acOnlyAwakeHelper: true,
+    activation: "next-future-slot" };
 }
 
 export async function uninstall(root) {

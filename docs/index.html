@@ -9,15 +9,15 @@
     <meta name="referrer" content="no-referrer">
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
     <title>岗位精选 · 一份清晰的岗位快照</title>
-    <link rel="icon" href="./favicon.svg?rev=20260909-paused1" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles.css?rev=20260909-paused1">
-    <script type="module" src="./app.mjs?rev=20260909-paused1"></script>
+    <link rel="icon" href="./favicon.svg?rev=20260910-review1" type="image/svg+xml">
+    <link rel="stylesheet" href="./styles.css?rev=20260910-review1">
+    <script type="module" src="./app.mjs?rev=20260910-review1"></script>
   </head>
   <body>
     <a class="skip-link" href="#shortlist">跳转到岗位列表</a>
     <header class="site-header shell">
       <a class="brand" href="./">
-        <img src="./favicon.svg?rev=20260909-paused1" width="38" height="38" alt="">
+        <img src="./favicon.svg?rev=20260910-review1" width="38" height="38" alt="">
         <span>岗位精选<small>JOB SHORTLIST</small></span>
       </a>
       <nav aria-label="页面导航">
@@ -56,6 +56,12 @@
       <aside class="automation-panel shell" id="paused-notice" role="status" hidden>
         <strong>定时采集已暂停，当前显示已保存岗位。</strong>
         <p class="automation-note">人工维护时间：<time id="maintenance-at">无法获取</time>（上海）。本次维护没有重新采集岗位，保留原观察日期。</p>
+      </aside>
+
+      <aside class="automation-panel shell" id="collection-only-notice" role="status" hidden>
+        <strong>自动采集已恢复；新候选待人工复核后发布。</strong>
+        <p class="automation-note">本机按上海时间 09:30、12:30 采集到私有待复核队列，不自动发布岗位，也不在每轮结束时更新本页。当前显示已保存岗位及其原观察日期。</p>
+        <p class="automation-note">这里只反映最近人工发布的运行模式；待复核数量和实际执行状态以本机 review-list / status 为准。需 Mac 已登录、Chrome 登录有效且网络可用，合盖或手动睡眠不保证执行。</p>
       </aside>
 
       <section class="automation-panel shell" id="automation-panel" aria-labelledby="automation-title" hidden>
@@ -131,7 +137,7 @@
               <label class="date-view-option" for="view-week"><input id="view-week" type="radio" name="arrivalView" value="week"><span>近7天新增 <span class="date-view-count" id="view-week-count">—</span></span></label>
               <label class="date-view-option" for="view-all"><input id="view-all" type="radio" name="arrivalView" value="all"><span>全部岗位 <span class="date-view-count" id="view-all-count">—</span></span></label>
             </fieldset>
-            <p class="date-view-help" id="date-view-help">上海日期 <time id="arrival-date">—</time> · 近7天含今天及前6天。按本站首次收录时间统计，不是源站发布时间；同来源、同岗位 ID 重复观察不重复计新。</p>
+            <p class="date-view-help" id="date-view-help">上海日期 <time id="arrival-date">—</time> · 近7天含今天及前6天。人工复核后首次入选的岗位按实际首次发布日统计；旧记录仍按本站首次收录时间，不是源站发布时间。同来源、同岗位 ID 重复观察不重复计新。</p>
             <p class="view-count" id="view-count" aria-live="polite">正在读取日期视图…</p>
             <div class="results-toolbar">
               <p id="result-count" role="status" aria-live="polite" aria-atomic="true">正在读取快照…</p>
@@ -198,6 +204,7 @@
               <div><dt>标注薪数</dt><dd data-field="months"></dd></div>
               <div><dt>详情阅读</dt><dd data-field="jd-read"></dd></div>
               <div><dt>最近观察</dt><dd><time data-field="last-seen"></time></dd></div>
+              <div data-field="admission-row" hidden><dt>首次入选</dt><dd><time data-field="admitted"></time></dd></div>
               <div><dt>源站发布</dt><dd><time data-field="published"></time></dd></div>
             </dl>
           </div>

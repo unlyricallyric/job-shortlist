@@ -32,7 +32,11 @@ export function nextSlots(now = new Date()) {
 export function dueSlot(state, now = new Date()) {
   if (state.paused) return null;
   const latest = latestSlot(now);
-  if (Date.parse(latest.at) < Date.parse(state.activatedAt)) return null;
+  if (Date.parse(latest.at) < Date.parse(state.collectionActivatedAt ?? state.activatedAt)) return null;
   if (state.lastScheduledSlot && latest.id <= state.lastScheduledSlot) return null;
   return latest;
+}
+
+export function activateNextSlot(state, now = new Date()) {
+  return { ...state, collectionActivatedAt: nextSlots(now)[0].at };
 }

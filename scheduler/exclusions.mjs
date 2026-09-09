@@ -58,6 +58,9 @@ export function withdrawExcludedJobs(snapshot, exclusions, publishedAt) {
     ...(snapshot.assessmentMethods ? { assessmentMethods: Object.fromEntries(
       jobs.map((job) => [job.id, snapshot.assessmentMethods[job.id]]),
     ) } : {}),
+    ...(snapshot.firstPublishedAtById ? { firstPublishedAtById: Object.fromEntries(
+      Object.entries(snapshot.firstPublishedAtById).filter(([id]) => !ids.has(id)),
+    ) } : {}),
     publication: { version: 1, type: "manual-maintenance", publishedAt, scheduler: "paused" },
   };
   return validateSnapshot(result);
