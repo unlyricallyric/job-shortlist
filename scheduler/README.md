@@ -1,6 +1,13 @@
-# 本机采集与人工复核
+# 本机采集与候选发布
 
-默认且唯一可启用的调度模式为 **`collection-only`**：北京时间每天 **09:30、12:30**，通过普通 Chrome 的已登录 BOSS直聘会话进行有界公开职位采样，保存到本机私有复核队列。**采集过程不访问 Git、发布克隆、GitHub API 或 Pages，不自动发布岗位，不调用模型、通知、MCP 或聊天会话。**
+北京时间每天 **09:30、12:30**，通过普通 Chrome 的已登录 BOSS直聘会话进行有界公开职位采样。安装必须明确指定模式，不会因为更新代码而暗中恢复自动发布：
+
+| 模式 | 岗位可见性 |
+| --- | --- |
+| `candidate-feed` | 有效来源卡片脱敏、去重后自动发布为采样候选，不需要事前批准；仅在 Pages 精确字节确认后记录发布成功 |
+| `collection-only` | 只保存私有队列，整个采集过程不访问 Git、发布克隆或 Pages；需显式人工批准与发布才公开 |
+
+两种模式都不调用模型、通知、MCP 或聊天会话。候选自动展示不等于资格通过或合格推荐。
 
 ## 方向与资格分开
 
@@ -23,18 +30,20 @@
 
 ## 私有数据与复核队列
 
-默认目录 `~/Library/Application Support/job-shortlist` 使用 `0700`；配置、台账、队列、证据为 `0600`。原 JD、私人方向、资格配置、未入选记录与手动排除不得进入公开 Git。
+默认目录 `~/Library/Application Support/job-shortlist` 使用 `0700`；配置、台账、队列、证据为 `0600`。原 JD、私人方向、资格配置、手动排除及联系人不得进入公开 Git。候选仅输出白名单卡片字段、简短来源模板与明确的信息缺失状态，不公开私有资格理由。
 
 `review-queue.json` 以来源限定的岗位 ID 去重，保存已验证元数据、完整 JD、观察日期、意图和资格判断及人工状态。`evidenceHash` 绑定规范化的实际内容，不绑定每次重新读取的时间。相同内容复查保留批准/拒绝；内容或资格发生实质变化后原批准失效，必须重新人工审核。明确拒绝及 `manual-exclusions.json` 中的 ID 不会自动重新入选。累计证据台账不是黑名单。
 
-采集完成状态为 `collected`，不同于 `dry-run` 或 `published`；`publication` 必须为 `null`。本机 `status` 单独显示最近采集、最近真正发布、待复核数和下次时段。新的采集不会覆盖上次有效发布或写入网页状态。
+仅采集成功状态为 `collected`，`publication` 为 `null`。候选模式先保存真实采样与私有证据，再从全部有效卡片及既有队列构建候选快照；私有初筛的 select/review/reject、方向不明或资格未知都不阻止展示，没有每轮新增上限。只有明确用户排除、队列人工拒绝和基本身份/隐私问题会阻止收录。JD 未读、过短、标题/ID 冲突或无法分离职责与要求时，只展示原卡片，`jdRead: false`，不采用错位正文。
+
+本机 `status` 分开显示最近采集与最近发布。候选模式 `autoPublish: true`、`manualApprovalRequiredForVisibility: false`，仅在推送及 Pages 精确字节确认后记录 `succeeded`；Git/Pages 失败保留之前的有效发布，不能用 `collected` 冒充网站已更新。无新候选的成功采样也发布真实采样时间与计数。
 
 ## 安装与恢复
 
 Node、系统 Perl/Fcntl、AppleScript、launchd 均从本机已有工具运行，无包依赖。Chrome 需要用户主动授予 Apple Events JavaScript 权限；程序不会改变 TCC、浏览器设置或绕过验证码。
 
 ```sh
-node scheduler/cli.mjs install --mode collection-only \
+node scheduler/cli.mjs install --mode candidate-feed \
   --repository OWNER/REPO \
   --matching /PRIVATE/matching.json \
   --ledger /PRIVATE/ledger.json \
@@ -43,7 +52,7 @@ node scheduler/cli.mjs install --mode collection-only \
   --node "$(command -v node)"
 ```
 
-安装复制代码到私有 `app/`，明确迁移为采集模式、关闭自动发布、建立独立方向策略及复核队列，并保持暂停。已有确认资格、排除记录、证据台账与成功/失败历史保留。缺少明确模式的旧配置不会默默恢复自动发布。
+安装复制代码到私有 `app/`，明确迁移到所选模式并保持暂停。仅采集模式可用 `--mode collection-only`。已有确认资格、方向策略、排除记录、证据台账与成功/失败历史保留。候选模式不保留旧 `maxNewJobs` 参数，它限制读取额度但不截断有效候选展示。缺少明确模式的旧配置不会默默恢复自动发布。
 
 `com.job-shortlist.scheduler` 每 60 秒检查实际上海时间；`com.job-shortlist.keep-awake` 仅在启用时通过 `caffeinate -s` 避免接通电源后的空闲系统睡眠。每轮仅临时使用 `caffeinate -i`。不会强制亮屏、改变系统电源设置，也不能保证合盖、手动睡眠、退出登录、断网后按时运行。
 
@@ -63,7 +72,16 @@ CLI="$HOME/Library/Application Support/job-shortlist/app/scheduler/cli.mjs"
 "$NODE" "$CLI" uninstall
 ```
 
-`request-run --controlled` 是显式请求已安装 launchd 在仍暂停时完成一次**真实采集与队列写入**，不是发布或自动恢复；仅在需要验收时人工调用。`run-once`、`tick`、`retry-run` 在采集模式下同样绝不触发 Git、网页数据更新或通知。`--dry-run` 标记非正式采集试验，仍可保存私有复核证据，但不会自动批准。
+`request-run --controlled` 显式请求已安装 launchd 在仍暂停时运行一次配置中的模式：候选模式会实际发布，collection-only 只采集，不会自动恢复日程。`--dry-run` 无论何种模式都不会发布。`run-once`、`tick`、`retry-run` 同样遵守明确模式，不发通知。
+
+```sh
+"$NODE" "$CLI" publish-captured --run-id COMPLETED-SOURCE-RUN-ID
+"$NODE" "$CLI" retry-candidate-publication
+```
+
+`publish-captured` 只从指定已完成采样的卡片及现有队列补展示，不启动 Chrome，也不改写源观察时间或该时段的采集历史。人工选入旧记录不会被降级为候选。首次公开时间保存在 `firstPublishedAtById`，同 ID 重复采样不重置日期，后续批次仅重置 `isNew`。
+
+候选发布从写入前即持久化 `pending.json`，记录预期脱敏快照、基准提交、精确摘要和已提交阶段。取消或 Git/Pages 故障后，显式恢复或下一次实际执行的采样时段最多进行一次有界恢复，不在每分钟空闲 tick 中无限重试。恢复重新核对排除、分支/来源、精确文件内容、提交路径与远端历史，不 reset 或覆盖未知修改；未知冲突保持可见错误并停止发布。
 
 `review-show` 仅在本机输出指定记录及原始资格说明；不要把输出发到公开仓库。`review-list` 默认列出最多 20 个待审核的主要方向、次级方向与不明确记录，按方向优先级排序，不把资格未知自动转成匹配。
 
@@ -92,7 +110,7 @@ CLI="$HOME/Library/Application Support/job-shortlist/app/scheduler/cli.mjs"
 "$NODE" "$CLI" review-reject --id SOURCE-JOB-ID --evidence-hash CURRENT_SHA256
 ```
 
-批准只改变私有状态。**只有第二个显式命令才允许发布**；它再次核对当前证据/批准/排除记录，使用独立 `publish/` 克隆及仓库专用 deploy key，并只提交已批准的脱敏快照。仍未审核的记录、失效批准、资格明确不满足或排除 ID 不会被推送。原始岗位对象只重置 `isNew` 标记；新的人工入选时间记录于 `firstPublishedAtById`，不重写首次观察日期。旧记录没有此字段时沿用原日期视图语义。
+批准只改变私有人工选择状态，第二个命令显式发布已选入标记与批准的脱敏摘要；它再次核对当前证据/批准/排除记录。候选模式不需要这些操作才可见，但人工选入仍需这个独立路径。已展示候选可原 ID 升级为已选入，不重复添加、不重置首次公开/观察时间；原有已选入对象不被自动候选数据覆盖。
 
 网络/Pages 确认失败后，`review-publication-pending.json` 保留精确提交、摘要和批准哈希。手动 `retry-reviewed-publication` 会重新验证批准未失效、未被拒绝/排除、提交/路径/摘要及远端历史一致，再重试或确认发布；调度不会自动调用它。旧的自动发布恢复命令已禁用。
 
@@ -100,7 +118,7 @@ CLI="$HOME/Library/Application Support/job-shortlist/app/scheduler/cli.mjs"
 
 所有采集/人工队列修改/发布使用同一内核 `flock`，拥有者声明采用不可覆盖的原子发布。程序退出会释放管道及锁；超时/取消清理仅限自己创建的子进程组。任务标签丢失可创建新的任务标签，仍存在但导航到非允许页面则阻塞，不复用其他用户页面。
 
-登录、验证码、未知加载、错 ID 和标题不一致都不会被当成有效完整 JD；明确的短正文和稳定标题冲突仅私有隔离。规则未识别不代表市场无岗位。日志有界、仅记录通用运行码和计数，daemon 不在完成/失败时输出大块 stdout 或发通知。无法据此承诺第三方应用卡死已解决。
+登录、验证码、未知加载、错 ID 和标题不一致都不会被当成有效完整 JD；冲突正文只私有隔离，但已验证的原岗位卡片可以作为详情待确认候选展示。规则未识别不代表市场无岗位。日志有界、仅记录通用运行码和计数，daemon 不在完成/失败时输出大块 stdout 或发通知。无法据此承诺第三方应用卡死已解决。
 
 `pause` 取消活动工作并卸载 AC 辅助；`uninstall` 进一步卸载服务/plist，但保留私有证据及 deploy key。GitHub 密钥撤销是所有者独立操作，不在守护进程中保存广泛权限。
 

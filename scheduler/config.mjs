@@ -2,7 +2,7 @@ import { join } from "node:path";
 import { homedir } from "node:os";
 import { lstat } from "node:fs/promises";
 import { RunError, readJson } from "./io.mjs";
-import { assertCollectionMode, partnerQueries, validateIntentPolicy } from "./intent.mjs";
+import { assertRuntimeMode, candidateMode, partnerQueries, validateIntentPolicy } from "./intent.mjs";
 
 export const defaultRoot = () => join(homedir(), "Library", "Application Support", "job-shortlist");
 export const label = "com.job-shortlist.scheduler";
@@ -11,6 +11,7 @@ export const defaultQueries = partnerQueries;
 export const defaultLimits = Object.freeze({
   queriesPerRun: 3, cardsPerQuery: 15, maxCards: 45, maxDetails: 8, maxNewJobs: 0, timeoutMinutes: 30,
 });
+export const candidateLimits = Object.freeze(Object.fromEntries(Object.entries(defaultLimits).filter(([key]) => key !== "maxNewJobs")));
 
 export async function loadConfiguration(root) {
   for (const name of ["runtime.json", "matching.json", "ledger.json", "intent-policy.json"]) {
@@ -20,14 +21,16 @@ export async function loadConfiguration(root) {
     }
   }
   const runtime = await readJson(join(root, "runtime.json"));
-  assertCollectionMode(runtime);
+  assertRuntimeMode(runtime);
   if (runtime.version !== 1 || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(runtime.repository)
     || runtime.branch !== "main" || !runtime.nodePath?.startsWith("/")) {
     throw new RunError("invalid-config", "Scheduler runtime configuration is invalid.", { blocked: true });
   }
   const limits = runtime.limits;
-  if (!limits || Object.keys(defaultLimits).some((key) => !Number.isSafeInteger(limits[key])
-    || limits[key] < (key === "maxNewJobs" ? 0 : 1) || limits[key] > defaultLimits[key])) {
+  const bounds = runtime.mode === candidateMode ? candidateLimits : defaultLimits;
+  if (!limits || Object.keys(bounds).some((key) => !Number.isSafeInteger(limits[key])
+    || limits[key] < (key === "maxNewJobs" ? 0 : 1) || limits[key] > bounds[key])
+    || (runtime.mode === candidateMode && Object.hasOwn(limits, "maxNewJobs"))) {
     throw new RunError("invalid-config", "Collection limits exceed the bounded defaults.", { blocked: true });
   }
   const intent = validateIntentPolicy(await readJson(join(root, "intent-policy.json")));

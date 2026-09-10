@@ -41,6 +41,43 @@ test("delayed human admission appears today while original firstSeen remains unc
   assert.equal(app.groups()[0].querySelector("h3").textContent, "今天 · 09月10日");
 });
 
+test("candidate feed defaults to showing both selections and pending/outside candidates with clear evidence filters", async (t) => {
+  const unread = job("feed-unread", { matchScore: null, priority: "采样候选 · 待你判断", category: null, jdRead: false });
+  const outside = job("feed-outside", { matchScore: null, priority: "采样候选 · 待你判断", category: null });
+  const data = snapshotOf([testJobs[0], unread, outside]);
+  data.run.mode = "采样候选 · 累计快照";
+  data.candidateFeed = {
+    version: 1, mode: "candidate-feed", publicationKind: "manual-backfill", runId: "test-backfill-run", sampleRunId: "test-source-run",
+    sampledAt: "2026-09-07T09:30:00+08:00", cardsThisSample: 3, detailsThisSample: 1, timeZone: "Asia/Shanghai", times: ["09:30", "12:30"],
+  };
+  data.candidateStatesById = {
+    [unread.id]: { evidence: "card-only", direction: "unclear", evidenceObservedAt: unread.lastSeen },
+    [outside.id]: { evidence: "full-jd", direction: "outside", evidenceObservedAt: outside.lastSeen },
+  };
+  data.firstPublishedAtById = { [unread.id]: data.generatedAt, [outside.id]: data.generatedAt };
+  data.assessmentMethods = { [testJobs[0].id]: "human-assisted", [unread.id]: "source-only", [outside.id]: "source-only" };
+  const app = await boot(t, { responses: [data] });
+  assert.equal(app.cards().length, 3);
+  assert.equal(app.get("candidate-feed-panel").hidden, false);
+  assert.equal(app.get("collection-only-notice").hidden, true);
+  assert.equal(app.get("automation-panel").hidden, true);
+  assert.match(app.get("candidate-totals").textContent, /已选入 1 个 · 采样候选 2 个/);
+  assert.match(app.get("candidate-publication-kind").textContent, /历史积压/);
+  assert.equal(app.get("view-today-count").textContent, "3");
+  app.change("visibility", "candidate");
+  assert.equal(app.cards().length, 2);
+  assert.ok(app.cards().every((card) => card.querySelector('[data-field="score-box"]').hidden));
+  assert.ok(app.cards().every((card) => card.querySelector('[data-field="visibility"]').textContent === "采样候选"));
+  assert.ok(app.cards().some((card) => card.querySelector('[data-field="candidate-evidence"]').textContent.includes("不在主要检索方向")));
+  app.change("evidence", "card-only");
+  assert.equal(app.cards().length, 1);
+  assert.match(app.cards()[0].querySelector('[data-field="candidate-evidence"]').textContent, /仅卡片/);
+  app.change("evidence", "all");
+  app.change("visibility", "selected");
+  assert.equal(app.cards().length, 1);
+  assert.equal(app.cards()[0].querySelector('[data-field="visibility"]').textContent, "已选入");
+});
+
 test("manual paused publication displays saved data without presenting maintenance as a fresh sample", async (t) => {
   const data = snapshotOf(testJobs);
   data.run.mode = "人工维护 · 已保存快照";
@@ -194,7 +231,7 @@ test("default today uses browser Shanghai date, offers explicit recent/all navig
   assert.equal(app.cards().length, 3);
   assert.equal(app.groups().length, 1);
   assert.equal(app.groups()[0].querySelector("h3").textContent, "昨天 · 09月07日");
-  assert.equal(app.groups()[0].querySelector("p").textContent, "3 个匹配岗位");
+  assert.equal(app.groups()[0].querySelector("p").textContent, "3 个岗位记录");
   assert.equal(new Set(app.cards().map((card) => card.querySelector('[data-field="link"]').href)).size, 3);
   app.click("reset-filters");
   assert.equal(app.get("view-today").checked, true);
@@ -312,7 +349,7 @@ test("visibility return updates a chosen recent view and relative headings witho
   assert.equal(app.get("view-week").checked, true);
   assert.equal(app.get("priority").value, "优先了解");
   assert.equal(app.groups()[0].querySelector("h3").textContent, "昨天 · 09月07日");
-  assert.equal(app.groups()[0].querySelector("p").textContent, "2 个匹配岗位");
+  assert.equal(app.groups()[0].querySelector("p").textContent, "2 个岗位记录");
   assert.equal(app.document.activeElement, sourceLink);
   assert.equal(app.groups()[0], group, "Same records keep their DOM nodes across midnight.");
   assert.equal(details.open, true);
@@ -586,7 +623,7 @@ test("real card rendering preserves literal strings, safe links, nulls and obser
   assert.equal(app.get("new-count").textContent, "2");
   assert.equal(app.requests.length, 1);
   assert.ok(app.requests[0].url.pathname.endsWith("/docs/data/jobs.json"));
-  assert.equal(app.requests[0].url.search, "?rev=20260910-approved1");
+  assert.equal(app.requests[0].url.search, "?rev=20260910-feed1");
   assert.equal(app.requests[0].options.credentials, "omit");
   assert.equal(app.requests[0].options.cache, "no-store");
 });
@@ -751,8 +788,8 @@ test("cumulative counters and current-run badges preserve old first-seen observa
   assert.equal(app.get("reviewed-count").textContent, "123");
   assert.equal(app.get("details-count").textContent, "45");
   assert.equal(app.get("new-count").textContent, "1");
-  assert.match(app.get("reviewed-count").parentElement.textContent, /累计初筛/);
-  assert.match(app.get("details-count").parentElement.textContent, /累计精读/);
+  assert.match(app.get("reviewed-count").parentElement.textContent, /累计卡片/);
+  assert.match(app.get("details-count").parentElement.textContent, /完整 JD/);
   assert.match(app.get("new-count").parentElement.textContent, /本轮新增/);
   assert.equal(app.get("new-filter-count").textContent, "（1）");
   assert.equal(app.cards()[0].querySelector('[data-field="first-seen"]').textContent, "2026.09.06 08:00");

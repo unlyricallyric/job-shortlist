@@ -10,8 +10,9 @@ import { collectBoss, discoverBoss, evaluatePage, cardsInPage } from "./browser.
 import { validateLedger, updateLedger } from "./snapshot.mjs";
 import { emptyReadHistory, validateReadHistory, updateReadHistory } from "./coverage.mjs";
 import { loadManualExclusions, manualExcludedIds } from "./exclusions.mjs";
-import { assertCollectionMode, collectionMode, assessForReview, prefilterIntentCard, intentCardPriority } from "./intent.mjs";
+import { assertRuntimeMode, collectionMode, candidateMode, modeSettings, assessForReview, prefilterIntentCard, intentCardPriority } from "./intent.mjs";
 import { loadReviewQueue, updateReviewQueue, saveReviewQueue, reviewCounts } from "./review.mjs";
+import { candidateEvidence, rejectedCandidateIds } from "./candidates.mjs";
 
 export function initialState(now = new Date()) {
   return { version: 1, activatedAt: latestSlot(now).at, lastScheduledSlot: null, queryCursor: 0, lastRun: null, lastPublished: null };
@@ -48,15 +49,24 @@ export async function status(root) {
   const state = await readJson(join(root, "state.json"));
   const control = await readJson(join(root, "control.json"));
   const runtime = await readJson(join(root, "runtime.json"));
-  const modeReady = runtime.mode === collectionMode && runtime.autoPublish === false && runtime.reviewRequired === true;
+  const collectionReady = runtime.mode === collectionMode && runtime.autoPublish === false && runtime.reviewRequired === true
+    && (runtime.manualApprovalRequiredForVisibility === undefined || runtime.manualApprovalRequiredForVisibility === true);
+  const candidateReady = runtime.mode === candidateMode && runtime.autoPublish === true && runtime.reviewRequired === false
+    && runtime.manualApprovalRequiredForVisibility === false;
+  const modeReady = collectionReady || candidateReady;
   const excludedIds = manualExcludedIds(await loadManualExclusions(root));
-  return { enabled: !control.paused && modeReady, mode: modeReady ? collectionMode : "migration-required",
-    autoPublish: false, reviewRequired: true, next: nextSlots(), activationBoundary: state.collectionActivatedAt ?? null,
+  const pending = await readJson(join(root, "pending.json"), null);
+  return { enabled: !control.paused && modeReady,
+    ...modeSettings(candidateReady ? candidateMode : collectionMode),
+    mode: modeReady ? runtime.mode : "migration-required",
+    queueBlocksVisibility: !candidateReady, qualificationVerified: false,
+    next: nextSlots(), activationBoundary: state.collectionActivatedAt ?? null,
     reviewQueue: reviewCounts(await loadReviewQueue(root), excludedIds),
     lastRun: state.lastRun, lastCollection: state.lastCollection ?? null, lastPublished: state.lastPublished,
     lastRecovery: state.lastRecovery ?? null,
     pendingReviewedPublication: await readJson(join(root, "review-publication-pending.json"), null),
-    pending: await readJson(join(root, "pending.json"), null), prerequisite: "Logged-in macOS session and ordinary Chrome; AC for idle awake helper. Manual sleep, closed lid and logout are not bypassed." };
+    pending: pending ? Object.fromEntries(Object.entries(pending).filter(([key]) => key !== "snapshot")) : null,
+    prerequisite: "Logged-in macOS session and ordinary Chrome; AC for idle awake helper. Manual sleep, closed lid and logout are not bypassed." };
 }
 
 export async function preflight(root, { browser = true } = {}) {
@@ -70,12 +80,14 @@ export async function preflight(root, { browser = true } = {}) {
     if (page.state !== "ready") throw new RunError("source-not-ready", "The BOSS search tab has no readable result state.", { blocked: true });
     source = `ready:${page.cards.length}`;
   }
-  return { mode: runtime.mode, autoPublish: false, browser: source, publicationAttempted: false, gitAccessed: false };
+  return { ...modeSettings(runtime.mode), browser: source, publicationAttempted: false, gitAccessed: false };
 }
 
 export async function run(root, { tick = false, dryRun = false, signal: outerSignal, services = {} } = {}) {
   const operations = {
     loadConfiguration, collectBoss, assessForReview, prefilterIntentCard,
+    publishCandidates: async (...args) => (await import("./publish-candidates.mjs")).publishCandidates(...args),
+    recoverCandidates: async (...args) => (await import("./publish-candidates.mjs")).retryCandidatePublication(...args),
     caffeinate: () => spawn("/usr/bin/caffeinate", ["-i", "-w", String(process.pid)], { stdio: "ignore" }),
     ...services,
   };
@@ -102,7 +114,7 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
     if (control.paused && !dryRun && !controlled) {
       if (request) await unlink(join(root, "request.json"));
       if (tick) return { status: "paused" };
-      throw new RunError("paused", "Collection is paused. Use an explicitly controlled acceptance run or resume collection-only.", { blocked: true });
+      throw new RunError("paused", "Collection is paused. Use an explicitly controlled acceptance run or resume the configured mode.", { blocked: true });
     }
     const scheduled = tick && !request;
     const id = scheduled ? slot.id : request?.id ?? `manual-${new Date().toISOString().replace(/\D/g, "")}-${randomUUID().slice(0, 8)}`;
@@ -129,17 +141,22 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
     caffeine?.once("error", (error) => controller.abort(error));
     const runDirectory = join(root, "runs", id);
     await privateDirectory(runDirectory);
-    const publication = null;
-    let failure = null, summary = null;
+    let publication = null;
+    let failure = null, summary = null, sampledAt = null;
     try {
       const { runtime, matching, intent } = await operations.loadConfiguration(root);
-      assertCollectionMode(runtime);
-      const excludedIds = manualExcludedIds(await loadManualExclusions(root));
+      const settings = assertRuntimeMode(runtime);
+      Object.assign(active, settings);
+      const queue = await loadReviewQueue(root);
+      const excludedIds = rejectedCandidateIds(queue, manualExcludedIds(await loadManualExclusions(root)));
       const eligibleCard = (card) => excludedIds.has(card.id) ? { eligible: false, reason: "manual-excluded" }
         : operations.prefilterIntentCard(card, matching, intent, excludedIds);
       let ledger = validateLedger(await readJson(join(root, "ledger.json")));
       let readHistory = validateReadHistory(await readJson(join(root, "read-history.json"), emptyReadHistory()));
-      const queue = await loadReviewQueue(root);
+      if (runtime.mode === candidateMode && !dryRun && await readJson(join(root, "pending.json"), null)) {
+        await operations.recoverCandidates(root, signal);
+        state.lastPublished = (await readJson(join(root, "state.json"))).lastPublished;
+      }
       clearTimeout(timer);
       timer = setTimeout(() => controller.abort(new RunError("run-timeout", "The bounded run deadline was reached.")), runtime.limits.timeoutMinutes * 60000);
       const queryCursor = request?.queryCursor ?? state.queryCursor;
@@ -153,16 +170,20 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
         priorityFor: intentCardPriority,
         onEvidence: async (partial) => {
           await atomicJson(join(runDirectory, "evidence.json"), partial);
-          ledger = updateLedger(ledger, partial);
+          const verified = runtime.mode === candidateMode ? candidateEvidence(partial) : partial;
+          ledger = updateLedger(ledger, verified);
           await atomicJson(join(root, "ledger.json"), ledger);
-          readHistory = updateReadHistory(readHistory, partial.details);
+          readHistory = updateReadHistory(readHistory, verified.details);
           await atomicJson(join(root, "read-history.json"), readHistory);
         },
       });
-      if (!evidence.complete || (!evidence.details.length && evidence.cards.some((card) => eligibleCard(card).eligible))) {
+      if (!evidence.complete) throw new RunError("source-incomplete", "The bounded source search did not complete; public data is unchanged.", { blocked: true });
+      if (runtime.mode === collectionMode && !evidence.details.length && evidence.cards.some((card) => eligibleCard(card).eligible)) {
         throw new RunError("no-complete-jds", "No full matching JD was read; the dataset is unchanged.", { blocked: true });
       }
-      const records = evidence.details.filter((record) => !excludedIds.has(record.id));
+      sampledAt = new Date().toISOString();
+      const verified = runtime.mode === candidateMode ? candidateEvidence(evidence, sampledAt) : evidence;
+      const records = verified.details.filter((record) => !excludedIds.has(record.id));
       const decisions = records.map((record) => ({ id: record.id, ...operations.assessForReview(record, matching, intent) }));
       const detailConflicts = evidence.detailConflicts ?? [];
       const incompleteDetails = evidence.incompleteDetails ?? [];
@@ -190,16 +211,30 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
         coverage: evidence.queries.map(({ term, industry, position, count, detailsRead, unreadDetails, recheckedDetails }) =>
           ({ term, industry, position: position ?? null, cards: count, details: detailsRead ?? 0, unread: unreadDetails ?? 0, rechecked: recheckedDetails ?? 0 })),
       };
+      if (!dryRun) {
+        state.lastCollection = { ...active, status: "collected", finishedAt: sampledAt, sampledAt, summary, publication: null };
+        await atomicJson(join(root, "state.json"), state);
+      }
       signal.throwIfAborted();
+      if (runtime.mode === candidateMode && !dryRun) {
+        publication = await operations.publishCandidates(root, {
+          evidence, ledger, intent, runId: id, sampleRunId: id, sampledAt,
+          publicationKind: scheduled ? "scheduled" : "controlled",
+        }, signal);
+        summary.publicAdmissions = publication.newCount;
+        summary.visibleCandidates = publication.candidates;
+        summary.manuallySelected = publication.selected;
+      }
     } catch (error) {
       failure = signal.aborted ? signal.reason : error;
     }
     const outcome = {
-      ...active, status: finalStatus({ error: failure, dryRun, publication, mode: collectionMode }), finishedAt: new Date().toISOString(),
-      code: failure ? sanitizeCode(failure) : null, summary, publication,
+      ...active, status: finalStatus({ error: failure, dryRun, publication, mode: active.mode }), finishedAt: new Date().toISOString(),
+      code: failure ? sanitizeCode(failure) : null, sampledAt, summary, publication,
     };
     state.lastRun = outcome;
     if (outcome.status === "collected") state.lastCollection = outcome;
+    state.lastPublished = (await readJson(join(root, "state.json"))).lastPublished;
     await atomicJson(join(root, "state.json"), state);
     await atomicJson(join(runDirectory, "result.json"), outcome);
     await appendLog(root, { event: "finished", runId: id, status: outcome.status, code: outcome.code, summary });

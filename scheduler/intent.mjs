@@ -2,6 +2,26 @@ import { RunError } from "./io.mjs";
 import { parseJobSections, prefilterCard, screenJob } from "./screening.mjs";
 
 export const collectionMode = "collection-only";
+export const candidateMode = "candidate-feed";
+
+export function modeSettings(mode) {
+  if (mode === candidateMode) return {
+    mode, autoPublish: true, reviewRequired: false, manualApprovalRequiredForVisibility: false,
+  };
+  if (mode === collectionMode) return {
+    mode, autoPublish: false, reviewRequired: true, manualApprovalRequiredForVisibility: true,
+  };
+  throw new RunError("collection-mode-required", "An explicit supported collection or candidate-feed mode is required.", { blocked: true });
+}
+
+export function assertRuntimeMode(runtime) {
+  if (runtime.mode === candidateMode) {
+    if (runtime.autoPublish !== true || runtime.reviewRequired !== false || runtime.manualApprovalRequiredForVisibility !== false) {
+      throw new RunError("candidate-mode-required", "Candidate visibility requires an explicit candidate-feed configuration.", { blocked: true });
+    }
+  } else assertCollectionMode(runtime);
+  return modeSettings(runtime.mode);
+}
 export const partnerQueries = [
   { term: "渠道经理", industry: "100021" },
   { term: "渠道拓展", industry: "100029" },
@@ -30,7 +50,8 @@ export function validateIntentPolicy(policy) {
 }
 
 export function assertCollectionMode(runtime) {
-  if (runtime.mode !== collectionMode || runtime.autoPublish !== false || runtime.reviewRequired !== true) {
+  if (runtime.mode !== collectionMode || runtime.autoPublish !== false || runtime.reviewRequired !== true
+    || (runtime.manualApprovalRequiredForVisibility !== undefined && runtime.manualApprovalRequiredForVisibility !== true)) {
     throw new RunError("collection-mode-required", "Legacy automatic publication is disabled. Explicit collection-only migration is required.", { blocked: true });
   }
 }

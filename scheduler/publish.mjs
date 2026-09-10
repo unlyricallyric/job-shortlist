@@ -110,6 +110,10 @@ export async function publishSnapshot(root, runtime, snapshot, prepared, signal,
   }
   const remote = await executeGit(runtime, ["ls-remote", "origin", "refs/heads/main"], { cwd, signal });
   if (remote.split(/\s+/)[0] !== prepared.head) throw new RunError("publish-conflict", "Remote main changed during collection; no publication attempted.", { blocked: true });
+  const candidate = Boolean(snapshot.candidateFeed);
+  const runId = snapshot.candidateFeed?.runId ?? snapshot.automation?.runId;
+  if (candidate) await onPending({ phase: "prepared", sha: null, baseSha: prepared.head, digest: digest(text), runId });
+  signal.throwIfAborted();
   const target = join(cwd, jsonPath);
   await writeFile(`${target}.scheduler-tmp`, text, { mode: 0o600, flag: "wx" });
   await rename(`${target}.scheduler-tmp`, target);
@@ -120,10 +124,10 @@ export async function publishSnapshot(root, runtime, snapshot, prepared, signal,
   await executeGit(runtime, ["diff", "--cached", "--check"], { cwd, signal });
   await executeGit(runtime, [
     "-c", "user.name=Job Shortlist Scheduler", "-c", "user.email=job-shortlist-scheduler@users.noreply.github.com",
-    "commit", "--quiet", "-m", "Update scheduled job shortlist snapshot", "-m", trailer,
+    "commit", "--quiet", "-m", candidate ? "Update captured job candidates" : "Update scheduled job shortlist snapshot", "-m", trailer,
   ], { cwd, signal });
   const sha = await executeGit(runtime, ["rev-parse", "HEAD"], { cwd, signal });
-  await onPending({ sha, digest: digest(text), runId: snapshot.automation.runId });
+  await onPending({ sha, digest: digest(text), runId, ...(candidate ? { phase: "committed", baseSha: prepared.head } : {}) });
   signal.throwIfAborted();
   await executeGit(runtime, ["push", "--quiet", `git@github.com:${runtime.repository}.git`, "HEAD:main"], { cwd, signal });
   const publication = await verify(runtime, text, signal);

@@ -7,7 +7,7 @@ export class SnapshotError extends Error {
 
 const rootKeys = ["version", "generatedAt", "run", "jobs"];
 const runKeys = ["source", "scope", "mode", "cardsReviewed", "detailsRead", "selectedCount", "newCount"];
-const snapshotModes = new Set(["单次采集", "累计精选 · 第二轮快照", "定时规则初筛 · 累计快照", "人工扩展复核 · 累计快照", "人工维护 · 已保存快照"]);
+const snapshotModes = new Set(["单次采集", "累计精选 · 第二轮快照", "定时规则初筛 · 累计快照", "人工扩展复核 · 累计快照", "人工维护 · 已保存快照", "采样候选 · 累计快照"]);
 const runSources = new Map([
   ["BOSS直聘", ["BOSS直聘"]],
   ["字节跳动招聘官网", ["字节跳动招聘官网"]],
@@ -196,8 +196,11 @@ export function validateSnapshot(value) {
   const hasMethods = value !== null && typeof value === "object" && Object.hasOwn(value, "assessmentMethods");
   const manualPublication = value !== null && typeof value === "object" && Object.hasOwn(value, "publication");
   const hasAdmissionDates = value !== null && typeof value === "object" && Object.hasOwn(value, "firstPublishedAtById");
+  const hasCandidateFeed = value !== null && typeof value === "object" && Object.hasOwn(value, "candidateFeed");
+  const hasCandidates = value !== null && typeof value === "object" && Object.hasOwn(value, "candidateStatesById");
   requireValue(hasExactKeys(value, [...rootKeys, ...(scheduled ? ["automation"] : []), ...(hasMethods ? ["assessmentMethods"] : []),
-    ...(manualPublication ? ["publication"] : []), ...(hasAdmissionDates ? ["firstPublishedAtById"] : [])])
+    ...(manualPublication ? ["publication"] : []), ...(hasAdmissionDates ? ["firstPublishedAtById"] : []),
+    ...(hasCandidateFeed ? ["candidateFeed"] : []), ...(hasCandidates ? ["candidateStatesById"] : [])])
     && (!scheduled || hasMethods), "快照字段不完整或包含不支持的字段。");
   requireValue(value.version === 1, "不支持的快照版本。");
   requireValue(isIsoDate(value.generatedAt, false), "快照生成时间必须包含时区。");
@@ -215,6 +218,7 @@ export function validateSnapshot(value) {
       && Date.parse(publication.publishedAt) >= Date.parse(value.generatedAt), "人工发布状态无效。");
   }
   requireValue(run.mode !== "人工维护 · 已保存快照" || manualPublication, "人工维护缺少发布状态说明。");
+  requireValue(hasCandidateFeed === hasCandidates && (run.mode !== "采样候选 · 累计快照" || hasCandidateFeed), "候选快照缺少展示状态。");
   for (const key of ["cardsReviewed", "detailsRead", "selectedCount", "newCount"]) {
     requireValue(Number.isSafeInteger(run[key]) && run[key] >= 0, `采集计数 ${key} 无效。`);
   }
@@ -282,13 +286,41 @@ export function validateSnapshot(value) {
     }
   }
   if (hasMethods) requireValue(hasExactKeys(value.assessmentMethods, jobs.map((job) => job.id))
-    && Object.values(value.assessmentMethods).every((method) => ["human-assisted", "rules-v1"].includes(method)), "岗位初筛方式说明无效。");
+    && Object.values(value.assessmentMethods).every((method) => ["human-assisted", "rules-v1", ...(hasCandidateFeed ? ["source-only"] : [])].includes(method)), "岗位初筛方式说明无效。");
+  if (hasCandidateFeed) {
+    const feed = value.candidateFeed, states = value.candidateStatesById;
+    requireValue(!scheduled && !manualPublication && hasMethods && hasAdmissionDates
+      && ["采样候选 · 累计快照", "人工扩展复核 · 累计快照"].includes(run.mode)
+      && hasExactKeys(feed, ["version", "mode", "publicationKind", "runId", "sampleRunId", "sampledAt",
+        "cardsThisSample", "detailsThisSample", "timeZone", "times"])
+      && feed.version === 1 && feed.mode === "candidate-feed"
+      && ["scheduled", "controlled", "manual-backfill", "manual-selection"].includes(feed.publicationKind)
+      && [feed.runId, feed.sampleRunId].every((id) => typeof id === "string" && /^[a-z0-9-]{8,90}$/.test(id))
+      && isIsoDate(feed.sampledAt, false) && Date.parse(feed.sampledAt) <= Date.parse(value.generatedAt)
+      && feed.timeZone === "Asia/Shanghai" && JSON.stringify(feed.times) === '["09:30","12:30"]'
+      && Number.isSafeInteger(feed.cardsThisSample) && feed.cardsThisSample >= 0 && feed.cardsThisSample <= run.cardsReviewed
+      && Number.isSafeInteger(feed.detailsThisSample) && feed.detailsThisSample >= 0
+      && feed.detailsThisSample <= feed.cardsThisSample, "候选采样说明无效。");
+    requireValue(states !== null && typeof states === "object" && !Array.isArray(states), "候选记录状态无效。");
+    for (const [id, state] of Object.entries(states)) {
+      const job = jobs.find((item) => item.id === id);
+      requireValue(job && hasExactKeys(state, ["evidence", "direction", "evidenceObservedAt"])
+        && ["full-jd", "card-only", "incomplete-jd", "identity-conflict"].includes(state.evidence)
+        && ["primary", "secondary", "outside", "unclear"].includes(state.direction)
+        && isIsoDate(state.evidenceObservedAt, false) && Date.parse(state.evidenceObservedAt) >= Date.parse(job.firstSeen)
+        && Date.parse(state.evidenceObservedAt) <= Date.parse(job.lastSeen)
+        && job.jdRead === (state.evidence === "full-jd") && (job.jdRead || state.direction === "unclear")
+        && job.matchScore === null && job.priority === "采样候选 · 待你判断" && job.matchReasons.length === 0
+        && value.assessmentMethods[id] === "source-only" && isIsoDate(value.firstPublishedAtById[id], false), "候选岗位不得伪装成人工入选或资格已确认。");
+    }
+    requireValue(jobs.every((job) => (value.assessmentMethods[job.id] === "source-only") === Object.hasOwn(states, job.id)), "候选来源方式与展示状态不一致。");
+  }
   if (hasAdmissionDates) {
     const dates = value.firstPublishedAtById;
     requireValue(dates !== null && typeof dates === "object" && !Array.isArray(dates)
       && Object.entries(dates).every(([id, date]) => ids.has(id) && isIsoDate(date, false)
         && Date.parse(date) >= Date.parse(jobs.find((job) => job.id === id).firstSeen)
-        && Date.parse(date) <= Date.parse(value.publication?.publishedAt ?? value.generatedAt)), "首次入选发布时间无效。");
+        && Date.parse(date) <= Date.parse(value.publication?.publishedAt ?? value.generatedAt)), "首次公开展示时间无效。");
   }
   return value;
 }
@@ -350,8 +382,10 @@ function priorityRank(priority) {
 export function selectJobs(jobs, {
   keyword = "", category = "", priority = "", newOnly = false,
   salaryMin = null, salaryMax = null, salaryMode = "all", sortBy = "score",
+  visibility = "all", evidence = "all", source = "", candidateStatesById = {},
 } = {}) {
-  if (!["all", "known", "unknown"].includes(salaryMode) || !["score", "firstSeen", "priority"].includes(sortBy)) {
+  if (!["all", "known", "unknown"].includes(salaryMode) || !["score", "firstSeen", "priority"].includes(sortBy)
+    || !["all", "candidate", "selected"].includes(visibility) || !["all", "full-jd", "card-only"].includes(evidence)) {
     throw new RangeError("不支持的筛选或排序方式。");
   }
   if ([salaryMin, salaryMax].some((value) => value !== null && (typeof value !== "number" || !Number.isFinite(value) || value < 0))
@@ -360,6 +394,10 @@ export function selectJobs(jobs, {
   }
   const terms = searchTerms(keyword);
   const selected = jobs.filter((job) => {
+    const candidate = Object.hasOwn(candidateStatesById, job.id);
+    if (visibility !== "all" && candidate !== (visibility === "candidate")) return false;
+    if (evidence !== "all" && job.jdRead !== (evidence === "full-jd")) return false;
+    if (source && job.source !== source) return false;
     if (category && (job.category ?? "待确认") !== category) return false;
     if (priority && (job.priority ?? "待确认") !== priority) return false;
     if (newOnly && !job.isNew) return false;
@@ -384,8 +422,14 @@ export function selectJobs(jobs, {
   });
 }
 
+export function candidateCounts(snapshot) {
+  const candidates = snapshot.jobs.filter((job) => Object.hasOwn(snapshot.candidateStatesById ?? {}, job.id));
+  return { candidates: candidates.length, selected: snapshot.jobs.length - candidates.length,
+    cardOnly: candidates.filter((job) => !job.jdRead).length, newCandidates: candidates.filter((job) => job.isNew).length };
+}
+
 export function filterOptions(jobs, key) {
-  if (!["category", "priority"].includes(key)) throw new RangeError("不支持的筛选字段。");
+  if (!["category", "priority", "source"].includes(key)) throw new RangeError("不支持的筛选字段。");
   const counts = new Map();
   for (const job of jobs) {
     const name = job[key] ?? "待确认";

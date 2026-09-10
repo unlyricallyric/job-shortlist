@@ -1,8 +1,8 @@
 import {
   SnapshotError, filterOptions, formatShanghaiTime, hasSalaryRange,
   parseSalaryRange, safeJobUrl, selectJobs, validateSnapshot,
-  shanghaiDateKey, nextShanghaiMidnight, selectArrivalView, groupJobsByFirstSeen,
-} from "./model.mjs?rev=20260910-approved1";
+  shanghaiDateKey, nextShanghaiMidnight, selectArrivalView, groupJobsByFirstSeen, candidateCounts,
+} from "./model.mjs?rev=20260910-feed1";
 
 const sourceLinkLabels = new Map([
   ["BOSS直聘", "查看原始岗位"],
@@ -27,6 +27,7 @@ const viewLabels = { today: "今日新增", week: "近7天新增", all: "全部�
 const fields = {
   keyword: byId("keyword"), category: byId("category"),
   priority: byId("priority"), newOnly: byId("new-only"),
+  visibility: byId("visibility"), evidence: byId("evidence"), source: byId("source"),
 };
 const manualGuidance = {
   assessment: byId("assessment-description").textContent,
@@ -72,17 +73,30 @@ function fillList(node, items, fallback) {
 }
 
 function isScheduleOverdue(data, now = Date.now()) {
-  if (!data.automation?.enabled) return false;
+  if (!data.automation?.enabled && !data.candidateFeed) return false;
   const day = shanghaiDateKey(now);
-  const slots = data.automation.times.map((time) => Date.parse(`${day}T${time}:00+08:00`));
+  const slots = (data.candidateFeed ?? data.automation).times.map((time) => Date.parse(`${day}T${time}:00+08:00`));
   const cutoff = now - 30 * 60_000;
   // Keep an earlier missed slot visible while the next slot is still within its grace period.
   const latestExpectedSlot = Math.max(...slots.map((slot) => slot < cutoff ? slot : slot - 24 * 60 * 60_000));
-  return Date.parse(data.generatedAt) < latestExpectedSlot;
+  return Date.parse(data.candidateFeed?.sampledAt ?? data.generatedAt) < latestExpectedSlot;
 }
 
 function renderAutomation() {
   const automation = snapshot.automation;
+  const feed = snapshot.candidateFeed;
+  byId("candidate-feed-panel").hidden = !feed;
+  byId("candidate-feed-warning").hidden = !feed || !isScheduleOverdue(snapshot);
+  if (feed) {
+    const counts = candidateCounts(snapshot);
+    byId("candidate-publication-kind").textContent = {
+      scheduled: "定时采样发布", controlled: "受控采样发布", "manual-backfill": "历史积压 · 补展示", "manual-selection": "人工选入更新",
+    }[feed.publicationKind];
+    setTime(byId("candidate-sampled-at"), feed.sampledAt);
+    byId("candidate-sample-counts").textContent = `${feed.cardsThisSample} 张 / ${feed.detailsThisSample} 份`;
+    byId("candidate-new-count").textContent = `${counts.newCandidates} 个`;
+    byId("candidate-totals").textContent = `当前已选入 ${counts.selected} 个 · 采样候选 ${counts.candidates} 个（其中仅卡片或详情待确认 ${counts.cardOnly} 个）。`;
+  }
   const pausedPublication = snapshot.publication?.scheduler === "paused";
   const collectionOnly = snapshot.publication?.scheduler === "collection-only";
   byId("paused-notice").hidden = !pausedPublication;
@@ -92,12 +106,16 @@ function renderAutomation() {
   byId("automation-panel").hidden = !automation;
   byId("review-queue-summary").hidden = !automation;
   byId("automation-warning").hidden = !isScheduleOverdue(snapshot);
-  byId("snapshot-label").textContent = collectionOnly ? "只读 · 采集待人工复核" : pausedPublication ? "只读 · 采集已暂停"
+  byId("snapshot-label").textContent = feed ? "只读 · 候选自动展示" : collectionOnly ? "只读 · 采集待人工复核" : pausedPublication ? "只读 · 采集已暂停"
     : automation ? "只读 · 定时采样快照" : "只读 · 人工辅助快照";
-  byId("assessment-description").textContent = hasRulesAssessment
+  byId("assessment-description").textContent = feed
+    ? "采样候选只记录真实来源卡片，不评分、不自动认定合格，也不因方向不明或详情未读而隐藏。已选入表示人工选择继续了解；原有参考分、优先级和条件保留，均不是资格证明或录用概率。"
+    : hasRulesAssessment
     ? "初筛方式以各卡片标记为准：人工辅助初筛沿用原有判断；规则初筛由固定规则计算，未经人工复核。再次观察到岗位不会改变其初筛方式。分数与优先级仅用于清单排序，不代表已满足全部任职要求，也不是录用概率。"
     : manualGuidance.assessment;
-  byId("category-help").textContent = hasRulesAssessment
+  byId("category-help").textContent = feed
+    ? "已选入保留原分类；采样候选仅在完整职责与要求可核对时提供来源文本方向，卡片-only 或不明确时标为待确认。所有方向默认可见，不按标题认定适合。"
+    : hasRulesAssessment
     ? "原标题保留，方向按 JD 实际职责归类；规则初筛岗位由固定规则归类，仍需核实具体职责。同一岗位名可能做不同工作。"
     : manualGuidance.category;
   if (!automation) return;
@@ -116,19 +134,26 @@ function createCard(job, index) {
   const field = (name) => card.querySelector(`[data-field="${name}"]`);
   const put = (name, value) => { field(name).textContent = value ?? "无法获取"; };
   const rulesBased = snapshot.assessmentMethods?.[job.id] === "rules-v1";
+  const candidate = snapshot.candidateStatesById?.[job.id];
+  const evidenceLabels = { "full-jd": "完整职责与要求已读取", "card-only": "仅卡片 · JD 尚未读取",
+    "incomplete-jd": "仅卡片 · 详情不完整或结构待确认", "identity-conflict": "仅卡片 · 详情身份待确认，未采用冲突正文" };
   const title = job.title ?? "岗位名称无法获取";
   field("title").id = `job-title-${index}`;
   card.setAttribute("aria-labelledby", field("title").id);
   put("title", title);
   put("category", job.category ?? "待确认");
   put("priority", job.priority ?? "优先级待确认");
+  put("visibility", candidate ? "采样候选" : "已选入");
+  card.classList.toggle("is-candidate", Boolean(candidate));
+  field("visibility").classList.toggle("is-candidate", Boolean(candidate));
   field("new").hidden = !job.isNew;
-  put("assessment", rulesBased ? "规则初筛 · rules-v1" : "人工辅助初筛");
+  put("assessment", candidate ? "来源记录 · 未人工选入" : rulesBased ? "规则初筛 · rules-v1" : "人工辅助初筛");
   field("assessment").classList.toggle("is-rules", rulesBased);
   field("assessment-note").hidden = !rulesBased;
   put("score", job.matchScore ?? "待确认");
   field("score-total").hidden = job.matchScore === null;
   field("score-box").classList.toggle("is-unknown", job.matchScore === null);
+  field("score-box").hidden = Boolean(candidate);
   field("score-box").setAttribute("aria-label", job.matchScore === null
     ? "初筛参考分无法获取" : `初筛参考分 ${job.matchScore}，满分 100；${rulesBased ? "固定规则计算，" : ""}仅用于排序，不代表满足全部要求或录用概率`);
   put("company", job.company ?? "公司名称无法获取");
@@ -141,13 +166,19 @@ function createCard(job, index) {
   put("location", job.location ?? (job.city ? `${job.city} · 具体地点待确认` : "无法获取"));
   put("experience", job.experienceText);
   put("education", job.educationText);
+  field("candidate-evidence").hidden = !candidate;
+  if (candidate) put("candidate-evidence", `${evidenceLabels[candidate.evidence]}。${{
+    primary: "职责含伙伴、渠道或商业生态业务", secondary: "职责为相邻业务方向",
+    outside: "职责不在主要检索方向，仍展示供判断", unclear: "具体职责方向待确认",
+  }[candidate.direction]}；任职资格是否满足尚未核实。`);
   fillList(field("summary"), job.summary, "岗位摘要无法获取，请查看原文。");
-  fillList(field("reasons"), job.matchReasons, "入选参考无法获取，不应仅凭分数判断。");
+  put("reasons-title", candidate ? "展示说明" : "入选参考");
+  fillList(field("reasons"), job.matchReasons, candidate ? "有效来源卡片自动展示，不代表入选或匹配结论。" : "入选参考无法获取，不应仅凭分数判断。");
   fillList(field("concerns"), job.concerns, "待确认事项无法获取，请进一步核实岗位条件。");
   fillList(field("requirements"), job.requirements, "任职要求无法获取，请查看原文或向招聘方确认。");
   put("language", job.languageNote ?? "工作语言待确认");
   put("months", job.salaryMonths === null ? "待确认" : `${job.salaryMonths} 薪`);
-  put("jd-read", job.jdRead
+  put("jd-read", candidate ? evidenceLabels[candidate.evidence] : job.jdRead
     ? (rulesBased ? "已读取源站完整职位详情" : "已阅读源站职位详情")
     : "仅获得职位卡片，详情未读取");
   put("source", `来源 · ${job.source}`);
@@ -157,6 +188,8 @@ function createCard(job, index) {
   setTime(field("published"), job.publishedAt);
   field("admission-row").hidden = !snapshot.firstPublishedAtById?.[job.id];
   if (snapshot.firstPublishedAtById?.[job.id]) setTime(field("admitted"), snapshot.firstPublishedAtById[job.id]);
+  field("evidence-time-row").hidden = !candidate || !job.jdRead;
+  if (candidate && job.jdRead) setTime(field("evidence-time"), candidate.evidenceObservedAt);
   const url = safeJobUrl(job.url, job.source);
   const linkLabel = sourceLinkLabels.get(job.source);
   if (url === null || linkLabel === undefined) throw new SnapshotError("岗位来源链接无效。");
@@ -182,10 +215,13 @@ function readFilters() {
     keyword: fields.keyword.value, category: fields.category.value, priority: fields.priority.value,
     newOnly: fields.newOnly.checked, salaryMin: range.min, salaryMax: range.max,
     salaryMode: salaryMode.value, sortBy: sortBy.value,
+    visibility: fields.visibility.value, evidence: fields.evidence.value, source: fields.source.value,
+    candidateStatesById: snapshot.candidateStatesById ?? {},
   };
   byId("filter-indicator").hidden = !(
     filters.keyword.trim() || filters.category || filters.priority || filters.newOnly
     || filters.salaryMin !== null || filters.salaryMax !== null || filters.salaryMode !== "all" || range.error
+    || filters.visibility !== "all" || filters.evidence !== "all" || filters.source
   );
   return { filters, error: range.error };
 }
@@ -259,7 +295,7 @@ function renderResults(now = Date.now(), { preserveCards = false } = {}) {
     title.textContent = group.label;
     section.setAttribute("aria-labelledby", title.id);
     const count = document.createElement("p");
-    count.textContent = `${group.jobs.length} 个匹配岗位`;
+    count.textContent = `${group.jobs.length} 个岗位记录`;
     heading.append(title, count);
     const grid = document.createElement("div");
     grid.setAttribute("class", "job-grid");
@@ -283,7 +319,7 @@ function setFilterOptions(id, key, defaultText) {
 async function fetchSnapshot() {
   let response;
   try {
-    response = await fetch(new URL("./data/jobs.json?rev=20260910-approved1", import.meta.url), {
+    response = await fetch(new URL("./data/jobs.json?rev=20260910-feed1", import.meta.url), {
       cache: "no-store", credentials: "omit", redirect: "error",
     });
   } catch (error) {
@@ -311,6 +347,7 @@ async function loadSnapshot() {
   byId("automation-panel").hidden = true;
   byId("paused-notice").hidden = true;
   byId("collection-only-notice").hidden = true;
+  byId("candidate-feed-panel").hidden = true;
   byId("automation-warning").hidden = true;
   byId("snapshot-label").textContent = "只读 · 岗位快照";
   setState("正在读取岗位快照", "只读取本站的静态数据，不会实时访问招聘平台。");
@@ -327,6 +364,7 @@ async function loadSnapshot() {
     renderAutomation();
     setFilterOptions("category", "category", "全部方向");
     setFilterOptions("priority", "priority", "全部优先级");
+    setFilterOptions("source", "source", "全部来源");
     renderResults();
     controls.disabled = false;
     dateControls.disabled = false;
@@ -340,6 +378,7 @@ async function loadSnapshot() {
     byId("automation-panel").hidden = true;
     byId("paused-notice").hidden = true;
     byId("collection-only-notice").hidden = true;
+    byId("candidate-feed-panel").hidden = true;
     byId("automation-warning").hidden = true;
     byId("snapshot-label").textContent = "只读 · 岗位快照";
     byId("results-footnote").hidden = true;
@@ -381,6 +420,7 @@ function refreshCalendar() {
   const now = Date.now();
   if (renderedDay !== shanghaiDateKey(now)) renderResults(now, { preserveCards: true });
   byId("automation-warning").hidden = !isScheduleOverdue(snapshot, now);
+  byId("candidate-feed-warning").hidden = !snapshot.candidateFeed || !isScheduleOverdue(snapshot, now);
   scheduleCalendarRefresh();
 }
 

@@ -195,31 +195,47 @@ export function rejectReview(queue, id, hash, now = new Date().toISOString()) {
 export function buildReviewedSnapshot(previous, queue, ids, ledger, excludedIds, now = new Date().toISOString()) {
   validateSnapshot(previous);
   if (!ids.length || new Set(ids).size !== ids.length || ids.length > 20) throw new RunError("invalid-reviewed-selection", "Explicit unique approved IDs are required.");
-  const existing = new Set(previous.jobs.map((job) => job.id));
+  excludedIds = new Set([...excludedIds, ...queue.entries.filter((entry) => entry.status === "rejected").map((entry) => entry.id)]);
+  const existing = new Map(previous.jobs.map((job) => [job.id, job]));
   const added = ids.map((id) => {
     const entry = showReview(queue, id);
     if (excludedIds.has(id) || entry.status !== "approved" || entry.approval?.evidenceHash !== entry.evidenceHash
       || entry.qualification.status === "not-met" || !["primary", "secondary"].includes(entry.intent.decision)) {
       throw new RunError("manual-approval-required", "Publication requires current explicit human approval for every record.");
     }
-    if (existing.has(id)) throw new RunError("already-published", "This record is already public; do not duplicate or silently rewrite it.");
+    if (existing.has(id) && !previous.candidateStatesById?.[id]) throw new RunError("already-published", "This record is already selected; do not duplicate or silently rewrite it.");
     validateApprovedJob(entry, entry.approval.job);
     if (!ledger.detailIds.includes(id)) throw new RunError("review-evidence-missing", "Approved record has no full-JD evidence ledger entry.");
-    return entry.approval.job;
+    const old = existing.get(id);
+    return old ? { ...entry.approval.job, firstSeen: old.firstSeen, isNew: false,
+      lastSeen: Date.parse(old.lastSeen) > Date.parse(entry.approval.job.lastSeen) ? old.lastSeen : entry.approval.job.lastSeen } : entry.approval.job;
   });
-  const jobs = [...previous.jobs.map((job) => ({ ...job, isNew: false })), ...added];
+  const jobs = [...previous.jobs.filter((job) => !excludedIds.has(job.id)).map((job) =>
+    added.find((item) => item.id === job.id) ?? { ...job, isNew: false }), ...added.filter((job) => !existing.has(job.id))];
+  const retainedIds = new Set(jobs.map((job) => job.id));
+  const methods = Object.fromEntries(jobs.map((job) => [job.id, previous.assessmentMethods?.[job.id] ?? "human-assisted"]));
+  const admissionDates = Object.fromEntries(Object.entries(previous.firstPublishedAtById ?? {}).filter(([id]) => retainedIds.has(id)));
+  for (const job of added) {
+    methods[job.id] = "human-assisted";
+    if (!existing.has(job.id)) admissionDates[job.id] = now;
+  }
   return validateSnapshot({
     version: 1, generatedAt: now,
     run: { ...previous.run, mode: "人工扩展复核 · 累计快照", selectedCount: jobs.length,
       newCount: jobs.filter((job) => job.isNew).length, cardsReviewed: ledger.reviewedIds.length, detailsRead: ledger.detailIds.length },
-    jobs, assessmentMethods: { ...previous.assessmentMethods, ...Object.fromEntries(added.map((job) => [job.id, "human-assisted"])) },
-    firstPublishedAtById: { ...(previous.firstPublishedAtById ?? {}), ...Object.fromEntries(added.map((job) => [job.id, now])) },
+    jobs, assessmentMethods: methods, firstPublishedAtById: admissionDates,
+    ...(previous.candidateFeed ? {
+      candidateFeed: { ...previous.candidateFeed, publicationKind: "manual-selection", runId: `review-${now.replace(/\D/g, "")}` },
+      candidateStatesById: Object.fromEntries(Object.entries(previous.candidateStatesById).filter(([id]) => retainedIds.has(id) && !ids.includes(id))),
+    } : {}),
     ...(previous.publication ? { publication: { ...previous.publication, publishedAt: now } } : {}),
   });
 }
 
 export async function reviewContext(root) {
-  return { queue: await loadReviewQueue(root), excludedIds: manualExcludedIds(await loadManualExclusions(root)) };
+  const queue = await loadReviewQueue(root);
+  return { queue, excludedIds: new Set([...manualExcludedIds(await loadManualExclusions(root)),
+    ...queue.entries.filter((entry) => entry.status === "rejected").map((entry) => entry.id)]) };
 }
 
 export const saveReviewQueue = (root, queue) => atomicJson(join(root, "review-queue.json"), validateReviewQueue(queue));

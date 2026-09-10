@@ -429,7 +429,8 @@ test("category, priority and explicit new-in-run filters compose without score e
   assert.deepEqual(selectJobs(jobs, { category: "渠道销售", priority: "优先了解", newOnly: true }).map((job) => job.id), ["a"]);
   assert.equal(selectJobs(jobs, { category: "待确认", priority: "待确认" })[0].id, "d");
   assert.deepEqual(new Map(filterOptions(jobs, "category")).get("渠道销售"), 2);
-  assert.throws(() => filterOptions(jobs, "source"), RangeError);
+  assert.deepEqual(filterOptions(jobs, "source"), [["BOSS直聘", 4]]);
+  assert.throws(() => filterOptions(jobs, "unsupported"), RangeError);
 });
 
 test("transition priorities are accepted, filterable and explicitly sortable without hiding any jobs", () => {

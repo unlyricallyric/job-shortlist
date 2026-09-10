@@ -4,11 +4,11 @@ import { dirname, join, resolve } from "node:path";
 import { homedir } from "node:os";
 import { command } from "./process.mjs";
 import { atomicJson, privateDirectory, readJson, RunError, acquireLock } from "./io.mjs";
-import { defaultRoot, defaultQueries, defaultLimits, label, awakeLabel } from "./config.mjs";
+import { defaultRoot, defaultLimits, candidateLimits, label, awakeLabel } from "./config.mjs";
 import { validateLedger } from "./snapshot.mjs";
 import { initialState } from "./runner.mjs";
 import { git } from "./publish.mjs";
-import { defaultIntentPolicy, validateIntentPolicy, assertCollectionMode, collectionMode } from "./intent.mjs";
+import { defaultIntentPolicy, validateIntentPolicy, assertRuntimeMode, collectionMode, candidateMode, modeSettings } from "./intent.mjs";
 import { emptyReviewQueue } from "./review.mjs";
 import { activateNextSlot } from "./clock.mjs";
 
@@ -80,7 +80,7 @@ async function bootstrap(name) {
 
 export async function install({ root = defaultRoot(), matchingPath, ledgerPath, sshKeyPath, knownHostsPath, repository,
   nodePath = process.execPath, gitPath = "/usr/bin/git", adoptWindow, adoptTab, mode }) {
-  if (mode !== collectionMode) throw new RunError("collection-mode-required", "Installation requires explicit mode collection-only.");
+  const settings = modeSettings(mode);
   process.umask(0o077);
   root = resolve(root);
   await privateDirectory(root);
@@ -96,8 +96,9 @@ export async function install({ root = defaultRoot(), matchingPath, ledgerPath, 
       ...(previousRuntime ?? {}),
       version: 1, repository, branch: "main", nodePath: resolve(nodePath), gitPath: await realpath(gitPath),
       sshKeyPath: resolve(sshKeyPath), knownHostsPath: resolve(knownHostsPath), queries: intent.queries,
-      limits: { ...(previousRuntime?.limits ?? defaultLimits), maxNewJobs: 0 },
-      mode: collectionMode, autoPublish: false, reviewRequired: true,
+      limits: { ...(mode === candidateMode ? candidateLimits : defaultLimits),
+        ...Object.fromEntries(Object.entries(previousRuntime?.limits ?? {}).filter(([key]) => key !== "maxNewJobs")) },
+      ...settings,
     };
     for (const path of [runtime.sshKeyPath, runtime.knownHostsPath]) {
       const info = await lstat(path);
@@ -117,7 +118,7 @@ export async function install({ root = defaultRoot(), matchingPath, ledgerPath, 
     await privateDirectory(join(installed, "docs"));
     await cp(join(source, "docs", "model.mjs"), join(installed, "docs", "model.mjs"));
     await atomicJson(join(root, "runtime.json"), runtime);
-    await atomicJson(join(root, "intent-policy.json"), intent);
+    if (!await readJson(join(root, "intent-policy.json"), null)) await atomicJson(join(root, "intent-policy.json"), intent);
     const previousMatching = await readJson(join(root, "matching.json"), null);
     if (!previousMatching) await atomicJson(join(root, "matching.json"), matching);
     const previousLedger = await readJson(join(root, "ledger.json"), null);
@@ -155,7 +156,7 @@ export async function install({ root = defaultRoot(), matchingPath, ledgerPath, 
     });
     await bootout(label);
     await bootstrap(label);
-    return { root, label, installed: true, paused: true, mode: collectionMode, autoPublish: false,
+    return { root, label, installed: true, paused: true, ...settings,
       collectionNeedsCredentials: false, explicitPublishingAuthentication: "task-repository-deploy-key" };
   } finally {
     await release();
@@ -170,10 +171,11 @@ export async function pause(root) {
 }
 
 export async function resume(root) {
-  const release = await acquireLock(root, "resume-collection-only");
+  const release = await acquireLock(root, "resume-configured-mode");
+  let settings;
   try {
     const runtime = await readJson(join(root, "runtime.json"));
-    assertCollectionMode(runtime);
+    settings = assertRuntimeMode(runtime);
     validateIntentPolicy(await readJson(join(root, "intent-policy.json")));
     const state = await readJson(join(root, "state.json"));
     await atomicJson(join(root, "state.json"), activateNextSlot(state));
@@ -184,7 +186,7 @@ export async function resume(root) {
   await bootstrap(label);
   await bootstrap(awakeLabel);
   await command("/bin/launchctl", ["kickstart", `${serviceDomain()}/${label}`]);
-  return { enabled: true, mode: collectionMode, autoPublish: false, acOnlyAwakeHelper: true,
+  return { enabled: true, ...settings, acOnlyAwakeHelper: true,
     activation: "next-future-slot" };
 }
 

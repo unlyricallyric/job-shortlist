@@ -136,6 +136,10 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
 .date-group-heading p { color: var(--muted); font-size: 11px; }
 .job-card { display: flex; flex-direction: column; min-width: 0; padding: 24px; background: var(--panel); border: 1px solid var(--border); border-radius: 11px; overflow-wrap: anywhere; }
 .job-card:hover { border-color: #67604a; }
+.job-card.is-candidate { border-left: 2px solid #67757a; }
+.visibility-tag { color: var(--gold); border: 1px solid #756341; padding: 2px 7px; border-radius: 4px; }
+.visibility-tag.is-candidate { color: #c1d0d4; border-color: #53666d; }
+.candidate-evidence { color: #c1d0d4; font-size: 11px; margin-block: 8px 15px; padding: 10px 12px; background: #b3d2de08; border-radius: 5px; }
 .card-kicker { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 18px; font-size: 10px; }
 .card-labels { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .category-tag { background: #ffffff06; border: 1px solid #494a40; border-radius: 4px; padding: 2px 7px; color: #d2d3c7; }

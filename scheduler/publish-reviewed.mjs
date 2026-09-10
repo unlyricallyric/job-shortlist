@@ -5,7 +5,7 @@ import { atomicJson, readJson, RunError } from "./io.mjs";
 import { prepareClone, git, verifyPublication } from "./publish.mjs";
 import { reviewContext, buildReviewedSnapshot } from "./review.mjs";
 import { validateLedger } from "./snapshot.mjs";
-import { assertCollectionMode } from "./intent.mjs";
+import { assertRuntimeMode } from "./intent.mjs";
 import { validateSnapshot } from "../docs/model.mjs";
 
 async function recordPublication(root, receipt, verified) {
@@ -32,7 +32,7 @@ function verifyApprovalBindings(queue, ids, excludedIds, bindings) {
 export async function publishReviewed(root, ids, signal, services = {}) {
   const operations = { prepareClone, git, verifyPublication, ...services };
   const runtime = await readJson(join(root, "runtime.json"));
-  assertCollectionMode(runtime);
+  assertRuntimeMode(runtime);
   const { queue, excludedIds } = await reviewContext(root);
   // Check approval before touching any Git/network state.
   verifyApprovalBindings(queue, ids, excludedIds);
@@ -60,7 +60,8 @@ export async function publishReviewed(root, ids, signal, services = {}) {
   ], { cwd: prepared.cwd, signal });
   const sha = await operations.git(runtime, ["rev-parse", "HEAD"], { cwd: prepared.cwd, signal });
   const receipt = { version: 1, status: "pending", sha, ids, digest: createHash("sha256").update(text).digest("hex"),
-    approvalHashes: Object.fromEntries(ids.map((id) => [id, queue.entries.find((entry) => entry.id === id).evidenceHash])) };
+    approvalHashes: Object.fromEntries(ids.map((id) => [id, queue.entries.find((entry) => entry.id === id).evidenceHash])),
+    approvalJobHashes: Object.fromEntries(ids.map((id) => [id, createHash("sha256").update(JSON.stringify(queue.entries.find((entry) => entry.id === id).approval.job)).digest("hex")])) };
   await atomicJson(join(root, "review-publication-pending.json"), receipt);
   signal.throwIfAborted();
   await operations.git(runtime, ["push", "--quiet", `git@github.com:${runtime.repository}.git`, "HEAD:main"], { cwd: prepared.cwd, signal });
@@ -72,7 +73,7 @@ export async function retryReviewedPublication(root, signal, services = {}) {
   const executeGit = services.git ?? git;
   const verify = services.verifyPublication ?? verifyPublication;
   const runtime = await readJson(join(root, "runtime.json"));
-  assertCollectionMode(runtime);
+  assertRuntimeMode(runtime);
   const receipt = await readJson(join(root, "review-publication-pending.json"));
   if (receipt.version !== 1 || !Array.isArray(receipt.ids) || !receipt.ids.length
     || new Set(receipt.ids).size !== receipt.ids.length || !/^[a-f0-9]{40}$/.test(receipt.sha)
@@ -91,7 +92,9 @@ export async function retryReviewedPublication(root, signal, services = {}) {
   const snapshot = validateSnapshot(JSON.parse(text));
   for (const id of receipt.ids) {
     const approved = queue.entries.find((entry) => entry.id === id).approval.job;
-    if (JSON.stringify(snapshot.jobs.find((job) => job.id === id)) !== JSON.stringify(approved)) {
+    if (receipt.approvalJobHashes
+      ? receipt.approvalJobHashes[id] !== createHash("sha256").update(JSON.stringify(approved)).digest("hex")
+      : JSON.stringify(snapshot.jobs.find((job) => job.id === id)) !== JSON.stringify(approved)) {
       throw new RunError("reviewed-approval-changed", "The approval payload changed after the pending commit.");
     }
   }

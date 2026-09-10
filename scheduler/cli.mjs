@@ -7,17 +7,18 @@ import { loadConfiguration } from "./config.mjs";
 import { run, status, preflight } from "./runner.mjs";
 import { install, pause, resume, uninstall, isLoaded, serviceDomain } from "./install.mjs";
 import { command } from "./process.mjs";
-import { assertCollectionMode, collectionMode } from "./intent.mjs";
+import { assertRuntimeMode } from "./intent.mjs";
 import { reviewContext, reviewCounts, listReviews, showReview, approveReviews, rejectReview, saveReviewQueue } from "./review.mjs";
 import { publishReviewed, retryReviewedPublication } from "./publish-reviewed.mjs";
 import { loadManualExclusions, validateManualExclusions } from "./exclusions.mjs";
+import { publishCaptured, retryCandidatePublication } from "./publish-candidates.mjs";
 
 process.umask(0o077);
 const [action, ...args] = process.argv.slice(2);
 const values = new Map();
 const flags = new Set();
 const known = new Set(["root", "matching", "ledger", "ssh-key", "known-hosts", "repository", "node", "git", "adopt-window", "adopt-tab",
-  "mode", "file", "id", "ids", "evidence-hash", "limit", "status"]);
+  "mode", "file", "id", "ids", "evidence-hash", "limit", "status", "run-id"]);
 for (let index = 0; index < args.length; index++) {
   const name = args[index].replace(/^--/, "");
   if (!args[index].startsWith("--")) throw new Error("Expected a named command option.");
@@ -53,10 +54,17 @@ try {
     result = action === "review-list" ? { counts: reviewCounts(queue, excludedIds), entries: listReviews(queue, {
       limit: values.has("limit") ? Number(values.get("limit")) : 20, status: values.get("status") ?? "pending", excludedIds,
     }) } : showReview(queue, values.get("id"));
+  } else if (["publish-captured", "retry-candidate-publication"].includes(action)) {
+    const release = await acquireLock(root, action);
+    try {
+      const signal = AbortSignal.any([release.signal, AbortSignal.timeout(300000)]);
+      result = action === "publish-captured" ? await publishCaptured(root, values.get("run-id"), signal)
+        : await retryCandidatePublication(root, signal);
+    } finally { await release(); }
   } else if (["review-approve", "review-reject", "publish-reviewed", "retry-reviewed-publication"].includes(action)) {
     const release = await acquireLock(root, action);
     try {
-      assertCollectionMode(await readJson(join(root, "runtime.json")));
+      assertRuntimeMode(await readJson(join(root, "runtime.json")));
       const { queue, excludedIds } = await reviewContext(root);
       if (action === "retry-reviewed-publication") {
         result = await retryReviewedPublication(root, AbortSignal.any([release.signal, AbortSignal.timeout(300000)]));
@@ -87,10 +95,10 @@ try {
   } else if (action === "request-run" || action === "retry-slot" || action === "retry-run") {
     if (!await isLoaded(label)) throw new RunError("service-not-loaded", "The installed LaunchAgent is not loaded.", { blocked: true });
     const requestLock = await acquireLock(root, "request-collection");
-    let request;
+    let request, settings;
     try {
     const { runtime } = await loadConfiguration(root);
-    assertCollectionMode(runtime);
+    settings = assertRuntimeMode(runtime);
     const state = await readJson(join(root, "state.json"));
     const control = await readJson(join(root, "control.json"));
     if (await readJson(join(root, "request.json"), null)) throw new RunError("request-pending", "A run request is already pending.");
@@ -132,9 +140,9 @@ try {
     }
     await command("/bin/launchctl", ["kickstart", `${serviceDomain()}/${label}`]);
     result = { requested: request.id, retryOf: request.retryOf ?? null, via: "installed-launchd", dryRun: request.dryRun,
-      mode: collectionMode, autoPublish: false, controlled: request.controlled };
+      ...settings, controlled: request.controlled };
   } else {
-    throw new RunError("usage", "Use install --mode collection-only, preflight, request-run [--controlled], run-once, status, review-list, review-show --id, review-approve --file, review-reject --id --evidence-hash, publish-reviewed --ids, pause, resume, or uninstall.");
+    throw new RunError("usage", "Use install --mode collection-only|candidate-feed, preflight, request-run [--controlled], run-once, status, publish-captured --run-id, retry-candidate-publication, review-list, review-show --id, review-approve --file, review-reject --id --evidence-hash, publish-reviewed --ids, pause, resume, or uninstall.");
   }
   if (action !== "tick") console.log(JSON.stringify(result, null, 2));
 } catch (error) {
