@@ -1,14 +1,14 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-10T02:22:13.566Z",
+  "generatedAt": "2026-09-10T02:24:57.486Z",
   "run": {
     "source": "BOSS直聘 + 字节跳动招聘官网 + 猎聘",
     "scope": "上海 · 企业级科技 · 伙伴营销、区域市场、内容营销、需求生成及商业化转型备选",
     "mode": "采样候选 · 累计快照",
-    "cardsReviewed": 356,
-    "detailsRead": 115,
-    "selectedCount": 58,
-    "newCount": 48
+    "cardsReviewed": 362,
+    "detailsRead": 118,
+    "selectedCount": 89,
+    "newCount": 31
   },
   "jobs": [
     {
@@ -479,9 +479,9 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-09T18:49:09.071Z",
-      "lastSeen": "2026-09-10T01:31:21.471Z",
+      "lastSeen": "2026-09-10T02:24:42.838Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-1a4d803e99f2ae6e03J42t67FVNY",
@@ -511,9 +511,9 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-09T18:49:12.625Z",
-      "lastSeen": "2026-09-09T18:49:12.625Z",
+      "lastSeen": "2026-09-10T02:24:42.838Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-bd6779a7f0a1d57c0nd62dy-FldV",
@@ -545,7 +545,7 @@
       "firstSeen": "2026-09-09T18:49:15.986Z",
       "lastSeen": "2026-09-10T01:31:21.471Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-bdbbdf2d9d7980b70nBz39i7FVtT",
@@ -578,7 +578,7 @@
       "firstSeen": "2026-09-09T18:49:24.620Z",
       "lastSeen": "2026-09-10T01:31:35.237Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-ca84a81f74b6f39203153t25EVFW",
@@ -610,7 +610,7 @@
       "firstSeen": "2026-09-09T18:49:28.170Z",
       "lastSeen": "2026-09-10T01:31:35.237Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-f8933298f04e5fa10nJ_2tq8F1tT",
@@ -641,9 +641,9 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-09T18:49:41.905Z",
-      "lastSeen": "2026-09-10T01:32:00.870Z",
+      "lastSeen": "2026-09-10T02:24:53.089Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-5a18d943bb612b410nB80t26GVdZ",
@@ -675,7 +675,7 @@
       "firstSeen": "2026-09-09T18:49:51.972Z",
       "lastSeen": "2026-09-10T01:32:00.870Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-009c18e7acc88c790nJ-29m4E1BZ",
@@ -708,7 +708,7 @@
       "firstSeen": "2026-09-09T20:13:56.676Z",
       "lastSeen": "2026-09-09T20:13:56.676Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-fd67cfdda305e07f0nN73t29F1tZ",
@@ -738,9 +738,9 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-09T20:13:59.976Z",
-      "lastSeen": "2026-09-10T01:31:21.471Z",
+      "lastSeen": "2026-09-10T02:24:42.838Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-38828aef2c6345170nFy09S9EldW",
@@ -770,9 +770,9 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-09T20:14:09.173Z",
-      "lastSeen": "2026-09-09T20:14:09.173Z",
+      "lastSeen": "2026-09-10T02:24:53.089Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-bd291b82bf0534f50nJy0t-6F1RV",
@@ -802,9 +802,9 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-09T20:14:11.418Z",
-      "lastSeen": "2026-09-09T20:14:11.418Z",
+      "lastSeen": "2026-09-10T02:24:53.089Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-456a91ebfffa8e3e0nJz2t6_GVBS",
@@ -834,9 +834,9 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-09T20:14:51.260Z",
-      "lastSeen": "2026-09-09T20:14:51.260Z",
+      "lastSeen": "2026-09-10T02:24:32.183Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-a2f89fa3913ea5350nJ_39u8F1FT",
@@ -866,9 +866,9 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:31:21.471Z",
-      "lastSeen": "2026-09-10T01:31:23.586Z",
+      "lastSeen": "2026-09-10T02:24:42.838Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-f31a5deea06b65c61Hxz2N61FFVR",
@@ -900,7 +900,7 @@
       "firstSeen": "2026-09-10T01:31:21.471Z",
       "lastSeen": "2026-09-10T01:31:25.958Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-5636db564b74930e0nF929u1F1NR",
@@ -932,7 +932,7 @@
       "firstSeen": "2026-09-10T01:31:21.471Z",
       "lastSeen": "2026-09-10T01:31:28.255Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-16edbaa1282d1d2a0nB939y6F1NV",
@@ -964,7 +964,7 @@
       "firstSeen": "2026-09-10T01:31:35.237Z",
       "lastSeen": "2026-09-10T01:31:36.077Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-8703aa5f0b5c86330nd8292_FlJR",
@@ -997,7 +997,7 @@
       "firstSeen": "2026-09-10T01:31:35.237Z",
       "lastSeen": "2026-09-10T01:31:38.404Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-29e5b22195930b170nN72d60FFNQ",
@@ -1029,7 +1029,7 @@
       "firstSeen": "2026-09-10T01:31:35.237Z",
       "lastSeen": "2026-09-10T01:31:40.717Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-2bb039988e14f58d0nJz2d61GFNY",
@@ -1061,7 +1061,7 @@
       "firstSeen": "2026-09-10T01:31:53.872Z",
       "lastSeen": "2026-09-10T01:32:00.870Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-caa6a9c725d802380nB90ty9GFVU",
@@ -1093,7 +1093,7 @@
       "firstSeen": "2026-09-10T01:32:00.870Z",
       "lastSeen": "2026-09-10T01:32:02.986Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-8dccbe03789cc56f0nN62Ny9FlNY",
@@ -1125,7 +1125,7 @@
       "firstSeen": "2026-09-10T01:31:00.686Z",
       "lastSeen": "2026-09-10T01:31:00.686Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-84ed8ba70cfd21110nJz09q5EVdY",
@@ -1155,9 +1155,9 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:31:21.471Z",
-      "lastSeen": "2026-09-10T01:31:21.471Z",
+      "lastSeen": "2026-09-10T02:24:42.838Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-97443cdc0638be130nF409m8ElJU",
@@ -1189,7 +1189,7 @@
       "firstSeen": "2026-09-10T01:31:21.471Z",
       "lastSeen": "2026-09-10T01:31:21.471Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-b9d5dca66e8fe7270nN439i9E1BZ",
@@ -1221,7 +1221,7 @@
       "firstSeen": "2026-09-10T01:31:21.471Z",
       "lastSeen": "2026-09-10T01:31:21.471Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-328cb7c425bf5ff60nN42du-EVtT",
@@ -1253,7 +1253,7 @@
       "firstSeen": "2026-09-10T01:31:21.471Z",
       "lastSeen": "2026-09-10T01:31:21.471Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-a735e520bbafdcfc0nN72N6_FFBU",
@@ -1285,7 +1285,7 @@
       "firstSeen": "2026-09-10T01:31:21.471Z",
       "lastSeen": "2026-09-10T01:31:21.471Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-ca733d1ca73d957d0nN529u4GFNR",
@@ -1317,7 +1317,7 @@
       "firstSeen": "2026-09-10T01:31:21.471Z",
       "lastSeen": "2026-09-10T01:31:21.471Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-29fdeffc3dbf3dea0nF60tq8GVJW",
@@ -1349,7 +1349,7 @@
       "firstSeen": "2026-09-10T01:31:00.686Z",
       "lastSeen": "2026-09-10T01:31:00.686Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-85957395cae256090nN43Ni9GVVT",
@@ -1381,7 +1381,7 @@
       "firstSeen": "2026-09-10T01:31:00.686Z",
       "lastSeen": "2026-09-10T01:31:00.686Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-650a6abfc23bc4db031y39y5F1NZ",
@@ -1413,7 +1413,7 @@
       "firstSeen": "2026-09-10T01:31:35.237Z",
       "lastSeen": "2026-09-10T01:31:35.237Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-9d037963381da8210nd439u9FltY",
@@ -1445,7 +1445,7 @@
       "firstSeen": "2026-09-10T01:31:35.237Z",
       "lastSeen": "2026-09-10T01:31:35.237Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-aed29e3a0b9c11f00nF_2dq8F1VV",
@@ -1477,7 +1477,7 @@
       "firstSeen": "2026-09-10T01:31:35.237Z",
       "lastSeen": "2026-09-10T01:31:35.237Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-8f9f1bd13c0e472c0nJ42tm4EFZX",
@@ -1509,7 +1509,7 @@
       "firstSeen": "2026-09-10T01:31:35.237Z",
       "lastSeen": "2026-09-10T01:31:35.237Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-cce8f3a00b98d76b0nBz09m8FVpZ",
@@ -1541,7 +1541,7 @@
       "firstSeen": "2026-09-10T01:31:35.237Z",
       "lastSeen": "2026-09-10T01:31:35.237Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-29b6e529a745b60f0nJ40965FltW",
@@ -1573,7 +1573,7 @@
       "firstSeen": "2026-09-10T01:31:35.237Z",
       "lastSeen": "2026-09-10T01:31:35.237Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-f71dd4228304460e0nB43Nq5ElNQ",
@@ -1605,7 +1605,7 @@
       "firstSeen": "2026-09-10T01:31:35.237Z",
       "lastSeen": "2026-09-10T01:31:35.237Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-8f9eee870fd3f0560nN72tq4EFJS",
@@ -1637,7 +1637,7 @@
       "firstSeen": "2026-09-10T01:31:35.237Z",
       "lastSeen": "2026-09-10T01:31:35.237Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-bd908d18f7f7b6b30nF_09S0ElZS",
@@ -1657,7 +1657,7 @@
       "matchScore": null,
       "priority": "采样候选 · 待你判断",
       "summary": [
-        "尚未取得可完整核对的 JD，请查看原岗位。"
+        "已读取可分离的岗位职责与要求，仅作为来源记录展示，不表示适合。"
       ],
       "requirements": [],
       "matchReasons": [],
@@ -1667,9 +1667,9 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:32:00.870Z",
-      "lastSeen": "2026-09-10T01:32:00.870Z",
-      "jdRead": false,
-      "isNew": true
+      "lastSeen": "2026-09-10T02:24:55.122Z",
+      "jdRead": true,
+      "isNew": false
     },
     {
       "id": "boss-61c88500cec9b52e0nF_2dW1GFVR",
@@ -1701,7 +1701,7 @@
       "firstSeen": "2026-09-10T01:32:00.870Z",
       "lastSeen": "2026-09-10T01:32:00.870Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-a86de40e3a85a4150nV93dq4EFtY",
@@ -1733,7 +1733,7 @@
       "firstSeen": "2026-09-10T01:32:00.870Z",
       "lastSeen": "2026-09-10T01:32:00.870Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-fba28b4e8ca63dc40ndy39m0FVpV",
@@ -1765,7 +1765,7 @@
       "firstSeen": "2026-09-10T01:32:00.870Z",
       "lastSeen": "2026-09-10T01:32:00.870Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-65b48b9e8e69e98f0nJy29q7GFRV",
@@ -1797,7 +1797,7 @@
       "firstSeen": "2026-09-10T01:32:00.870Z",
       "lastSeen": "2026-09-10T01:32:00.870Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-86563e77f1b21b1b0nJz2Nq0FltV",
@@ -1829,7 +1829,7 @@
       "firstSeen": "2026-09-10T01:32:00.870Z",
       "lastSeen": "2026-09-10T01:32:00.870Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-e7e55fdb0d08b37d0nJ90tu0EFJT",
@@ -1861,7 +1861,7 @@
       "firstSeen": "2026-09-10T01:32:00.870Z",
       "lastSeen": "2026-09-10T01:32:00.870Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-89827265ff7f41ff0nN73t68GVBT",
@@ -1893,7 +1893,7 @@
       "firstSeen": "2026-09-10T01:32:00.870Z",
       "lastSeen": "2026-09-10T01:32:00.870Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-6bb382741dad4f840nN52Nq8EFBW",
@@ -1925,7 +1925,7 @@
       "firstSeen": "2026-09-10T01:32:00.870Z",
       "lastSeen": "2026-09-10T01:32:00.870Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-368bdfb760c76b4a0nF62N67E1NV",
@@ -1957,7 +1957,7 @@
       "firstSeen": "2026-09-10T01:32:00.870Z",
       "lastSeen": "2026-09-10T01:32:00.870Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-2e69a1d341ec97cf0nF62NW8FVtR",
@@ -1988,6 +1988,1000 @@
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:32:00.870Z",
       "lastSeen": "2026-09-10T01:32:00.870Z",
+      "jdRead": false,
+      "isNew": false
+    },
+    {
+      "id": "boss-734ddcfab5afad590nN509-8F1pV",
+      "title": "产品经理(3个月短期商城项目)",
+      "company": "虹信软件",
+      "city": "上海",
+      "location": "上海·浦东新区·南码头",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/734ddcfab5afad590nN509-8F1pV.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "5-10年",
+      "educationText": "大专",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "已读取可分离的岗位职责与要求，仅作为来源记录展示，不表示适合。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:10.804Z",
+      "lastSeen": "2026-09-10T02:24:42.838Z",
+      "jdRead": true,
+      "isNew": true
+    },
+    {
+      "id": "boss-cec98ca866584f041XN73d66EFJX",
+      "title": "海外业务拓展BD",
+      "company": "UCloud",
+      "city": "上海",
+      "location": "上海",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/cec98ca866584f041XN73d66EFJX.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "1-3年",
+      "educationText": "本科",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:23.331Z",
+      "lastSeen": "2026-09-10T02:24:53.089Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-513726703611cd840nF82969ElNU",
+      "title": "合伙人VP-上海",
+      "company": "领航云智能",
+      "city": "上海",
+      "location": "上海·闵行区·虹桥",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/513726703611cd840nF82969ElNU.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "1-3年",
+      "educationText": "大专",
+      "category": "渠道销售",
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "职责涉及合作伙伴或渠道业务，具体分工请核对原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:26.787Z",
+      "lastSeen": "2026-09-10T02:24:53.089Z",
+      "jdRead": true,
+      "isNew": true
+    },
+    {
+      "id": "boss-2f91cdabf115dc730nN50ty7EVBR",
+      "title": "生态合作伙伴拓展与运维经理",
+      "company": "九韶智能",
+      "city": "上海",
+      "location": "上海·徐汇区·徐家汇",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/2f91cdabf115dc730nN50ty7EVBR.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "1-3年",
+      "educationText": "本科",
+      "category": "渠道销售",
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "职责涉及合作伙伴或渠道业务，具体分工请核对原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:32.183Z",
+      "lastSeen": "2026-09-10T02:24:34.123Z",
+      "jdRead": true,
+      "isNew": true
+    },
+    {
+      "id": "boss-665d394ca22441160nF_3d-7FVNR",
+      "title": "生态渠道经理",
+      "company": "上海喜啦科技有限公司",
+      "city": "上海",
+      "location": "上海·杨浦区·五角场",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/665d394ca22441160nF_3d-7FVNR.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "5-10年",
+      "educationText": "本科",
+      "category": "渠道销售",
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "职责涉及合作伙伴或渠道业务，具体分工请核对原岗位。",
+        "职责同时涉及研究、战略或管理层支持。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:32.183Z",
+      "lastSeen": "2026-09-10T02:24:37.589Z",
+      "jdRead": true,
+      "isNew": true
+    },
+    {
+      "id": "boss-cad62a02e47148e40nJ809y0GFZW",
+      "title": "商务及渠道增长经理(BD & Partnership)",
+      "company": "上海温残信息技术",
+      "city": "上海",
+      "location": "上海·浦东新区·张江",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/cad62a02e47148e40nJ809y0GFZW.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "5-10年",
+      "educationText": "本科",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "职责涉及合作伙伴或渠道业务，具体分工请核对原岗位。",
+        "职责同时涉及研究、战略或管理层支持。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:42.838Z",
+      "lastSeen": "2026-09-10T02:24:46.272Z",
+      "jdRead": true,
+      "isNew": true
+    },
+    {
+      "id": "boss-91bfcc18e61cd02d0nJ909S6FlpX",
+      "title": "区域经理",
+      "company": "掌银科技有限公司",
+      "city": "上海",
+      "location": "上海·浦东新区·陆家嘴",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/91bfcc18e61cd02d0nJ909S6FlpX.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "经验不限",
+      "educationText": null,
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:42.838Z",
+      "lastSeen": "2026-09-10T02:24:42.838Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-2ed990db7ffe941d1HF82tW_EVBT",
+      "title": "渠道经理",
+      "company": "安在信息",
+      "city": "上海",
+      "location": "上海·浦东新区·张江",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/2ed990db7ffe941d1HF82tW_EVBT.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "经验不限",
+      "educationText": "学历不限",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:42.838Z",
+      "lastSeen": "2026-09-10T02:24:42.838Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-ecc3dea7437cc1d80nJ609q4EFRQ",
+      "title": "海外销售经理",
+      "company": "上海瀚蓝软件",
+      "city": "上海",
+      "location": "上海·闵行区·浦江",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/ecc3dea7437cc1d80nJ609q4EFRQ.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "经验不限",
+      "educationText": "学历不限",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:42.838Z",
+      "lastSeen": "2026-09-10T02:24:42.838Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-cc17b34fc70387400nJ73tS4E1JR",
+      "title": "交付经理",
+      "company": "微创软件",
+      "city": "上海",
+      "location": "上海·徐汇区·漕河泾",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/cc17b34fc70387400nJ73tS4E1JR.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "5-10年",
+      "educationText": "大专",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:00.906Z",
+      "lastSeen": "2026-09-10T02:24:00.906Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-5e730768ab9601e40nJ82dy4GVdY",
+      "title": "java技术经理",
+      "company": "众信易成",
+      "city": "上海",
+      "location": "上海·徐汇区·漕河泾",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/5e730768ab9601e40nJ82dy4GVdY.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "5-10年",
+      "educationText": "本科",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:23:43.403Z",
+      "lastSeen": "2026-09-10T02:23:43.403Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-4b9ec0cf93f491ee0nN52d29GVNQ",
+      "title": "绝缘纸业务销售经理",
+      "company": "上海久友智能科技",
+      "city": "上海",
+      "location": "上海·松江区·新桥",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/4b9ec0cf93f491ee0nN52d29GVNQ.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "5-10年",
+      "educationText": "本科",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:23:43.403Z",
+      "lastSeen": "2026-09-10T02:23:43.403Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-7785d7c6b2f9df5d0nN53dq-GVdV",
+      "title": "财务经理 助理",
+      "company": "同恩",
+      "city": "上海",
+      "location": "上海·杨浦区·五角场",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/7785d7c6b2f9df5d0nN53dq-GVdV.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "在校/应届",
+      "educationText": "本科",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:23:43.403Z",
+      "lastSeen": "2026-09-10T02:23:43.403Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-2236fced04b70e870nN609W-FFZT",
+      "title": "外包交付经理",
+      "company": "上海思芮",
+      "city": "上海",
+      "location": "上海·闵行区·吴泾",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/2236fced04b70e870nN609W-FFZT.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "3-5年",
+      "educationText": "本科",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:23:43.403Z",
+      "lastSeen": "2026-09-10T02:23:43.403Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-7cb0bdd641978a570nN62t26F1NZ",
+      "title": "A I+云 计 算 合 伙 人(国内大厂+全国市场",
+      "company": "智惠云科技有限公司",
+      "city": "上海",
+      "location": "上海·宝山区·淞南",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/7cb0bdd641978a570nN62t26F1NZ.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "经验不限",
+      "educationText": "学历不限",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:53.089Z",
+      "lastSeen": "2026-09-10T02:24:53.089Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-b5fe25737915b8240nJ52tq4F1tR",
+      "title": "业务拓展经理",
+      "company": "亚马逊云科技",
+      "city": "上海",
+      "location": "上海·浦东新区·三林",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/b5fe25737915b8240nJ52tq4F1tR.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "5-10年",
+      "educationText": "本科",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:53.089Z",
+      "lastSeen": "2026-09-10T02:24:53.089Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-f1a740195d12bdc60nJ_3tm1E1pZ",
+      "title": "采购经理",
+      "company": "Zenlayer",
+      "city": "上海",
+      "location": "上海·静安区·彭浦镇",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/f1a740195d12bdc60nJ_3tm1E1pZ.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "5-10年",
+      "educationText": "本科",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:53.089Z",
+      "lastSeen": "2026-09-10T02:24:53.089Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-b8e28a2e988714530nF-3Ni5FVVQ",
+      "title": "BD商务经理(媒体行业)",
+      "company": "零氪云",
+      "city": "上海",
+      "location": "上海·闵行区·虹桥",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/b8e28a2e988714530nF-3Ni5FVVQ.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "3-5年",
+      "educationText": "本科",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:53.089Z",
+      "lastSeen": "2026-09-10T02:24:53.089Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-80f28438b2b4c5f70nRz3960FlBY",
+      "title": "业务销售(上海市场)",
+      "company": "索提斯",
+      "city": "上海",
+      "location": "上海·嘉定区·外冈",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/80f28438b2b4c5f70nRz3960FlBY.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "1-3年",
+      "educationText": "本科",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:53.089Z",
+      "lastSeen": "2026-09-10T02:24:53.089Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-c2f5aabfacd1198e0nJ52d61ElJV",
+      "title": "东南亚AIDC总经理",
+      "company": "上海无穹智算数字科技",
+      "city": "上海",
+      "location": "上海·黄浦区·外滩",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/c2f5aabfacd1198e0nJ52d61ElJV.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "10年以上",
+      "educationText": "本科",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:53.089Z",
+      "lastSeen": "2026-09-10T02:24:53.089Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-adc6b14c6209ae1c0nB43dm1EFRQ",
+      "title": "跨境B2B事业合伙人(美国市场)",
+      "company": "上海易帆数据科技",
+      "city": "上海",
+      "location": "上海·普陀区·真如",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/adc6b14c6209ae1c0nB43dm1EFRQ.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "5-10年",
+      "educationText": "本科",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:53.089Z",
+      "lastSeen": "2026-09-10T02:24:53.089Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-cbe265cca372a4970nZy09y6E1ZT",
+      "title": "云计算 & 模型API销售经理-SH",
+      "company": "图能科技",
+      "city": "上海",
+      "location": "上海·徐汇区·漕河泾",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/cbe265cca372a4970nZy09y6E1ZT.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "3-5年",
+      "educationText": "大专",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:53.089Z",
+      "lastSeen": "2026-09-10T02:24:53.089Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-a60d00240139f8660nJz2du6GVVZ",
+      "title": "生态合作经理",
+      "company": "大连同方软银",
+      "city": "上海",
+      "location": "上海·虹口区·四川北路",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/a60d00240139f8660nJz2du6GVVZ.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "3-5年",
+      "educationText": "本科",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:32.183Z",
+      "lastSeen": "2026-09-10T02:24:32.183Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-2588ef9e0b6d2b2b0nJz29W6FVdT",
+      "title": "b端产品经理",
+      "company": "上海瀚蓝软件",
+      "city": "上海",
+      "location": "上海·闵行区·浦江",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/2588ef9e0b6d2b2b0nJz29W6FVdT.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "3-5年",
+      "educationText": "学历不限",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:32.183Z",
+      "lastSeen": "2026-09-10T02:24:32.183Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-1b7563342c631cbd031739S1ElFX",
+      "title": "数据要素生态专家",
+      "company": "零数科技",
+      "city": "上海",
+      "location": "上海",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/1b7563342c631cbd031739S1ElFX.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "5-10年",
+      "educationText": "本科",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:23:55.606Z",
+      "lastSeen": "2026-09-10T02:23:55.606Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-e7cfc357687bb8e70nJz3t68EFNW",
+      "title": "解决方案工程师(生态赋能方向)",
+      "company": "谷斗科技(上海)...",
+      "city": "上海",
+      "location": "上海·宝山区·共康",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/e7cfc357687bb8e70nJz3t68EFNW.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "1-3年",
+      "educationText": "本科",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:32.183Z",
+      "lastSeen": "2026-09-10T02:24:32.183Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-c531833cee8adb4f0nZ-3tu7EltZ",
+      "title": "座舱大模型项目经理",
+      "company": "软通动力",
+      "city": "上海",
+      "location": "上海·杨浦区·五角场",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/c531833cee8adb4f0nZ-3tu7EltZ.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "5-10年",
+      "educationText": "大专",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:32.183Z",
+      "lastSeen": "2026-09-10T02:24:32.183Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-417e7a4a98e5fc730nN529q_FVtQ",
+      "title": "工业生态销售经理-信创行业-上市公司",
+      "company": "北京海量数据",
+      "city": "上海",
+      "location": "上海·长宁区·北新泾",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/417e7a4a98e5fc730nN529q_FVtQ.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "1-3年",
+      "educationText": "本科",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:32.183Z",
+      "lastSeen": "2026-09-10T02:24:32.183Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-c7151f881ce8208a0nZ83N-5EFVZ",
+      "title": "区域生态渠道经理(华东区域)",
+      "company": "精琢科技",
+      "city": "上海",
+      "location": "上海·浦东新区·陆家嘴",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/c7151f881ce8208a0nZ83N-5EFVZ.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "3-5年",
+      "educationText": "大专",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:32.183Z",
+      "lastSeen": "2026-09-10T02:24:32.183Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-bc56130d8057b8850nJy3NS0FlNX",
+      "title": "市场总监(ABM/ToB科技/基础软件)",
+      "company": "合肥邮创汇",
+      "city": "上海",
+      "location": "上海·浦东新区·张江",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/bc56130d8057b8850nJy3NS0FlNX.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "5-10年",
+      "educationText": "本科",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:24:32.183Z",
+      "lastSeen": "2026-09-10T02:24:32.183Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-9456198164ad7dee0nN72Ni_EVVY",
+      "title": "生态运营-音频、音乐",
+      "company": "纬致科技北京",
+      "city": "上海",
+      "location": "上海·杨浦区·五角场",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/9456198164ad7dee0nN72Ni_EVVY.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "1-3年",
+      "educationText": "大专",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T02:23:55.606Z",
+      "lastSeen": "2026-09-10T02:23:55.606Z",
       "jdRead": false,
       "isNew": true
     }
@@ -2050,7 +3044,38 @@
     "boss-89827265ff7f41ff0nN73t68GVBT": "source-only",
     "boss-6bb382741dad4f840nN52Nq8EFBW": "source-only",
     "boss-368bdfb760c76b4a0nF62N67E1NV": "source-only",
-    "boss-2e69a1d341ec97cf0nF62NW8FVtR": "source-only"
+    "boss-2e69a1d341ec97cf0nF62NW8FVtR": "source-only",
+    "boss-734ddcfab5afad590nN509-8F1pV": "source-only",
+    "boss-cec98ca866584f041XN73d66EFJX": "source-only",
+    "boss-513726703611cd840nF82969ElNU": "source-only",
+    "boss-2f91cdabf115dc730nN50ty7EVBR": "source-only",
+    "boss-665d394ca22441160nF_3d-7FVNR": "source-only",
+    "boss-cad62a02e47148e40nJ809y0GFZW": "source-only",
+    "boss-91bfcc18e61cd02d0nJ909S6FlpX": "source-only",
+    "boss-2ed990db7ffe941d1HF82tW_EVBT": "source-only",
+    "boss-ecc3dea7437cc1d80nJ609q4EFRQ": "source-only",
+    "boss-cc17b34fc70387400nJ73tS4E1JR": "source-only",
+    "boss-5e730768ab9601e40nJ82dy4GVdY": "source-only",
+    "boss-4b9ec0cf93f491ee0nN52d29GVNQ": "source-only",
+    "boss-7785d7c6b2f9df5d0nN53dq-GVdV": "source-only",
+    "boss-2236fced04b70e870nN609W-FFZT": "source-only",
+    "boss-7cb0bdd641978a570nN62t26F1NZ": "source-only",
+    "boss-b5fe25737915b8240nJ52tq4F1tR": "source-only",
+    "boss-f1a740195d12bdc60nJ_3tm1E1pZ": "source-only",
+    "boss-b8e28a2e988714530nF-3Ni5FVVQ": "source-only",
+    "boss-80f28438b2b4c5f70nRz3960FlBY": "source-only",
+    "boss-c2f5aabfacd1198e0nJ52d61ElJV": "source-only",
+    "boss-adc6b14c6209ae1c0nB43dm1EFRQ": "source-only",
+    "boss-cbe265cca372a4970nZy09y6E1ZT": "source-only",
+    "boss-a60d00240139f8660nJz2du6GVVZ": "source-only",
+    "boss-2588ef9e0b6d2b2b0nJz29W6FVdT": "source-only",
+    "boss-1b7563342c631cbd031739S1ElFX": "source-only",
+    "boss-e7cfc357687bb8e70nJz3t68EFNW": "source-only",
+    "boss-c531833cee8adb4f0nZ-3tu7EltZ": "source-only",
+    "boss-417e7a4a98e5fc730nN529q_FVtQ": "source-only",
+    "boss-c7151f881ce8208a0nZ83N-5EFVZ": "source-only",
+    "boss-bc56130d8057b8850nJy3NS0FlNX": "source-only",
+    "boss-9456198164ad7dee0nN72Ni_EVVY": "source-only"
   },
   "candidateStatesById": {
     "boss-6c462526869b2f3b0nJ93Nu7E1FZ": {
@@ -2061,7 +3086,7 @@
     "boss-1a4d803e99f2ae6e03J42t67FVNY": {
       "evidence": "incomplete-jd",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-09T18:49:12.625Z"
+      "evidenceObservedAt": "2026-09-10T02:24:42.838Z"
     },
     "boss-bd6779a7f0a1d57c0nd62dy-FldV": {
       "evidence": "incomplete-jd",
@@ -2096,7 +3121,7 @@
     "boss-fd67cfdda305e07f0nN73t29F1tZ": {
       "evidence": "incomplete-jd",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:31:21.471Z"
+      "evidenceObservedAt": "2026-09-10T02:24:42.838Z"
     },
     "boss-38828aef2c6345170nFy09S9EldW": {
       "evidence": "full-jd",
@@ -2116,7 +3141,7 @@
     "boss-a2f89fa3913ea5350nJ_39u8F1FT": {
       "evidence": "incomplete-jd",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:31:23.586Z"
+      "evidenceObservedAt": "2026-09-10T02:24:42.838Z"
     },
     "boss-f31a5deea06b65c61Hxz2N61FFVR": {
       "evidence": "full-jd",
@@ -2161,7 +3186,7 @@
     "boss-84ed8ba70cfd21110nJz09q5EVdY": {
       "evidence": "card-only",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:31:21.471Z"
+      "evidenceObservedAt": "2026-09-10T02:24:42.838Z"
     },
     "boss-97443cdc0638be130nF409m8ElJU": {
       "evidence": "card-only",
@@ -2239,9 +3264,9 @@
       "evidenceObservedAt": "2026-09-10T01:31:35.237Z"
     },
     "boss-bd908d18f7f7b6b30nF_09S0ElZS": {
-      "evidence": "card-only",
+      "evidence": "full-jd",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:32:00.870Z"
+      "evidenceObservedAt": "2026-09-10T02:24:55.122Z"
     },
     "boss-61c88500cec9b52e0nF_2dW1GFVR": {
       "evidence": "identity-conflict",
@@ -2292,6 +3317,161 @@
       "evidence": "card-only",
       "direction": "unclear",
       "evidenceObservedAt": "2026-09-10T01:32:00.870Z"
+    },
+    "boss-734ddcfab5afad590nN509-8F1pV": {
+      "evidence": "full-jd",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:24:10.804Z"
+    },
+    "boss-cec98ca866584f041XN73d66EFJX": {
+      "evidence": "incomplete-jd",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:24:53.089Z"
+    },
+    "boss-513726703611cd840nF82969ElNU": {
+      "evidence": "full-jd",
+      "direction": "primary",
+      "evidenceObservedAt": "2026-09-10T02:24:26.787Z"
+    },
+    "boss-2f91cdabf115dc730nN50ty7EVBR": {
+      "evidence": "full-jd",
+      "direction": "primary",
+      "evidenceObservedAt": "2026-09-10T02:24:34.123Z"
+    },
+    "boss-665d394ca22441160nF_3d-7FVNR": {
+      "evidence": "full-jd",
+      "direction": "primary",
+      "evidenceObservedAt": "2026-09-10T02:24:37.589Z"
+    },
+    "boss-cad62a02e47148e40nJ809y0GFZW": {
+      "evidence": "full-jd",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:24:46.272Z"
+    },
+    "boss-91bfcc18e61cd02d0nJ909S6FlpX": {
+      "evidence": "card-only",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:24:42.838Z"
+    },
+    "boss-2ed990db7ffe941d1HF82tW_EVBT": {
+      "evidence": "identity-conflict",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:24:42.838Z"
+    },
+    "boss-ecc3dea7437cc1d80nJ609q4EFRQ": {
+      "evidence": "identity-conflict",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:24:42.838Z"
+    },
+    "boss-cc17b34fc70387400nJ73tS4E1JR": {
+      "evidence": "identity-conflict",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:24:00.906Z"
+    },
+    "boss-5e730768ab9601e40nJ82dy4GVdY": {
+      "evidence": "card-only",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:23:43.403Z"
+    },
+    "boss-4b9ec0cf93f491ee0nN52d29GVNQ": {
+      "evidence": "card-only",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:23:43.403Z"
+    },
+    "boss-7785d7c6b2f9df5d0nN53dq-GVdV": {
+      "evidence": "card-only",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:23:43.403Z"
+    },
+    "boss-2236fced04b70e870nN609W-FFZT": {
+      "evidence": "card-only",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:23:43.403Z"
+    },
+    "boss-7cb0bdd641978a570nN62t26F1NZ": {
+      "evidence": "card-only",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:24:53.089Z"
+    },
+    "boss-b5fe25737915b8240nJ52tq4F1tR": {
+      "evidence": "card-only",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:24:53.089Z"
+    },
+    "boss-f1a740195d12bdc60nJ_3tm1E1pZ": {
+      "evidence": "card-only",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:24:53.089Z"
+    },
+    "boss-b8e28a2e988714530nF-3Ni5FVVQ": {
+      "evidence": "card-only",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:24:53.089Z"
+    },
+    "boss-80f28438b2b4c5f70nRz3960FlBY": {
+      "evidence": "card-only",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:24:53.089Z"
+    },
+    "boss-c2f5aabfacd1198e0nJ52d61ElJV": {
+      "evidence": "identity-conflict",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:24:53.089Z"
+    },
+    "boss-adc6b14c6209ae1c0nB43dm1EFRQ": {
+      "evidence": "card-only",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:24:53.089Z"
+    },
+    "boss-cbe265cca372a4970nZy09y6E1ZT": {
+      "evidence": "card-only",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:24:53.089Z"
+    },
+    "boss-a60d00240139f8660nJz2du6GVVZ": {
+      "evidence": "card-only",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:24:32.183Z"
+    },
+    "boss-2588ef9e0b6d2b2b0nJz29W6FVdT": {
+      "evidence": "card-only",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:24:32.183Z"
+    },
+    "boss-1b7563342c631cbd031739S1ElFX": {
+      "evidence": "card-only",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:23:55.606Z"
+    },
+    "boss-e7cfc357687bb8e70nJz3t68EFNW": {
+      "evidence": "card-only",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:24:32.183Z"
+    },
+    "boss-c531833cee8adb4f0nZ-3tu7EltZ": {
+      "evidence": "card-only",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:24:32.183Z"
+    },
+    "boss-417e7a4a98e5fc730nN529q_FVtQ": {
+      "evidence": "card-only",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:24:32.183Z"
+    },
+    "boss-c7151f881ce8208a0nZ83N-5EFVZ": {
+      "evidence": "card-only",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:24:32.183Z"
+    },
+    "boss-bc56130d8057b8850nJy3NS0FlNX": {
+      "evidence": "card-only",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:24:32.183Z"
+    },
+    "boss-9456198164ad7dee0nN72Ni_EVVY": {
+      "evidence": "card-only",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T02:23:55.606Z"
     }
   },
   "firstPublishedAtById": {
@@ -2345,17 +3525,48 @@
     "boss-89827265ff7f41ff0nN73t68GVBT": "2026-09-10T02:22:13.566Z",
     "boss-6bb382741dad4f840nN52Nq8EFBW": "2026-09-10T02:22:13.566Z",
     "boss-368bdfb760c76b4a0nF62N67E1NV": "2026-09-10T02:22:13.566Z",
-    "boss-2e69a1d341ec97cf0nF62NW8FVtR": "2026-09-10T02:22:13.566Z"
+    "boss-2e69a1d341ec97cf0nF62NW8FVtR": "2026-09-10T02:22:13.566Z",
+    "boss-734ddcfab5afad590nN509-8F1pV": "2026-09-10T02:24:57.486Z",
+    "boss-cec98ca866584f041XN73d66EFJX": "2026-09-10T02:24:57.486Z",
+    "boss-513726703611cd840nF82969ElNU": "2026-09-10T02:24:57.486Z",
+    "boss-2f91cdabf115dc730nN50ty7EVBR": "2026-09-10T02:24:57.486Z",
+    "boss-665d394ca22441160nF_3d-7FVNR": "2026-09-10T02:24:57.486Z",
+    "boss-cad62a02e47148e40nJ809y0GFZW": "2026-09-10T02:24:57.486Z",
+    "boss-91bfcc18e61cd02d0nJ909S6FlpX": "2026-09-10T02:24:57.486Z",
+    "boss-2ed990db7ffe941d1HF82tW_EVBT": "2026-09-10T02:24:57.486Z",
+    "boss-ecc3dea7437cc1d80nJ609q4EFRQ": "2026-09-10T02:24:57.486Z",
+    "boss-cc17b34fc70387400nJ73tS4E1JR": "2026-09-10T02:24:57.486Z",
+    "boss-5e730768ab9601e40nJ82dy4GVdY": "2026-09-10T02:24:57.486Z",
+    "boss-4b9ec0cf93f491ee0nN52d29GVNQ": "2026-09-10T02:24:57.486Z",
+    "boss-7785d7c6b2f9df5d0nN53dq-GVdV": "2026-09-10T02:24:57.486Z",
+    "boss-2236fced04b70e870nN609W-FFZT": "2026-09-10T02:24:57.486Z",
+    "boss-7cb0bdd641978a570nN62t26F1NZ": "2026-09-10T02:24:57.486Z",
+    "boss-b5fe25737915b8240nJ52tq4F1tR": "2026-09-10T02:24:57.486Z",
+    "boss-f1a740195d12bdc60nJ_3tm1E1pZ": "2026-09-10T02:24:57.486Z",
+    "boss-b8e28a2e988714530nF-3Ni5FVVQ": "2026-09-10T02:24:57.486Z",
+    "boss-80f28438b2b4c5f70nRz3960FlBY": "2026-09-10T02:24:57.486Z",
+    "boss-c2f5aabfacd1198e0nJ52d61ElJV": "2026-09-10T02:24:57.486Z",
+    "boss-adc6b14c6209ae1c0nB43dm1EFRQ": "2026-09-10T02:24:57.486Z",
+    "boss-cbe265cca372a4970nZy09y6E1ZT": "2026-09-10T02:24:57.486Z",
+    "boss-a60d00240139f8660nJz2du6GVVZ": "2026-09-10T02:24:57.486Z",
+    "boss-2588ef9e0b6d2b2b0nJz29W6FVdT": "2026-09-10T02:24:57.486Z",
+    "boss-1b7563342c631cbd031739S1ElFX": "2026-09-10T02:24:57.486Z",
+    "boss-e7cfc357687bb8e70nJz3t68EFNW": "2026-09-10T02:24:57.486Z",
+    "boss-c531833cee8adb4f0nZ-3tu7EltZ": "2026-09-10T02:24:57.486Z",
+    "boss-417e7a4a98e5fc730nN529q_FVtQ": "2026-09-10T02:24:57.486Z",
+    "boss-c7151f881ce8208a0nZ83N-5EFVZ": "2026-09-10T02:24:57.486Z",
+    "boss-bc56130d8057b8850nJy3NS0FlNX": "2026-09-10T02:24:57.486Z",
+    "boss-9456198164ad7dee0nN72Ni_EVVY": "2026-09-10T02:24:57.486Z"
   },
   "candidateFeed": {
     "version": 1,
     "mode": "candidate-feed",
-    "publicationKind": "manual-backfill",
-    "runId": "backfill-20260910022212760-ceddfd55",
-    "sampleRunId": "2026-09-10-0930",
-    "sampledAt": "2026-09-10T01:32:04.618Z",
+    "publicationKind": "controlled",
+    "runId": "manual-20260910022337417-9660bbec",
+    "sampleRunId": "manual-20260910022337417-9660bbec",
+    "sampledAt": "2026-09-10T02:24:56.690Z",
     "cardsThisSample": 45,
-    "detailsThisSample": 8,
+    "detailsThisSample": 7,
     "timeZone": "Asia/Shanghai",
     "times": [
       "09:30",
