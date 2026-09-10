@@ -7,13 +7,13 @@ import { validateLedger } from "./snapshot.mjs";
 import { RunError } from "./io.mjs";
 
 const metadata = ["id", "source", "url", "title", "company", "location", "experienceText", "educationText", "salaryText"];
-const unsafe = /[\p{Co}\p{Cc}\p{Cf}]|https?:\/\/|www\.|[\w.+-]+@[\w.-]+\.[a-z]{2,}|(?:\+?86[- ]?)?1[3-9](?:[- ]?\d){9}|0\d{2,3}[- ]?\d{7,8}|securityid|(?:token|cookie|authorization)\s*[:=]|微信|手机号|简历|验证码|扫码登录/iu;
+const unsafe = /[\p{Co}\p{Cc}\p{Cf}]|https?:\/\/|www\.|[\w.+-]+@[\w.-]+\.[a-z]{2,}|(?:\+?86[- ]?)?1[3-9](?:[- ]?\d){9}|0\d{2,3}[- ]?\d{7,8}|securityid|(?:token|cookie|authorization)\s*[:=]|(?<!企业)微信|(?:加|添加|联系|扫码).{0,8}企业微信|企业微信\s*[:：]|手机号|简历|验证码|扫码登录/iu;
 const normalize = (value) => typeof value === "string" ? value.normalize("NFKC").trim().replace(/\s+/gu, " ") : null;
 const safeText = (value, limit = 120) => {
   if (value === null || value === undefined) return null;
   if (typeof value !== "string" || unsafe.test(value)) return null;
   const text = normalize(value);
-  return text && text.length <= limit ? text : null;
+  return text && text.length <= limit && !unsafe.test(text) ? text : null;
 };
 const categories = {
   "partner-development": "伙伴发展", "channel-management": "渠道销售", "business-ecosystem": "生态商业化",

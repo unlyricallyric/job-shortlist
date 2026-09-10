@@ -114,6 +114,22 @@ test("public candidate schema refuses qualification scores, conditional-match de
   }
 });
 
+test("enterprise WeChat product titles remain visible while normalized contacts, URLs and tokens stay private", () => {
+  for (const title of ["企业微信生态合作经理", "企业微信SCRM渠道销售", "企业微信产品经理"]) {
+    assert.equal(sourceCard(record("product-title", { title }), now).card.title, title);
+  }
+  for (const title of [
+    "加微信 TEST_ONLY", "请添加企业微信 TEST_ONLY", "企业微信：TEST_ONLY",
+    "联系１３８００００００００", "ｈｔｔｐｓ：／／example.invalid", "ｔｏｋｅｎ＝ＴＥＳＴ",
+    "ｔｅｓｔ＠ｅｘａｍｐｌｅ．ｉｎｖａｌｉｄ", "\ue012企业微信", "企业微信\n渠道经理", "企业微信\u200d渠道经理",
+  ]) assert.equal(sourceCard(record("unsafe-title", { title }), now).card, undefined, title);
+  const safe = sourceCard(record("optional-contact", { title: "企业微信渠道经理", company: "１３８００００００００",
+    location: "ｈｔｔｐｓ：／／example.invalid", salaryText: "\ue012K" }), now).card;
+  assert.equal(safe.company, null);
+  assert.equal(safe.location, null);
+  assert.equal(safe.salaryText, null);
+});
+
 test("manual exclusions and review rejections win over old public data, backlog, observations and details", () => {
   const excluded = record("excluded", { jd }), rejected = record("rejected", { jd }), retained = record("retained");
   const queue = queueOf([excluded, rejected]);
