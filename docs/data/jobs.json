@@ -1,14 +1,14 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-10T02:24:57.486Z",
+  "generatedAt": "2026-09-10T04:32:14.634Z",
   "run": {
     "source": "BOSS直聘 + 字节跳动招聘官网 + 猎聘",
     "scope": "上海 · 企业级科技 · 伙伴营销、区域市场、内容营销、需求生成及商业化转型备选",
     "mode": "采样候选 · 累计快照",
-    "cardsReviewed": 362,
-    "detailsRead": 118,
-    "selectedCount": 89,
-    "newCount": 31
+    "cardsReviewed": 364,
+    "detailsRead": 124,
+    "selectedCount": 93,
+    "newCount": 4
   },
   "jobs": [
     {
@@ -479,7 +479,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-09T18:49:09.071Z",
-      "lastSeen": "2026-09-10T02:24:42.838Z",
+      "lastSeen": "2026-09-10T04:32:01.857Z",
       "jdRead": true,
       "isNew": false
     },
@@ -511,7 +511,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-09T18:49:12.625Z",
-      "lastSeen": "2026-09-10T02:24:42.838Z",
+      "lastSeen": "2026-09-10T04:32:01.857Z",
       "jdRead": false,
       "isNew": false
     },
@@ -543,7 +543,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-09T18:49:15.986Z",
-      "lastSeen": "2026-09-10T01:31:21.471Z",
+      "lastSeen": "2026-09-10T04:32:01.857Z",
       "jdRead": false,
       "isNew": false
     },
@@ -576,7 +576,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-09T18:49:24.620Z",
-      "lastSeen": "2026-09-10T01:31:35.237Z",
+      "lastSeen": "2026-09-10T04:31:36.007Z",
       "jdRead": true,
       "isNew": false
     },
@@ -608,7 +608,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-09T18:49:28.170Z",
-      "lastSeen": "2026-09-10T01:31:35.237Z",
+      "lastSeen": "2026-09-10T04:31:36.007Z",
       "jdRead": false,
       "isNew": false
     },
@@ -641,7 +641,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-09T18:49:41.905Z",
-      "lastSeen": "2026-09-10T02:24:53.089Z",
+      "lastSeen": "2026-09-10T04:32:10.924Z",
       "jdRead": true,
       "isNew": false
     },
@@ -673,7 +673,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-09T18:49:51.972Z",
-      "lastSeen": "2026-09-10T01:32:00.870Z",
+      "lastSeen": "2026-09-10T04:32:10.924Z",
       "jdRead": false,
       "isNew": false
     },
@@ -738,7 +738,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-09T20:13:59.976Z",
-      "lastSeen": "2026-09-10T02:24:42.838Z",
+      "lastSeen": "2026-09-10T04:32:01.857Z",
       "jdRead": false,
       "isNew": false
     },
@@ -930,7 +930,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:31:21.471Z",
-      "lastSeen": "2026-09-10T01:31:28.255Z",
+      "lastSeen": "2026-09-10T04:32:01.857Z",
       "jdRead": false,
       "isNew": false
     },
@@ -962,7 +962,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:31:35.237Z",
-      "lastSeen": "2026-09-10T01:31:36.077Z",
+      "lastSeen": "2026-09-10T04:31:36.007Z",
       "jdRead": true,
       "isNew": false
     },
@@ -995,7 +995,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:31:35.237Z",
-      "lastSeen": "2026-09-10T01:31:38.404Z",
+      "lastSeen": "2026-09-10T04:31:08.759Z",
       "jdRead": true,
       "isNew": false
     },
@@ -1027,7 +1027,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:31:35.237Z",
-      "lastSeen": "2026-09-10T01:31:40.717Z",
+      "lastSeen": "2026-09-10T04:31:36.007Z",
       "jdRead": true,
       "isNew": false
     },
@@ -1059,7 +1059,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:31:53.872Z",
-      "lastSeen": "2026-09-10T01:32:00.870Z",
+      "lastSeen": "2026-09-10T04:32:10.924Z",
       "jdRead": true,
       "isNew": false
     },
@@ -1091,7 +1091,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:32:00.870Z",
-      "lastSeen": "2026-09-10T01:32:02.986Z",
+      "lastSeen": "2026-09-10T04:32:10.924Z",
       "jdRead": false,
       "isNew": false
     },
@@ -1123,7 +1123,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:31:00.686Z",
-      "lastSeen": "2026-09-10T01:31:00.686Z",
+      "lastSeen": "2026-09-10T04:31:22.973Z",
       "jdRead": false,
       "isNew": false
     },
@@ -1155,7 +1155,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:31:21.471Z",
-      "lastSeen": "2026-09-10T02:24:42.838Z",
+      "lastSeen": "2026-09-10T04:32:01.857Z",
       "jdRead": false,
       "isNew": false
     },
@@ -1173,11 +1173,11 @@
       "salaryMonths": null,
       "experienceText": "1-3年",
       "educationText": "大专",
-      "category": null,
+      "category": "渠道销售",
       "matchScore": null,
       "priority": "采样候选 · 待你判断",
       "summary": [
-        "尚未取得可完整核对的 JD，请查看原岗位。"
+        "职责涉及合作伙伴或渠道业务，具体分工请核对原岗位。"
       ],
       "requirements": [],
       "matchReasons": [],
@@ -1187,8 +1187,8 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:31:21.471Z",
-      "lastSeen": "2026-09-10T01:31:21.471Z",
-      "jdRead": false,
+      "lastSeen": "2026-09-10T04:32:03.822Z",
+      "jdRead": true,
       "isNew": false
     },
     {
@@ -1219,7 +1219,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:31:21.471Z",
-      "lastSeen": "2026-09-10T01:31:21.471Z",
+      "lastSeen": "2026-09-10T04:32:01.857Z",
       "jdRead": false,
       "isNew": false
     },
@@ -1241,7 +1241,7 @@
       "matchScore": null,
       "priority": "采样候选 · 待你判断",
       "summary": [
-        "尚未取得可完整核对的 JD，请查看原岗位。"
+        "已读取可分离的岗位职责与要求，仅作为来源记录展示，不表示适合。"
       ],
       "requirements": [],
       "matchReasons": [],
@@ -1251,8 +1251,8 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:31:21.471Z",
-      "lastSeen": "2026-09-10T01:31:21.471Z",
-      "jdRead": false,
+      "lastSeen": "2026-09-10T04:31:26.623Z",
+      "jdRead": true,
       "isNew": false
     },
     {
@@ -1273,7 +1273,7 @@
       "matchScore": null,
       "priority": "采样候选 · 待你判断",
       "summary": [
-        "尚未取得可完整核对的 JD，请查看原岗位。"
+        "已读取可分离的岗位职责与要求，仅作为来源记录展示，不表示适合。"
       ],
       "requirements": [],
       "matchReasons": [],
@@ -1283,8 +1283,8 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:31:21.471Z",
-      "lastSeen": "2026-09-10T01:31:21.471Z",
-      "jdRead": false,
+      "lastSeen": "2026-09-10T04:32:01.857Z",
+      "jdRead": true,
       "isNew": false
     },
     {
@@ -1315,7 +1315,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:31:21.471Z",
-      "lastSeen": "2026-09-10T01:31:21.471Z",
+      "lastSeen": "2026-09-10T04:32:01.857Z",
       "jdRead": false,
       "isNew": false
     },
@@ -1379,7 +1379,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:31:00.686Z",
-      "lastSeen": "2026-09-10T01:31:00.686Z",
+      "lastSeen": "2026-09-10T04:32:01.857Z",
       "jdRead": false,
       "isNew": false
     },
@@ -1411,7 +1411,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:31:35.237Z",
-      "lastSeen": "2026-09-10T01:31:35.237Z",
+      "lastSeen": "2026-09-10T04:31:36.007Z",
       "jdRead": false,
       "isNew": false
     },
@@ -1443,7 +1443,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:31:35.237Z",
-      "lastSeen": "2026-09-10T01:31:35.237Z",
+      "lastSeen": "2026-09-10T04:31:08.759Z",
       "jdRead": false,
       "isNew": false
     },
@@ -1475,7 +1475,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:31:35.237Z",
-      "lastSeen": "2026-09-10T01:31:35.237Z",
+      "lastSeen": "2026-09-10T04:31:36.007Z",
       "jdRead": false,
       "isNew": false
     },
@@ -1497,7 +1497,7 @@
       "matchScore": null,
       "priority": "采样候选 · 待你判断",
       "summary": [
-        "尚未取得可完整核对的 JD，请查看原岗位。"
+        "已读取可分离的岗位职责与要求，仅作为来源记录展示，不表示适合。"
       ],
       "requirements": [],
       "matchReasons": [],
@@ -1507,8 +1507,8 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:31:35.237Z",
-      "lastSeen": "2026-09-10T01:31:35.237Z",
-      "jdRead": false,
+      "lastSeen": "2026-09-10T04:31:39.250Z",
+      "jdRead": true,
       "isNew": false
     },
     {
@@ -1667,7 +1667,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:32:00.870Z",
-      "lastSeen": "2026-09-10T02:24:55.122Z",
+      "lastSeen": "2026-09-10T04:32:10.924Z",
       "jdRead": true,
       "isNew": false
     },
@@ -1699,7 +1699,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:32:00.870Z",
-      "lastSeen": "2026-09-10T01:32:00.870Z",
+      "lastSeen": "2026-09-10T04:32:10.924Z",
       "jdRead": false,
       "isNew": false
     },
@@ -1731,7 +1731,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:32:00.870Z",
-      "lastSeen": "2026-09-10T01:32:00.870Z",
+      "lastSeen": "2026-09-10T04:32:10.924Z",
       "jdRead": false,
       "isNew": false
     },
@@ -1763,7 +1763,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:32:00.870Z",
-      "lastSeen": "2026-09-10T01:32:00.870Z",
+      "lastSeen": "2026-09-10T04:32:10.924Z",
       "jdRead": false,
       "isNew": false
     },
@@ -1795,7 +1795,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:32:00.870Z",
-      "lastSeen": "2026-09-10T01:32:00.870Z",
+      "lastSeen": "2026-09-10T04:32:10.924Z",
       "jdRead": false,
       "isNew": false
     },
@@ -1827,7 +1827,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:32:00.870Z",
-      "lastSeen": "2026-09-10T01:32:00.870Z",
+      "lastSeen": "2026-09-10T04:32:10.924Z",
       "jdRead": false,
       "isNew": false
     },
@@ -1859,7 +1859,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:32:00.870Z",
-      "lastSeen": "2026-09-10T01:32:00.870Z",
+      "lastSeen": "2026-09-10T04:32:10.924Z",
       "jdRead": false,
       "isNew": false
     },
@@ -1891,7 +1891,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:32:00.870Z",
-      "lastSeen": "2026-09-10T01:32:00.870Z",
+      "lastSeen": "2026-09-10T04:32:10.924Z",
       "jdRead": false,
       "isNew": false
     },
@@ -1923,7 +1923,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:32:00.870Z",
-      "lastSeen": "2026-09-10T01:32:00.870Z",
+      "lastSeen": "2026-09-10T04:32:11.729Z",
       "jdRead": false,
       "isNew": false
     },
@@ -1955,7 +1955,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:32:00.870Z",
-      "lastSeen": "2026-09-10T01:32:00.870Z",
+      "lastSeen": "2026-09-10T04:32:10.924Z",
       "jdRead": false,
       "isNew": false
     },
@@ -1987,7 +1987,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:32:00.870Z",
-      "lastSeen": "2026-09-10T01:32:00.870Z",
+      "lastSeen": "2026-09-10T04:32:10.924Z",
       "jdRead": false,
       "isNew": false
     },
@@ -2021,7 +2021,7 @@
       "firstSeen": "2026-09-10T02:24:10.804Z",
       "lastSeen": "2026-09-10T02:24:42.838Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-cec98ca866584f041XN73d66EFJX",
@@ -2053,7 +2053,7 @@
       "firstSeen": "2026-09-10T02:24:23.331Z",
       "lastSeen": "2026-09-10T02:24:53.089Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-513726703611cd840nF82969ElNU",
@@ -2085,7 +2085,7 @@
       "firstSeen": "2026-09-10T02:24:26.787Z",
       "lastSeen": "2026-09-10T02:24:53.089Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-2f91cdabf115dc730nN50ty7EVBR",
@@ -2117,7 +2117,7 @@
       "firstSeen": "2026-09-10T02:24:32.183Z",
       "lastSeen": "2026-09-10T02:24:34.123Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-665d394ca22441160nF_3d-7FVNR",
@@ -2148,9 +2148,9 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T02:24:32.183Z",
-      "lastSeen": "2026-09-10T02:24:37.589Z",
+      "lastSeen": "2026-09-10T04:31:22.973Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-cad62a02e47148e40nJ809y0GFZW",
@@ -2183,7 +2183,7 @@
       "firstSeen": "2026-09-10T02:24:42.838Z",
       "lastSeen": "2026-09-10T02:24:46.272Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-91bfcc18e61cd02d0nJ909S6FlpX",
@@ -2215,7 +2215,7 @@
       "firstSeen": "2026-09-10T02:24:42.838Z",
       "lastSeen": "2026-09-10T02:24:42.838Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-2ed990db7ffe941d1HF82tW_EVBT",
@@ -2247,7 +2247,7 @@
       "firstSeen": "2026-09-10T02:24:42.838Z",
       "lastSeen": "2026-09-10T02:24:42.838Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-ecc3dea7437cc1d80nJ609q4EFRQ",
@@ -2279,7 +2279,7 @@
       "firstSeen": "2026-09-10T02:24:42.838Z",
       "lastSeen": "2026-09-10T02:24:42.838Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-cc17b34fc70387400nJ73tS4E1JR",
@@ -2311,7 +2311,7 @@
       "firstSeen": "2026-09-10T02:24:00.906Z",
       "lastSeen": "2026-09-10T02:24:00.906Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-5e730768ab9601e40nJ82dy4GVdY",
@@ -2343,7 +2343,7 @@
       "firstSeen": "2026-09-10T02:23:43.403Z",
       "lastSeen": "2026-09-10T02:23:43.403Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-4b9ec0cf93f491ee0nN52d29GVNQ",
@@ -2375,7 +2375,7 @@
       "firstSeen": "2026-09-10T02:23:43.403Z",
       "lastSeen": "2026-09-10T02:23:43.403Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-7785d7c6b2f9df5d0nN53dq-GVdV",
@@ -2407,7 +2407,7 @@
       "firstSeen": "2026-09-10T02:23:43.403Z",
       "lastSeen": "2026-09-10T02:23:43.403Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-2236fced04b70e870nN609W-FFZT",
@@ -2439,7 +2439,7 @@
       "firstSeen": "2026-09-10T02:23:43.403Z",
       "lastSeen": "2026-09-10T02:23:43.403Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-7cb0bdd641978a570nN62t26F1NZ",
@@ -2471,7 +2471,7 @@
       "firstSeen": "2026-09-10T02:24:53.089Z",
       "lastSeen": "2026-09-10T02:24:53.089Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-b5fe25737915b8240nJ52tq4F1tR",
@@ -2503,7 +2503,7 @@
       "firstSeen": "2026-09-10T02:24:53.089Z",
       "lastSeen": "2026-09-10T02:24:53.089Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-f1a740195d12bdc60nJ_3tm1E1pZ",
@@ -2535,7 +2535,7 @@
       "firstSeen": "2026-09-10T02:24:53.089Z",
       "lastSeen": "2026-09-10T02:24:53.089Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-b8e28a2e988714530nF-3Ni5FVVQ",
@@ -2567,7 +2567,7 @@
       "firstSeen": "2026-09-10T02:24:53.089Z",
       "lastSeen": "2026-09-10T02:24:53.089Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-80f28438b2b4c5f70nRz3960FlBY",
@@ -2599,7 +2599,7 @@
       "firstSeen": "2026-09-10T02:24:53.089Z",
       "lastSeen": "2026-09-10T02:24:53.089Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-c2f5aabfacd1198e0nJ52d61ElJV",
@@ -2631,7 +2631,7 @@
       "firstSeen": "2026-09-10T02:24:53.089Z",
       "lastSeen": "2026-09-10T02:24:53.089Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-adc6b14c6209ae1c0nB43dm1EFRQ",
@@ -2663,7 +2663,7 @@
       "firstSeen": "2026-09-10T02:24:53.089Z",
       "lastSeen": "2026-09-10T02:24:53.089Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-cbe265cca372a4970nZy09y6E1ZT",
@@ -2695,7 +2695,7 @@
       "firstSeen": "2026-09-10T02:24:53.089Z",
       "lastSeen": "2026-09-10T02:24:53.089Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-a60d00240139f8660nJz2du6GVVZ",
@@ -2727,7 +2727,7 @@
       "firstSeen": "2026-09-10T02:24:32.183Z",
       "lastSeen": "2026-09-10T02:24:32.183Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-2588ef9e0b6d2b2b0nJz29W6FVdT",
@@ -2759,7 +2759,7 @@
       "firstSeen": "2026-09-10T02:24:32.183Z",
       "lastSeen": "2026-09-10T02:24:32.183Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-1b7563342c631cbd031739S1ElFX",
@@ -2791,7 +2791,7 @@
       "firstSeen": "2026-09-10T02:23:55.606Z",
       "lastSeen": "2026-09-10T02:23:55.606Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-e7cfc357687bb8e70nJz3t68EFNW",
@@ -2823,7 +2823,7 @@
       "firstSeen": "2026-09-10T02:24:32.183Z",
       "lastSeen": "2026-09-10T02:24:32.183Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-c531833cee8adb4f0nZ-3tu7EltZ",
@@ -2855,7 +2855,7 @@
       "firstSeen": "2026-09-10T02:24:32.183Z",
       "lastSeen": "2026-09-10T02:24:32.183Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-417e7a4a98e5fc730nN529q_FVtQ",
@@ -2887,7 +2887,7 @@
       "firstSeen": "2026-09-10T02:24:32.183Z",
       "lastSeen": "2026-09-10T02:24:32.183Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-c7151f881ce8208a0nZ83N-5EFVZ",
@@ -2919,7 +2919,7 @@
       "firstSeen": "2026-09-10T02:24:32.183Z",
       "lastSeen": "2026-09-10T02:24:32.183Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-bc56130d8057b8850nJy3NS0FlNX",
@@ -2951,7 +2951,7 @@
       "firstSeen": "2026-09-10T02:24:32.183Z",
       "lastSeen": "2026-09-10T02:24:32.183Z",
       "jdRead": false,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-9456198164ad7dee0nN72Ni_EVVY",
@@ -2982,6 +2982,134 @@
       "publishedAt": null,
       "firstSeen": "2026-09-10T02:23:55.606Z",
       "lastSeen": "2026-09-10T02:23:55.606Z",
+      "jdRead": false,
+      "isNew": false
+    },
+    {
+      "id": "boss-6a28990bb15265e70nN50tu6GVVR",
+      "title": "座舱项目经理-base上海或芜湖",
+      "company": "熵评",
+      "city": "上海",
+      "location": "上海·徐汇区·上海南站",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/6a28990bb15265e70nN50tu6GVVR.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "5-10年",
+      "educationText": "大专",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T04:31:36.007Z",
+      "lastSeen": "2026-09-10T04:31:36.793Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-e6add0ed45ed91640nN52t-_FVJT",
+      "title": "14-高级信息流优化师",
+      "company": "聚鑫明",
+      "city": "上海",
+      "location": "上海·普陀区·曹杨",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/e6add0ed45ed91640nN52t-_FVJT.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "5-10年",
+      "educationText": "本科",
+      "category": "渠道销售",
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "职责涉及合作伙伴或渠道业务，具体分工请核对原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T04:31:36.007Z",
+      "lastSeen": "2026-09-10T04:31:41.555Z",
+      "jdRead": true,
+      "isNew": true
+    },
+    {
+      "id": "boss-f398c1e732c8992b0nJ53tm-GVtQ",
+      "title": "渠道销售-上海",
+      "company": "天谋科技有限公司",
+      "city": "上海",
+      "location": "上海·虹口区·江湾",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/f398c1e732c8992b0nJ53tm-GVtQ.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "3-5年",
+      "educationText": "本科",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T04:32:01.857Z",
+      "lastSeen": "2026-09-10T04:32:01.857Z",
+      "jdRead": false,
+      "isNew": true
+    },
+    {
+      "id": "boss-29e157b7c22336850nN73dS6GVRT",
+      "title": "市场总监(跨境支付)",
+      "company": "深圳某小型数字支付与金融基础设施服务公司",
+      "city": "上海",
+      "location": "上海",
+      "source": "BOSS直聘",
+      "url": "https://www.zhipin.com/job_detail/29e157b7c22336850nN73dS6GVRT.html",
+      "salaryText": null,
+      "salaryMinK": null,
+      "salaryMaxK": null,
+      "salaryMonths": null,
+      "experienceText": "3-5年",
+      "educationText": "本科",
+      "category": null,
+      "matchScore": null,
+      "priority": "采样候选 · 待你判断",
+      "summary": [
+        "尚未取得可完整核对的 JD，请查看原岗位。"
+      ],
+      "requirements": [],
+      "matchReasons": [],
+      "concerns": [
+        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
+      ],
+      "languageNote": null,
+      "publishedAt": null,
+      "firstSeen": "2026-09-10T04:31:08.759Z",
+      "lastSeen": "2026-09-10T04:31:08.759Z",
       "jdRead": false,
       "isNew": true
     }
@@ -3075,7 +3203,11 @@
     "boss-417e7a4a98e5fc730nN529q_FVtQ": "source-only",
     "boss-c7151f881ce8208a0nZ83N-5EFVZ": "source-only",
     "boss-bc56130d8057b8850nJy3NS0FlNX": "source-only",
-    "boss-9456198164ad7dee0nN72Ni_EVVY": "source-only"
+    "boss-9456198164ad7dee0nN72Ni_EVVY": "source-only",
+    "boss-6a28990bb15265e70nN50tu6GVVR": "source-only",
+    "boss-e6add0ed45ed91640nN52t-_FVJT": "source-only",
+    "boss-f398c1e732c8992b0nJ53tm-GVtQ": "source-only",
+    "boss-29e157b7c22336850nN73dS6GVRT": "source-only"
   },
   "candidateStatesById": {
     "boss-6c462526869b2f3b0nJ93Nu7E1FZ": {
@@ -3086,12 +3218,12 @@
     "boss-1a4d803e99f2ae6e03J42t67FVNY": {
       "evidence": "incomplete-jd",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T02:24:42.838Z"
+      "evidenceObservedAt": "2026-09-10T04:32:01.857Z"
     },
     "boss-bd6779a7f0a1d57c0nd62dy-FldV": {
       "evidence": "incomplete-jd",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:31:21.471Z"
+      "evidenceObservedAt": "2026-09-10T04:32:01.857Z"
     },
     "boss-bdbbdf2d9d7980b70nBz39i7FVtT": {
       "evidence": "full-jd",
@@ -3101,7 +3233,7 @@
     "boss-ca84a81f74b6f39203153t25EVFW": {
       "evidence": "incomplete-jd",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:31:35.237Z"
+      "evidenceObservedAt": "2026-09-10T04:31:36.007Z"
     },
     "boss-f8933298f04e5fa10nJ_2tq8F1tT": {
       "evidence": "full-jd",
@@ -3111,7 +3243,7 @@
     "boss-5a18d943bb612b410nB80t26GVdZ": {
       "evidence": "incomplete-jd",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:32:00.870Z"
+      "evidenceObservedAt": "2026-09-10T04:32:10.924Z"
     },
     "boss-009c18e7acc88c790nJ-29m4E1BZ": {
       "evidence": "full-jd",
@@ -3121,7 +3253,7 @@
     "boss-fd67cfdda305e07f0nN73t29F1tZ": {
       "evidence": "incomplete-jd",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T02:24:42.838Z"
+      "evidenceObservedAt": "2026-09-10T04:32:01.857Z"
     },
     "boss-38828aef2c6345170nFy09S9EldW": {
       "evidence": "full-jd",
@@ -3151,7 +3283,7 @@
     "boss-5636db564b74930e0nF929u1F1NR": {
       "evidence": "incomplete-jd",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:31:28.255Z"
+      "evidenceObservedAt": "2026-09-10T04:32:01.857Z"
     },
     "boss-16edbaa1282d1d2a0nB939y6F1NV": {
       "evidence": "full-jd",
@@ -3176,42 +3308,42 @@
     "boss-caa6a9c725d802380nB90ty9GFVU": {
       "evidence": "incomplete-jd",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:32:02.986Z"
+      "evidenceObservedAt": "2026-09-10T04:32:10.924Z"
     },
     "boss-8dccbe03789cc56f0nN62Ny9FlNY": {
       "evidence": "card-only",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:31:00.686Z"
+      "evidenceObservedAt": "2026-09-10T04:31:22.973Z"
     },
     "boss-84ed8ba70cfd21110nJz09q5EVdY": {
       "evidence": "card-only",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T02:24:42.838Z"
+      "evidenceObservedAt": "2026-09-10T04:32:01.857Z"
     },
     "boss-97443cdc0638be130nF409m8ElJU": {
-      "evidence": "card-only",
-      "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:31:21.471Z"
+      "evidence": "full-jd",
+      "direction": "primary",
+      "evidenceObservedAt": "2026-09-10T04:32:03.822Z"
     },
     "boss-b9d5dca66e8fe7270nN439i9E1BZ": {
       "evidence": "card-only",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:31:21.471Z"
+      "evidenceObservedAt": "2026-09-10T04:32:01.857Z"
     },
     "boss-328cb7c425bf5ff60nN42du-EVtT": {
-      "evidence": "card-only",
+      "evidence": "full-jd",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:31:21.471Z"
+      "evidenceObservedAt": "2026-09-10T04:31:26.623Z"
     },
     "boss-a735e520bbafdcfc0nN72N6_FFBU": {
-      "evidence": "card-only",
+      "evidence": "full-jd",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:31:21.471Z"
+      "evidenceObservedAt": "2026-09-10T04:31:28.938Z"
     },
     "boss-ca733d1ca73d957d0nN529u4GFNR": {
       "evidence": "card-only",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:31:21.471Z"
+      "evidenceObservedAt": "2026-09-10T04:32:01.857Z"
     },
     "boss-29fdeffc3dbf3dea0nF60tq8GVJW": {
       "evidence": "card-only",
@@ -3221,27 +3353,27 @@
     "boss-85957395cae256090nN43Ni9GVVT": {
       "evidence": "card-only",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:31:00.686Z"
+      "evidenceObservedAt": "2026-09-10T04:32:01.857Z"
     },
     "boss-650a6abfc23bc4db031y39y5F1NZ": {
       "evidence": "card-only",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:31:35.237Z"
+      "evidenceObservedAt": "2026-09-10T04:31:36.007Z"
     },
     "boss-9d037963381da8210nd439u9FltY": {
       "evidence": "card-only",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:31:35.237Z"
+      "evidenceObservedAt": "2026-09-10T04:31:08.759Z"
     },
     "boss-aed29e3a0b9c11f00nF_2dq8F1VV": {
       "evidence": "card-only",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:31:35.237Z"
+      "evidenceObservedAt": "2026-09-10T04:31:36.007Z"
     },
     "boss-8f9f1bd13c0e472c0nJ42tm4EFZX": {
-      "evidence": "card-only",
+      "evidence": "full-jd",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:31:35.237Z"
+      "evidenceObservedAt": "2026-09-10T04:31:39.250Z"
     },
     "boss-cce8f3a00b98d76b0nBz09m8FVpZ": {
       "evidence": "card-only",
@@ -3271,52 +3403,52 @@
     "boss-61c88500cec9b52e0nF_2dW1GFVR": {
       "evidence": "identity-conflict",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:32:00.870Z"
+      "evidenceObservedAt": "2026-09-10T04:32:10.924Z"
     },
     "boss-a86de40e3a85a4150nV93dq4EFtY": {
-      "evidence": "card-only",
+      "evidence": "incomplete-jd",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:32:00.870Z"
+      "evidenceObservedAt": "2026-09-10T04:32:10.924Z"
     },
     "boss-fba28b4e8ca63dc40ndy39m0FVpV": {
       "evidence": "card-only",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:32:00.870Z"
+      "evidenceObservedAt": "2026-09-10T04:32:10.924Z"
     },
     "boss-65b48b9e8e69e98f0nJy29q7GFRV": {
       "evidence": "card-only",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:32:00.870Z"
+      "evidenceObservedAt": "2026-09-10T04:32:10.924Z"
     },
     "boss-86563e77f1b21b1b0nJz2Nq0FltV": {
       "evidence": "card-only",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:32:00.870Z"
+      "evidenceObservedAt": "2026-09-10T04:32:10.924Z"
     },
     "boss-e7e55fdb0d08b37d0nJ90tu0EFJT": {
       "evidence": "card-only",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:32:00.870Z"
+      "evidenceObservedAt": "2026-09-10T04:32:10.924Z"
     },
     "boss-89827265ff7f41ff0nN73t68GVBT": {
       "evidence": "card-only",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:32:00.870Z"
+      "evidenceObservedAt": "2026-09-10T04:32:10.924Z"
     },
     "boss-6bb382741dad4f840nN52Nq8EFBW": {
-      "evidence": "card-only",
+      "evidence": "incomplete-jd",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:32:00.870Z"
+      "evidenceObservedAt": "2026-09-10T04:32:11.729Z"
     },
     "boss-368bdfb760c76b4a0nF62N67E1NV": {
       "evidence": "card-only",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:32:00.870Z"
+      "evidenceObservedAt": "2026-09-10T04:32:10.924Z"
     },
     "boss-2e69a1d341ec97cf0nF62NW8FVtR": {
       "evidence": "card-only",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-10T01:32:00.870Z"
+      "evidenceObservedAt": "2026-09-10T04:32:10.924Z"
     },
     "boss-734ddcfab5afad590nN509-8F1pV": {
       "evidence": "full-jd",
@@ -3472,6 +3604,26 @@
       "evidence": "card-only",
       "direction": "unclear",
       "evidenceObservedAt": "2026-09-10T02:23:55.606Z"
+    },
+    "boss-6a28990bb15265e70nN50tu6GVVR": {
+      "evidence": "incomplete-jd",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T04:31:36.793Z"
+    },
+    "boss-e6add0ed45ed91640nN52t-_FVJT": {
+      "evidence": "full-jd",
+      "direction": "primary",
+      "evidenceObservedAt": "2026-09-10T04:31:41.555Z"
+    },
+    "boss-f398c1e732c8992b0nJ53tm-GVtQ": {
+      "evidence": "identity-conflict",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T04:32:01.857Z"
+    },
+    "boss-29e157b7c22336850nN73dS6GVRT": {
+      "evidence": "card-only",
+      "direction": "unclear",
+      "evidenceObservedAt": "2026-09-10T04:31:08.759Z"
     }
   },
   "firstPublishedAtById": {
@@ -3556,17 +3708,21 @@
     "boss-417e7a4a98e5fc730nN529q_FVtQ": "2026-09-10T02:24:57.486Z",
     "boss-c7151f881ce8208a0nZ83N-5EFVZ": "2026-09-10T02:24:57.486Z",
     "boss-bc56130d8057b8850nJy3NS0FlNX": "2026-09-10T02:24:57.486Z",
-    "boss-9456198164ad7dee0nN72Ni_EVVY": "2026-09-10T02:24:57.486Z"
+    "boss-9456198164ad7dee0nN72Ni_EVVY": "2026-09-10T02:24:57.486Z",
+    "boss-6a28990bb15265e70nN50tu6GVVR": "2026-09-10T04:32:14.634Z",
+    "boss-e6add0ed45ed91640nN52t-_FVJT": "2026-09-10T04:32:14.634Z",
+    "boss-f398c1e732c8992b0nJ53tm-GVtQ": "2026-09-10T04:32:14.634Z",
+    "boss-29e157b7c22336850nN73dS6GVRT": "2026-09-10T04:32:14.634Z"
   },
   "candidateFeed": {
     "version": 1,
     "mode": "candidate-feed",
-    "publicationKind": "controlled",
-    "runId": "manual-20260910022337417-9660bbec",
-    "sampleRunId": "manual-20260910022337417-9660bbec",
-    "sampledAt": "2026-09-10T02:24:56.690Z",
+    "publicationKind": "scheduled",
+    "runId": "2026-09-10-1230",
+    "sampleRunId": "2026-09-10-1230",
+    "sampledAt": "2026-09-10T04:32:13.314Z",
     "cardsThisSample": 45,
-    "detailsThisSample": 7,
+    "detailsThisSample": 8,
     "timeZone": "Asia/Shanghai",
     "times": [
       "09:30",
