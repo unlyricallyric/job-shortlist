@@ -79,6 +79,13 @@ test("partner account roles and generic sales titles with reseller duties are no
     assert.equal(assessRoleExclusion({ title, jd: jd(partnerDuties) }, policy), null, title);
     assert.equal(assessRoleExclusion({ title, jd: jd(`${partnerDuties}\n${directDuties}`) }, policy)?.category, "frontline-sales", title);
   }
+  for (const title of ["Channel Sales Representative", "渠道销售代表", "销售代表支持专员", "销售代表"]) {
+    assert.equal(assessRoleExclusion({ title, jd: jd(partnerDuties) }, policy), null, title);
+  }
+  assert.equal(assessRoleExclusion({ title: "区域销售经理", jd: jd("负责CRM维护和销售计划文档，整理销售团队培训材料。\n负责销售培训，不负责客户拓展签约。") }, policy), null);
+  const clientOwner = assessRoleExclusion({ title: "销售经理", jd: jd("负责制定年度销售计划。\n开拓与维护客户资源，完成公司销售目标。") }, policy);
+  assert.equal(clientOwner.category, "frontline-sales");
+  assert.equal(clientOwner.basis, "duties");
   for (const duties of [
     "负责独立拓展渠道客户和代理商、招募经销伙伴。\n主导代理合作合同谈判与签署。",
     "负责支持渠道伙伴自主开发终端客户。\n负责协助渠道伙伴完成客户合同签署。",

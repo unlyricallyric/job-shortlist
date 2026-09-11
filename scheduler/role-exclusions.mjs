@@ -81,8 +81,10 @@ export async function rememberRoleExclusions(root, context, removals, now = new 
 export const normalizeRoleText = (text) => text.normalize("NFKC").toLowerCase().replace(/[\s\p{P}\p{S}\p{Cf}]/gu, "");
 const contextHeading = /晋升(?:通道|路径|方向|空间)?|职业发展|发展(?:通道|路径)|汇报(?:对象|关系)|report(?:s|ing)?\s+to|career\s+path|promotion\s+to/iu;
 const partnerTitle = /伙伴|渠道|生态|partner|reseller|channel|pdr|bdr|sdr|销售开发|salesdevelopment/u;
-const directTitle = /直客|直销|终端销售|业务销售|海外销售|外贸销售|销售代表|accountexecutive|directsales|salesrepresentative/u;
+const directTitle = /直客|直销|终端销售|directsales/u;
 const accountTitle = /大客户(?:销售|经理|商务)|ka(?:大客户|客户|销售|商务)|accountmanager|keyaccount/u;
+const representativeTitle = /业务销售|海外销售|外贸销售|销售代表|accountexecutive|salesrepresentative/u;
+const salesSupportTitle = /销售(?:代表)?(?:运营|支持|赋能|培训|策略|开发)|售前|sales(?:representative)?(?:operations|enablement|support|development)/u;
 const executive = /总经理|副总裁|总裁|首席.{0,10}官|vicepresident|generalmanager|(?:^|[^a-z])(?:[es]?vp|ceo|cto|cfo|coo|cio|cdo|cpo)(?:$|[^a-z])/u;
 const marketingHead = /(?:市场|营销|品牌).{0,6}(?:总监|一号位)|(?:市场|营销|品牌)负责人|marketingdirector|headofmarketing|chiefmarketingofficer|(?:^|[^a-z])cmo(?:$|[^a-z])/u;
 const supportTitle = /(?:市场总监|营销总监|总经理|总裁|ceo|cmo|vp)(?:助理|秘书|办公室|支持)|(?:assistantto|supportfor)(?:the)?(?:ceo|cmo|vp|generalmanager)/gu;
@@ -122,7 +124,7 @@ export function assessRoleExclusion(record, policy) {
   ];
   for (const [category, matches] of titleChecks) if (matches && enabled.has(category)) return result(category, "title");
   const clauses = dutyClauses(record.jd);
-  const owning = clauses.filter((text) => /负责|主导|牵头|独立|自主|建立|制定|执行|开展|推动|担任|出任/u.test(text)
+  const owning = clauses.filter((text) => /负责|主导|牵头|独立|自主|建立|制定|执行|开展|推动|担任|出任|开拓|拓展/u.test(text)
     || /^\d*(?:youwill)?(?:own|lead|manage|develop|drive|build|execute|responsiblefor|independently|support|enable|recruit)/u.test(text));
   if (owning.some((text) => /(?:担任|出任)(?:集团|公司)?(?:市场总监|营销总监|cmo)/u.test(text))) {
     const decision = result("marketing-leadership", "duties");
@@ -166,11 +168,12 @@ export function assessRoleExclusion(record, policy) {
     /伙伴转售|(?:伙伴|经销商|渠道).{0,6}(?:销售指标|收入指标|业绩)|转售指标|partnerrevenue|resellertargets/u,
     /联合打单|联合销售|商机互荐|coselling|jointselling|referrals/u,
   ].filter((pattern) => owning.some((text) => pattern.test(text))).length >= 2;
-  const salesPurpose = owning.some((text) => /销售目标|销售团队|销售计划|客户.{0,8}(?:拓展|开发)|(?:拓展|开发|开拓).{0,8}客户|sales(?:targets|team|pipeline)|customeracquisition/u.test(text));
+  const salesPurpose = owning.some((text) => !partnerSupport(text)
+    && /(?:拓展|开发|开拓)(?:与维护)?(?:终端|企业|新|大)?客户|负责.{0,10}(?:企业级|终端|大)客户.{0,65}(?:开拓|拓展|开发)|customeracquisition|endcustomerprospecting/u.test(text));
   if (!partnerTitle.test(title) && !/客户成功|customersuccess|csm/u.test(title) && !partnerLifecycle
-    && !/销售(?:运营|支持|赋能|培训|策略|开发)|售前|sales(?:operations|enablement|support|development)/u.test(title)
-    && (accountTitle.test(title) || (salesPurpose && /销售|sales(?:manager|executive)/u.test(title)))) {
-    return result("frontline-sales", "title");
+    && !salesSupportTitle.test(title)) {
+    if (accountTitle.test(title) || representativeTitle.test(title)) return result("frontline-sales", "title");
+    if (salesPurpose && /销售|sales(?:manager|executive)/u.test(title)) return result("frontline-sales", "duties");
   }
   return null;
 }
