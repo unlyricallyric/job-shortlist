@@ -5,6 +5,7 @@ const careerContext = /晋升(?:通道|方向|路径)?|职业发展|发展通道
 const technicalStack = /java|python|golang|rust|c\+\+|c#|javascript|typescript|react|vue|android|ios|kotlin|swift|cuda|gpu|hpc|linux|kubernetes|k8s|docker|容器|算子|内核|云平台|大模型|算法|框架|软硬件/u;
 const technicalRole = /软件(?:开发|研发|测试)?工程师|(?:前端|后端|全栈|移动端|嵌入式|算法|机器学习|深度学习|模型|数据|云计算|网络|安全|运维|系统|性能|测试)(?:开发|研发|架构|安全)?工程师|数据科学家|系统管理员|数据库管理员|(?:软件|云|系统|网络|安全|ai|数据)?架构师|(?:软件|技术|研发|后端|前端)(?:研发|开发)?(?:管理)?(?:经理|总监|负责人)|software(?:engineer|developer|architect)|(?:frontend|backend|fullstack|mobile|embedded|security|network|systems?|cloud|performance|test|data|ml|ai|machinelearning)(?:software)?engineer|datascientist|(?:systems?|network|database)administrator|solutions?architect|cloudarchitect|systems?architect|securityarchitect|technicalarchitect|aiarchitect|engineeringmanager|rdmanager|headofengineering|devopsengineer|sitereliabilityengineer/u;
 const standaloneTechnical = /^(?:senior|staff|principal|高级|资深)?(?:sre|devops|dba)(?:工程师|engineer)?$/u;
+const technicalOperationsTitle = /(?:sre|devops|dba)(?:工程师|engineer|专家)|^(?:高级|资深)?it(?:高级|资深)?经理|^itmanager|机房(?:经理|运维|管理员)|datacenteroperationsmanager|(?:mes|erp|sap|软件)(?:实施|交付|项目)(?:经理|顾问|工程师)|解决方案工程师|solutions?engineer/u;
 const delegate = /(?:协调|对接|沟通|联络|联合).{0,14}(?:研发|开发|工程师|技术团队|架构师|供应商)|(?:coordinate|liaise|workwith|partnerwith).{0,20}(?:engineer|developer|technicalteam)/u;
 const contextClause = /晋升|汇报|面向.{0,15}(?:工程师|架构师)|客户.{0,8}(?:cto|技术负责人)|产品(?:功能|介绍|特性)|(?:our|the)product(?:supports|provides)|careerpath|reportsto/u;
 const negation = /无需|不要求|不负责|不涉及|不承担|无须|不需要|不必|不编写|不做(?:编码|开发)|notrequired|nocoding|doesnotrequire|notresponsiblefor/u;
@@ -44,7 +45,7 @@ function personalTechnicalWork(clause) {
 
 export function assessTechnicalFunction(record) {
   const title = positionTitle(record.title);
-  if (technicalRole.test(title) || standaloneTechnical.test(title)
+  if (technicalRole.test(title) || standaloneTechnical.test(title) || technicalOperationsTitle.test(title)
     || ((technicalStack.test(title) || technicalStack.test((record.title ?? "").normalize("NFKC").toLowerCase()))
       && /(?:研发|开发|技术)(?:管理)?(?:经理|专家|工程师|支持|负责人|总监)|工程师|(?:developer|engineer)(?:$|[（(])/u.test(title))) {
     return { category: "technical-function", reasonCode: "role-technical-function", basis: "title" };

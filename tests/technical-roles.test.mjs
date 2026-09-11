@@ -23,6 +23,8 @@ test("v2 excludes explicit technical professions across example titles, synonyms
     "CUDA Developer", "Rust Engineer", "Java Developer", "Kubernetes Engineer", "DevOps Engineer", "SRE",
     "Site Reliability Engineer", "System Administrator", "Network Engineer", "Security Architect", "Solutions Architect",
     "Engineering Manager", "HPC Performance Engineer",
+    "云原生SRE工程师", "IT高级经理", "IDC机房经理", "MES项目经理", "解决方案工程师（生态赋能方向）",
+    "Solution Engineer", "IT Manager", "Data Center Operations Manager",
   ];
   for (const [index, title] of titles.entries()) {
     const result = assessRoleExclusion({ id: `boss-technical-test-${index}`, title }, policy);
@@ -83,9 +85,11 @@ test("other explicit occupation categories do not confuse commercial technology 
     ["商家运营", "consumer-operations"], ["游戏运营", "consumer-operations"], ["高级信息流优化师", "professional-marketing"],
     ["科技内容传播专家", "professional-marketing"], ["商业化产品经理", "product-delivery"], ["外包交付经理", "product-delivery"],
     ["双休——部门运营管理", "internal-operations"],
+    ["品牌活动策展经理", "professional-marketing"],
   ]) assert.equal(decide(title)?.category, category, title);
   for (const title of ["医疗软件渠道经理", "财务软件合作伙伴经理", "游戏云服务伙伴开发经理", "技术合作项目经理",
-    "AI产品合作伙伴经理", "硬件商务拓展", "商业运营经理", "伙伴运营经理"]) assert.equal(decide(title, jd(business)), null, title);
+    "AI产品合作伙伴经理", "硬件商务拓展", "商业运营经理", "伙伴运营经理", "IT Partner Manager",
+    "IDC机房渠道经理", "MES生态合作项目经理", "伙伴售前赋能经理"]) assert.equal(decide(title, jd(business)), null, title);
   assert.equal(decide("生态合作伙伴拓展与运维经理",
     jd("负责企业和高校合作伙伴建联、合作协议和关系维护。\n负责伙伴计划复盘，组织商业交流与非技术合作事项。")), null);
 });
