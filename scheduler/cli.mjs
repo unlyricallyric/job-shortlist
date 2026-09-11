@@ -11,7 +11,7 @@ import { assertRuntimeMode } from "./intent.mjs";
 import { reviewContext, reviewCounts, listReviews, showReview, approveReviews, rejectReview, saveReviewQueue } from "./review.mjs";
 import { publishReviewed, retryReviewedPublication } from "./publish-reviewed.mjs";
 import { loadManualExclusions, validateManualExclusions } from "./exclusions.mjs";
-import { publishCaptured, retryCandidatePublication, publishRoleCleanup } from "./publish-candidates.mjs";
+import { publishCaptured, retryCandidatePublication, publishRoleCleanup, publishFullReview } from "./publish-candidates.mjs";
 
 process.umask(0o077);
 const [action, ...args] = process.argv.slice(2);
@@ -54,11 +54,12 @@ try {
     result = action === "review-list" ? { counts: reviewCounts(queue, excludedIds), entries: listReviews(queue, {
       limit: values.has("limit") ? Number(values.get("limit")) : 20, status: values.get("status") ?? "pending", excludedIds,
     }) } : showReview(queue, values.get("id"));
-  } else if (["publish-captured", "retry-candidate-publication", "filter-candidates"].includes(action)) {
+  } else if (["publish-captured", "retry-candidate-publication", "filter-candidates", "publish-full-review"].includes(action)) {
     const release = await acquireLock(root, action);
     try {
       const signal = AbortSignal.any([release.signal, AbortSignal.timeout(300000)]);
-      result = action === "publish-captured" ? await publishCaptured(root, values.get("run-id"), signal)
+      result = action === "publish-full-review" ? await publishFullReview(root, await readJson(values.get("file")), signal)
+        : action === "publish-captured" ? await publishCaptured(root, values.get("run-id"), signal)
         : action === "filter-candidates" ? await publishRoleCleanup(root, signal) : await retryCandidatePublication(root, signal);
     } finally { await release(); }
   } else if (["review-approve", "review-reject", "publish-reviewed", "retry-reviewed-publication"].includes(action)) {

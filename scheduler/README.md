@@ -101,6 +101,34 @@ CLI="$HOME/Library/Application Support/job-shortlist/app/scheduler/cli.mjs"
 
 未来确有新的明确人工意图覆盖类型规则时，仍需当前源证据及普通 `review-approve`，然后仅在该次人工发布使用 `publish-reviewed --ids ... --override-role-exclusions`。旧批准或默认发布不能覆盖后来添加的反馈；覆盖不适用于明确逐 ID 拒绝，也不会自动确认任职资格。
 
+### 扩展职能政策与全量复查
+
+`role-feedback-v2` / `version: 2` 增加技术职业及明确的其他职能过滤。`runtime.roleExclusionsVersion` 必须与实际政策版本一致。旧 v1 历史项保留原 `policyId`、版本、理由和时间，新项按 v2 追加；不得靠把历史记录改成新版来伪造判断。已声明版本的政策缺失、版本冲突或无效历史会明确阻止发布。普通安装升级保留实际私人政策，不自动改写其版本或确认资格。
+
+技术规则识别岗位本身的工程、架构、算法、GPU/容器/系统开发、专业技术实施等职责，以及明确必需的编程、部署、排障、系统设计能力。技术产品名、合作对象、汇报 CTO、晋升路径或仅优先技术经验不等同于当前工程职责；业务开发与伙伴开发不是软件开发，计算机专业要求本身不证明工作是编码。非技术伙伴经营、普通商业培训及职责不明确的候选继续展示。
+
+当前全部岗位需要重新审核时，使用完整且来源快照绑定的私有文件：
+
+```json
+{
+  "version": 1,
+  "publicSha256": "SHA256_OF_CURRENT_PUBLIC_JSON_BYTES",
+  "decisions": [
+    {"id": "SOURCE-JOB-ID", "decision": "remove", "category": "technical-function"}
+  ]
+}
+```
+
+每个当前 ID 必须且只能出现一次，不能只提交部分移除名单；`decision` 为 `remove`、`retain` 或 `uncertain`，后两者的 `category` 为 `null`。移除类别须属于当前 v2 政策；快照字节变化时整次操作失败，不猜测增删记录。实际文件必须覆盖所有已选入和候选记录，上例仅示意一个字段结构。
+
+```sh
+"$NODE" "$CLI" publish-full-review --file /PRIVATE/full-review.json
+```
+
+该人工命令只按明确审核 ID 撤下岗位，既可撤下候选，也可撤下先前人工选择。它沿用候选快照裁剪器，保留其他对象与所有首次展示/观察记录，只刷新维护发布时间；不启动浏览器。移除 ID 追加到原 `manual-exclusions.json`，旧拒绝项、队列证据和批准内容不被覆盖。`full-relevance-reviews/` 保存私有摘要绑定、逐 ID 结果和发布回执，禁止上传。
+
+提交或 Pages 失败时明确拒绝仍持久生效，既有 `pending.json` 和 `retry-candidate-publication` 路径负责精确恢复；只有确认公开字节后才标记完成。旧人工批准、旧候选积压、旧待发布提交都不能绕过新的逐 ID 拒绝。重新采样的未知或商业相关候选仍走自动展示，不恢复前置审批。
+
 ## 明确人工批准与发布
 
 使用 `review-show` 阅读当前证据，人工准备一个私有 JSON：

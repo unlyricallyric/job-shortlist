@@ -63,14 +63,17 @@ export function candidateEvidence(evidence, now = new Date().toISOString()) {
   return { ...evidence, cards, details };
 }
 
-function sourceSummary(parsed) {
+function sourceSummary(parsed, direction) {
+  if (!["primary", "secondary"].includes(direction.decision)) {
+    return ["已读取来源中的职责与要求，具体职业方向仍需核对，不据渠道或合作等字样认定为商业伙伴岗位。"];
+  }
   const templates = [
-    [/伙伴|渠道|代理商/u, "职责涉及合作伙伴或渠道业务，具体分工请核对原岗位。"],
     [/联合打单|商机互荐|联合销售/u, "职责涉及商机协同或联合销售。"],
     [/独立.{0,12}(?:开发|谈判|签约)|回款/u, "职责含独立客户推进、商务环节或回款责任，需进一步确认边界。"],
     [/战略|研究报告|高管/u, "职责同时涉及研究、战略或管理层支持。"],
   ];
   const summary = templates.filter(([pattern]) => pattern.test(parsed.duties)).map(([, text]) => text);
+  if (direction.decision === "primary") summary.unshift("职责涉及商业合作伙伴或渠道经营，具体分工请核对原岗位。");
   return summary.length ? summary : ["已读取可分离的岗位职责与要求，仅作为来源记录展示，不表示适合。"];
 }
 
@@ -146,7 +149,7 @@ export function buildCandidateSnapshot(previous, evidence, queue, ledger, {
         else {
           if (!ledgerDetails.has(id)) throw new RunError("candidate-detail-missing", "A full-JD candidate has no matching detail ledger entry.");
           evidenceState = "full-jd";
-          direction = assessIntent({ jd: detail.jd }, policy);
+          direction = assessIntent({ title: card.title, jd: detail.jd }, policy);
         }
       }
     }
@@ -158,7 +161,7 @@ export function buildCandidateSnapshot(previous, evidence, queue, ledger, {
       salaryText: card.salaryText, salaryMinK: null, salaryMaxK: null, salaryMonths: null,
       experienceText: card.experienceText, educationText: card.educationText, category: full ? categories[direction.family] ?? null : null,
       matchScore: null, priority: "采样候选 · 待你判断",
-      summary: full ? sourceSummary(parsed) : ["尚未取得可完整核对的 JD，请查看原岗位。"],
+      summary: full ? sourceSummary(parsed, direction) : ["尚未取得可完整核对的 JD，请查看原岗位。"],
       requirements: [], matchReasons: [],
       concerns: ["来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"],
       languageNote: null, publishedAt: null, firstSeen: old?.firstSeen ?? firstSeen.get(id), lastSeen,

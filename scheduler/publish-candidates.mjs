@@ -9,6 +9,8 @@ import { validateLedger } from "./snapshot.mjs";
 import { prepareClone, git, publishSnapshot, verifyPublication } from "./publish.mjs";
 import { validateSnapshot, candidateCounts } from "../docs/model.mjs";
 import { loadRoleContext, rememberRoleExclusions } from "./role-exclusions.mjs";
+import { buildFullReviewSnapshot, validateFullReviewReceipt } from "./full-review.mjs";
+import { appendManualExclusions, loadManualExclusions } from "./exclusions.mjs";
 
 const path = "docs/data/jobs.json";
 const hash = (text) => createHash("sha256").update(text).digest("hex");
@@ -27,6 +29,7 @@ async function candidateRuntime(root) {
 
 async function recordPublication(root, receipt, verified) {
   const { snapshot } = receipt;
+  if (receipt.fullReview) validateFullReviewReceipt(receipt.fullReview, snapshot);
   const at = new Date().toISOString();
   const publication = { type: candidateMode, at, sha: receipt.sha, url: verified.url,
     runId: snapshot.candidateFeed.runId, sampleRunId: snapshot.candidateFeed.sampleRunId,
@@ -37,14 +40,19 @@ async function recordPublication(root, receipt, verified) {
   const state = await readJson(join(root, "state.json"));
   state.lastPublished = publication;
   await atomicJson(join(root, "state.json"), state);
+  if (receipt.fullReview) {
+    await atomicJson(join(root, "full-relevance-reviews", `${receipt.fullReview.publicSha256}.json`), {
+      ...receipt.fullReview, status: "published", at, sha: receipt.sha,
+    });
+  }
   await unlink(join(root, "pending.json"));
   return result;
 }
 
-async function commitCandidates(root, runtime, prepared, snapshot, signal, services) {
+async function commitCandidates(root, runtime, prepared, snapshot, signal, services, metadata = {}) {
   let receipt;
   const verified = await (services.publishSnapshot ?? publishSnapshot)(root, runtime, snapshot, prepared, signal, async (binding) => {
-    receipt = { version: 1, type: candidateMode, status: "pending", ...binding, snapshot };
+    receipt = { version: 1, type: candidateMode, status: "pending", ...binding, snapshot, ...metadata };
     await atomicJson(join(root, "pending.json"), receipt);
   }, services);
   if (!receipt || receipt.sha !== verified.sha) throw new RunError("candidate-receipt-missing", "Candidate publication has no matching durable receipt.");
@@ -90,6 +98,31 @@ export async function publishRoleCleanup(root, signal, services = {}) {
     priorSelectionConflicts: selectionConflicts.map((item) => item.id) };
 }
 
+export async function publishFullReview(root, payload, signal, services = {}) {
+  const runtime = await candidateRuntime(root), roleContext = await loadRoleContext(root, runtime);
+  if (roleContext.policy?.version !== 2) throw new RunError("full-review-policy-required", "Full relevance review requires the explicit extended role policy.");
+  if (await readJson(join(root, "pending.json"), null)) {
+    throw new RunError("pending-publication", "Recover the existing pending publication before applying a new full review.", { blocked: true });
+  }
+  if ((await readJson(join(root, "state.json"))).lastRun?.status === "running" || await readJson(join(root, "request.json"), null)) {
+    throw new RunError("full-review-run-active", "Finish the active or requested collection before applying a full review.", { blocked: true });
+  }
+  const prepared = await (services.prepareClone ?? prepareClone)(root, runtime, signal);
+  const { snapshot, removedIds, counts } = buildFullReviewSnapshot(prepared.text, payload, roleContext.policy);
+  const exclusions = appendManualExclusions(await loadManualExclusions(root), [...removedIds], snapshot.generatedAt);
+  const { excludedIds } = await reviewContext(root);
+  if (snapshot.jobs.some((job) => excludedIds.has(job.id))) {
+    throw new RunError("full-review-rejected-retention", "A retained record has an existing explicit rejection; review this conflict before publication.", { blocked: true });
+  }
+  const fullReview = { version: 1, status: "pending", publicSha256: payload.publicSha256,
+    decisions: payload.decisions, policyId: roleContext.policy.id, reviewedAt: snapshot.generatedAt, counts };
+  signal.throwIfAborted();
+  await atomicJson(join(root, "full-relevance-reviews", `${payload.publicSha256}.json`), fullReview);
+  await atomicJson(join(root, "manual-exclusions.json"), exclusions);
+  const publication = await commitCandidates(root, runtime, prepared, snapshot, signal, services, { fullReview });
+  return { ...publication, ...counts, newlyDisplayed: 0 };
+}
+
 export async function publishCaptured(root, sampleRunId, signal, services = {}) {
   await candidateRuntime(root);
   if (!validId(sampleRunId)) throw new RunError("invalid-captured-run", "Supply an exact completed source run ID.");
@@ -118,6 +151,7 @@ export async function retryCandidatePublication(root, signal, services = {}) {
     throw new RunError("candidate-pending-invalid", "The pending candidate receipt is invalid.", { blocked: true });
   }
   const snapshot = validateSnapshot(receipt.snapshot), text = bytes(snapshot);
+  if (snapshot.candidateFeed?.publicationKind === "full-review") validateFullReviewReceipt(receipt.fullReview, snapshot);
   if (hash(text) !== receipt.digest || snapshot.candidateFeed?.runId !== receipt.runId) {
     throw new RunError("candidate-pending-mismatch", "Pending candidate snapshot content changed.", { blocked: true });
   }

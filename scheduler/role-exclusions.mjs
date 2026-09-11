@@ -3,17 +3,23 @@ import { join } from "node:path";
 import { isIsoDate } from "../docs/model.mjs";
 import { atomicJson, readJson, RunError } from "./io.mjs";
 import { parseJobSections } from "./screening.mjs";
+import { assessTechnicalFunction } from "./technical-roles.mjs";
+import { assessOtherOccupation } from "./occupational-roles.mjs";
 
 const categories = ["cockpit-project", "marketing-leadership", "entrepreneurial-partner", "executive-ownership", "procurement", "frontline-sales"];
+const versions = new Map([[1, categories], [2, [...categories, "technical-function", "human-resources",
+  "production-planning", "finance-settlement", "consumer-operations", "professional-marketing", "product-delivery", "internal-operations"]]]);
 const exact = (value, keys) => value && typeof value === "object" && !Array.isArray(value)
   && Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key));
-export const feedbackRolePolicy = () => ({ version: 1, id: "role-feedback-v1", categories: [...categories] });
+export const feedbackRolePolicy = (version = 1) => validateRolePolicy({
+  version, id: `role-feedback-v${version}`, categories: [...(versions.get(version) ?? [])],
+});
 export const emptyRoleHistory = () => ({ version: 1, entries: [] });
 
 export function validateRolePolicy(value) {
-  if (!exact(value, ["version", "id", "categories"]) || value.version !== 1 || value.id !== "role-feedback-v1"
+  if (!exact(value, ["version", "id", "categories"]) || !versions.has(value.version) || value.id !== `role-feedback-v${value.version}`
     || !Array.isArray(value.categories) || !value.categories.length || new Set(value.categories).size !== value.categories.length
-    || value.categories.some((category) => !categories.includes(category))) {
+    || value.categories.some((category) => !versions.get(value.version).includes(category))) {
     throw new RunError("invalid-role-policy", "A supported, versioned private role-exclusion policy is required.", { blocked: true });
   }
   return value;
@@ -28,8 +34,9 @@ export function validateRoleHistory(value) {
     const key = `${entry.id}:${entry.policyId}:${entry.category}`;
     if (!exact(entry, ["id", "policyId", "policyVersion", "category", "reasonCode", "basis", "observedAt", "filteredAt"])
       || typeof entry.id !== "string" || !/^(?:boss-[A-Za-z0-9_~-]+|bytedance-\d+|liepin-\d+)$/.test(entry.id)
-      || entry.policyId !== "role-feedback-v1" || entry.policyVersion !== 1 || !categories.includes(entry.category)
-      || entry.reasonCode !== `role-${entry.category}` || !["title", "duties"].includes(entry.basis)
+      || !versions.has(entry.policyVersion) || entry.policyId !== `role-feedback-v${entry.policyVersion}`
+      || !versions.get(entry.policyVersion).includes(entry.category)
+      || entry.reasonCode !== `role-${entry.category}` || !["title", "duties", ...(entry.policyVersion === 2 ? ["requirements"] : [])].includes(entry.basis)
       || !isIsoDate(entry.observedAt, false) || !isIsoDate(entry.filteredAt, false)
       || Date.parse(entry.observedAt) > Date.parse(entry.filteredAt) || keys.has(key)) {
       throw new RunError("invalid-role-history", "A private role-exclusion record is invalid.", { blocked: true });
@@ -60,11 +67,15 @@ export async function loadRoleContext(root, runtime) {
     }
     return { policy: null, history: emptyRoleHistory() };
   }
-  if (runtime.roleExclusionsVersion !== 1) throw new RunError("invalid-role-policy", "Unsupported runtime role policy version.", { blocked: true });
-  return {
+  if (!versions.has(runtime.roleExclusionsVersion)) throw new RunError("invalid-role-policy", "Unsupported runtime role policy version.", { blocked: true });
+  const context = {
     policy: validateRolePolicy(await privateJson(root, "role-exclusions.json", "role-policy-missing")),
     history: validateRoleHistory(await privateJson(root, "role-exclusions-history.json", "role-history-missing")),
   };
+  if (context.policy.version !== runtime.roleExclusionsVersion || context.history.entries.some((entry) => entry.policyVersion > context.policy.version)) {
+    throw new RunError("role-policy-version-mismatch", "Runtime, policy and historical role versions do not agree.", { blocked: true });
+  }
+  return context;
 }
 
 export async function rememberRoleExclusions(root, context, removals, now = new Date().toISOString()) {
@@ -114,6 +125,14 @@ export function assessRoleExclusion(record, policy) {
     && !/assistant|support|liaison|report|客户|对接|支持|协助|汇报|助理/u.test(rawTitle);
   const enabled = new Set(policy.categories);
   const result = (category, basis) => enabled.has(category) ? { category, reasonCode: `role-${category}`, basis } : null;
+  if (enabled.has("technical-function")) {
+    const technical = assessTechnicalFunction(record);
+    if (technical) return technical;
+  }
+  if (policy.version === 2) {
+    const other = assessOtherOccupation(record);
+    if (other && enabled.has(other.category)) return other;
+  }
   const titleChecks = [
     ["cockpit-project", /(?:座舱|cockpit).{0,18}(?:项目经理|项目管理|项目总监|技术交付|交付经理|projectmanager|programmanager)/u.test(title)],
     ["entrepreneurial-partner", /合伙人|联合创始人|共同创始人|cofounder|foundingpartner|equitypartner|managingpartner|franchiseowner/u.test(title)],

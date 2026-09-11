@@ -643,7 +643,7 @@ test("real card rendering preserves literal strings, safe links, nulls and obser
   assert.equal(app.get("new-count").textContent, "2");
   assert.equal(app.requests.length, 1);
   assert.ok(app.requests[0].url.pathname.endsWith("/docs/data/jobs.json"));
-  assert.equal(app.requests[0].url.search, "?rev=20260912-feedback1");
+  assert.equal(app.requests[0].url.search, "?rev=20260912-relevance1");
   assert.equal(app.requests[0].options.credentials, "omit");
   assert.equal(app.requests[0].options.cache, "no-store");
 });

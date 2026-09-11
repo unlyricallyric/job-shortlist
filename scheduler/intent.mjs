@@ -1,5 +1,6 @@
 import { RunError } from "./io.mjs";
 import { parseJobSections, prefilterCard, screenJob } from "./screening.mjs";
+import { assessOtherOccupation } from "./occupational-roles.mjs";
 
 export const collectionMode = "collection-only";
 export const candidateMode = "candidate-feed";
@@ -71,12 +72,16 @@ export function assessIntent(record, policy) {
   if (typeof record.jd !== "string" || !record.jd.trim()) {
     return { decision: "unclear", family: null, reasons: ["intent-evidence-missing"] };
   }
+  if (assessOtherOccupation(record)) {
+    return { decision: "outside", family: null, reasons: ["different-occupational-function"] };
+  }
   const parsed = parseJobSections(record);
   // Unseparated text can inform a private direction preview, never establish qualifications.
   const body = normalize(parsed?.duties || record.jd.split(/任职要求|任职资格|岗位要求/u)[0]);
   const clauses = body.split(/[\r\n。；;]+/u).filter((text) => text.trim());
   const active = clauses.filter((text) => action.test(text) || /^伙伴拓展|^共商机|^共销售/u.test(text));
-  const commercial = active.filter((text) => partner.test(text) && (businessPartner.test(text) || channelBusiness.test(text)));
+  const commercial = active.filter((text) => partner.test(text) && (businessPartner.test(text) || channelBusiness.test(text))
+    && !/招聘渠道|人才渠道|广告投放渠道|用户获取渠道|游戏用户渠道/u.test(text));
   const ecosystem = active.filter((text) => ecosystemBusiness.test(text)
     && /合作|伙伴|商务|项目|洽谈|协议|交付/u.test(text));
   const unrelated = active.filter((text) => outsidePurpose.test(text)

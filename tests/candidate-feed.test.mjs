@@ -53,6 +53,19 @@ test("all valid cards are visible regardless of private fit decisions, unread de
   assert.equal(selectJobs(data.jobs, { candidateStatesById: data.candidateStatesById }).length, cards.length);
 });
 
+test("recruitment, advertising and game-user channels do not become commercial partner claims in generated summaries", () => {
+  const records = [
+    record("recruitment-context", { title: "HRBP", jd: "岗位职责：\n负责招聘渠道拓展和招聘需求收集，维护人才资源。\n主导候选人面试与员工关系处理，完善招聘渠道体系。\n任职要求：\n有相关人力资源业务经验，能够组织沟通和处理日常招聘及员工服务事项。" }),
+    record("advertising-context", { title: "高级信息流优化师", jd: "岗位职责：\n负责广告投放渠道管理，制定买量策略并持续复盘效果。\n执行广告投放和媒体采买，优化信息流素材与投放转化。\n任职要求：\n有相关投放业务经验，能够整理数据并跟进素材和媒体合作进度。" }),
+    record("game-context", { title: "游戏运营", jd: "岗位职责：\n负责游戏用户渠道拓展，安排玩家活动并跟踪玩家留存。\n开展游戏用户运营，制定玩家活跃和游戏买量计划。\n任职要求：\n有相关游戏业务经验，能够维护用户活动并按计划复盘日常运营效果。" }),
+  ];
+  const data = build(evidenceOf(records, records));
+  for (const job of data.jobs) {
+    assert.equal(job.category, null);
+    assert.equal(data.candidateStatesById[job.id].direction, "outside");
+    assert.ok(!job.summary.some((text) => text.includes("商业合作伙伴") || text.includes("渠道业务")));
+  }
+});
 test("unread, short, unseparated and mismatched details fall back to the authentic card without stale body or score", () => {
   const cards = ["unread", "short", "unseparated", "mismatch", "conflict"].map((id) => record(id, { salaryText: "\ue031-\ue032K" }));
   const details = [

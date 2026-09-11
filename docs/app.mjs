@@ -2,7 +2,7 @@ import {
   SnapshotError, filterOptions, formatShanghaiTime, hasSalaryRange,
   parseSalaryRange, safeJobUrl, selectJobs, validateSnapshot,
   shanghaiDateKey, nextShanghaiMidnight, selectArrivalView, groupJobsByFirstSeen, candidateCounts,
-} from "./model.mjs?rev=20260912-feedback1";
+} from "./model.mjs?rev=20260912-relevance1";
 
 const sourceLinkLabels = new Map([
   ["BOSS直聘", "查看原始岗位"],
@@ -86,18 +86,23 @@ function renderAutomation() {
   const automation = snapshot.automation;
   const feed = snapshot.candidateFeed;
   byId("candidate-feed-panel").hidden = !feed;
-  byId("feedback-maintenance-note").hidden = feed?.publicationKind !== "feedback-filter";
+  const maintenance = ["feedback-filter", "full-review"].includes(feed?.publicationKind);
+  byId("feedback-maintenance-note").hidden = !maintenance;
+  byId("feedback-maintenance-note").textContent = feed?.publicationKind === "full-review"
+    ? "本次对已保存岗位（含原已选入记录）进行了全量方向复查，没有重新采样或新增展示。保留记录的内容、观察日期、首次展示日期和最近批次新增标记不变。"
+    : "本次仅按已反馈类型过滤已保存候选，没有重新采样或新增展示。保留记录的观察日期、首次展示日期和最近批次新增标记不变；原人工选择仍单独保留。";
   byId("candidate-feed-warning").hidden = !feed || !isScheduleOverdue(snapshot);
   if (feed) {
     const counts = candidateCounts(snapshot);
     byId("candidate-publication-kind").textContent = {
       scheduled: "定时采样发布", controlled: "受控采样发布", "manual-backfill": "历史积压 · 补展示", "manual-selection": "人工选入更新",
       "feedback-filter": "已保存候选 · 反馈过滤",
+      "full-review": "已保存岗位 · 全量方向复查",
     }[feed.publicationKind];
     setTime(byId("candidate-sampled-at"), feed.sampledAt);
     byId("candidate-sample-counts").textContent = `${feed.cardsThisSample} 张 / ${feed.detailsThisSample} 份`;
-    byId("candidate-new-label").textContent = feed.publicationKind === "feedback-filter" ? "本次仅过滤，没有新增展示" : "本次首次展示的候选";
-    byId("candidate-new-count").textContent = `${feed.publicationKind === "feedback-filter" ? 0 : counts.newCandidates} 个`;
+    byId("candidate-new-label").textContent = maintenance ? "本次仅复查，没有新增展示" : "本次首次展示的候选";
+    byId("candidate-new-count").textContent = `${maintenance ? 0 : counts.newCandidates} 个`;
     byId("candidate-totals").textContent = `当前已选入 ${counts.selected} 个 · 采样候选 ${counts.candidates} 个（其中仅卡片或详情待确认 ${counts.cardOnly} 个）。`;
   }
   const pausedPublication = snapshot.publication?.scheduler === "paused";
@@ -322,7 +327,7 @@ function setFilterOptions(id, key, defaultText) {
 async function fetchSnapshot() {
   let response;
   try {
-    response = await fetch(new URL("./data/jobs.json?rev=20260912-feedback1", import.meta.url), {
+    response = await fetch(new URL("./data/jobs.json?rev=20260912-relevance1", import.meta.url), {
       cache: "no-store", credentials: "omit", redirect: "error",
     });
   } catch (error) {

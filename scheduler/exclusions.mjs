@@ -45,6 +45,16 @@ export function manualExcludedIds(exclusions) {
   return new Set(validateManualExclusions(exclusions).entries.map((entry) => entry.id));
 }
 
+export function appendManualExclusions(exclusions, ids, excludedAt) {
+  const entries = [...validateManualExclusions(exclusions).entries];
+  const existing = new Set(entries.map((entry) => entry.id));
+  for (const id of ids) if (!existing.has(id)) {
+    entries.push({ id, excludedAt, reasonCode: "user-direction-rejection" });
+    existing.add(id);
+  }
+  return validateManualExclusions({ version: 1, entries });
+}
+
 export function withdrawExcludedJobs(snapshot, exclusions, publishedAt) {
   validateSnapshot(snapshot);
   const ids = manualExcludedIds(exclusions);
