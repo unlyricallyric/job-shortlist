@@ -3,6 +3,7 @@ import { homedir } from "node:os";
 import { lstat } from "node:fs/promises";
 import { RunError, readJson } from "./io.mjs";
 import { assertRuntimeMode, candidateMode, partnerQueries, validateIntentPolicy } from "./intent.mjs";
+import { loadRoleContext } from "./role-exclusions.mjs";
 
 export const defaultRoot = () => join(homedir(), "Library", "Application Support", "job-shortlist");
 export const label = "com.job-shortlist.scheduler";
@@ -38,7 +39,8 @@ export async function loadConfiguration(root) {
     throw new RunError("invalid-config", "Scheduled queries must match the explicit private career-intent policy.", { blocked: true });
   }
   const { validateMatchingConfig } = await import("./screening.mjs");
-  return { runtime, matching: validateMatchingConfig(await readJson(join(root, "matching.json"))), intent };
+  return { runtime, matching: validateMatchingConfig(await readJson(join(root, "matching.json"))), intent,
+    roleContext: await loadRoleContext(root, runtime) };
 }
 
 export function rotatingQueries(queries, cursor, count) {

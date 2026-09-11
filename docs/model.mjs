@@ -294,7 +294,7 @@ export function validateSnapshot(value) {
       && hasExactKeys(feed, ["version", "mode", "publicationKind", "runId", "sampleRunId", "sampledAt",
         "cardsThisSample", "detailsThisSample", "timeZone", "times"])
       && feed.version === 1 && feed.mode === "candidate-feed"
-      && ["scheduled", "controlled", "manual-backfill", "manual-selection"].includes(feed.publicationKind)
+      && ["scheduled", "controlled", "manual-backfill", "manual-selection", "feedback-filter"].includes(feed.publicationKind)
       && [feed.runId, feed.sampleRunId].every((id) => typeof id === "string" && /^[a-z0-9-]{8,90}$/.test(id))
       && isIsoDate(feed.sampledAt, false) && Date.parse(feed.sampledAt) <= Date.parse(value.generatedAt)
       && feed.timeZone === "Asia/Shanghai" && JSON.stringify(feed.times) === '["09:30","12:30"]'

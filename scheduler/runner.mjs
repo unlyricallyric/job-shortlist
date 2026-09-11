@@ -13,6 +13,7 @@ import { loadManualExclusions, manualExcludedIds } from "./exclusions.mjs";
 import { assertRuntimeMode, collectionMode, candidateMode, modeSettings, assessForReview, prefilterIntentCard, intentCardPriority } from "./intent.mjs";
 import { loadReviewQueue, updateReviewQueue, saveReviewQueue, reviewCounts } from "./review.mjs";
 import { candidateEvidence, rejectedCandidateIds } from "./candidates.mjs";
+import { assessRoleExclusion, loadRoleContext, emptyRoleHistory } from "./role-exclusions.mjs";
 
 export function initialState(now = new Date()) {
   return { version: 1, activatedAt: latestSlot(now).at, lastScheduledSlot: null, queryCursor: 0, lastRun: null, lastPublished: null };
@@ -55,11 +56,14 @@ export async function status(root) {
     && runtime.manualApprovalRequiredForVisibility === false;
   const modeReady = collectionReady || candidateReady;
   const excludedIds = manualExcludedIds(await loadManualExclusions(root));
+  const roleContext = await loadRoleContext(root, runtime);
   const pending = await readJson(join(root, "pending.json"), null);
   return { enabled: !control.paused && modeReady,
     ...modeSettings(candidateReady ? candidateMode : collectionMode),
     mode: modeReady ? runtime.mode : "migration-required",
     queueBlocksVisibility: !candidateReady, qualificationVerified: false,
+    roleExclusions: { policy: roleContext.policy?.id ?? null, version: roleContext.policy?.version ?? null,
+      blockedIds: new Set(roleContext.history.entries.map((entry) => entry.id)).size },
     next: nextSlots(), activationBoundary: state.collectionActivatedAt ?? null,
     reviewQueue: reviewCounts(await loadReviewQueue(root), excludedIds),
     lastRun: state.lastRun, lastCollection: state.lastCollection ?? null, lastPublished: state.lastPublished,
@@ -144,13 +148,19 @@ export async function run(root, { tick = false, dryRun = false, signal: outerSig
     let publication = null;
     let failure = null, summary = null, sampledAt = null;
     try {
-      const { runtime, matching, intent } = await operations.loadConfiguration(root);
+      const { runtime, matching, intent, roleContext = { policy: null, history: emptyRoleHistory() } } = await operations.loadConfiguration(root);
       const settings = assertRuntimeMode(runtime);
       Object.assign(active, settings);
       const queue = await loadReviewQueue(root);
       const excludedIds = rejectedCandidateIds(queue, manualExcludedIds(await loadManualExclusions(root)));
-      const eligibleCard = (card) => excludedIds.has(card.id) ? { eligible: false, reason: "manual-excluded" }
-        : operations.prefilterIntentCard(card, matching, intent, excludedIds);
+      const roleBlocked = new Set(roleContext.history.entries.map((entry) => entry.id));
+      const eligibleCard = (card) => {
+        if (excludedIds.has(card.id)) return { eligible: false, reason: "manual-excluded" };
+        if (roleBlocked.has(card.id)) return { eligible: false, reason: "role-feedback-excluded" };
+        const decision = assessRoleExclusion({ title: card.title }, roleContext.policy);
+        return decision ? { eligible: false, reason: decision.reasonCode }
+          : operations.prefilterIntentCard(card, matching, intent, excludedIds);
+      };
       let ledger = validateLedger(await readJson(join(root, "ledger.json")));
       let readHistory = validateReadHistory(await readJson(join(root, "read-history.json"), emptyReadHistory()));
       if (runtime.mode === candidateMode && !dryRun && await readJson(join(root, "pending.json"), null)) {

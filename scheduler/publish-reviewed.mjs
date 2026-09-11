@@ -7,6 +7,17 @@ import { reviewContext, buildReviewedSnapshot } from "./review.mjs";
 import { validateLedger } from "./snapshot.mjs";
 import { assertRuntimeMode } from "./intent.mjs";
 import { validateSnapshot } from "../docs/model.mjs";
+import { loadRoleContext, assessRoleExclusion, rememberRoleExclusions } from "./role-exclusions.mjs";
+import { filterRoleCandidates } from "./candidates.mjs";
+
+function requireRoleOverride(queue, ids, context, overrides = []) {
+  const blocked = ids.filter((id) => context.history.entries.some((entry) => entry.id === id)
+    || assessRoleExclusion(queue.entries.find((entry) => entry.id === id).evidence, context.policy));
+  if (blocked.some((id) => !overrides.includes(id))) {
+    throw new RunError("role-override-required", "Current feedback excludes this role; publication needs an explicit human role override.");
+  }
+  return blocked;
+}
 
 async function recordPublication(root, receipt, verified) {
   const result = { ...receipt, status: "published", publishedAt: new Date().toISOString(), ...verified };
@@ -29,20 +40,24 @@ function verifyApprovalBindings(queue, ids, excludedIds, bindings) {
 }
 
 // Caller holds the scheduler mutex. This entry point is never called by tick/run-once.
-export async function publishReviewed(root, ids, signal, services = {}) {
+export async function publishReviewed(root, ids, signal, services = {}, { roleOverride = false } = {}) {
   const operations = { prepareClone, git, verifyPublication, ...services };
   const runtime = await readJson(join(root, "runtime.json"));
   assertRuntimeMode(runtime);
   const { queue, excludedIds } = await reviewContext(root);
   // Check approval before touching any Git/network state.
   verifyApprovalBindings(queue, ids, excludedIds);
+  const roleContext = await loadRoleContext(root, runtime);
+  const roleOverrideIds = requireRoleOverride(queue, ids, roleContext, roleOverride ? ids : []);
   if (!ids.length || new Set(ids).size !== ids.length) throw new RunError("invalid-reviewed-selection", "Supply unique approved IDs.");
   if (await readJson(join(root, "review-publication-pending.json"), null)) {
     throw new RunError("review-publication-pending", "Inspect the previous unconfirmed reviewed publication before another push.", { blocked: true });
   }
   const ledger = validateLedger(await readJson(join(root, "ledger.json")));
   const prepared = await operations.prepareClone(root, runtime, signal);
-  const snapshot = buildReviewedSnapshot(prepared.snapshot, queue, ids, ledger, excludedIds);
+  const reviewed = buildReviewedSnapshot(prepared.snapshot, queue, ids, ledger, excludedIds);
+  const { snapshot, removals } = filterRoleCandidates(reviewed, queue, roleContext);
+  await rememberRoleExclusions(root, roleContext, removals);
   const remote = await operations.git(runtime, ["ls-remote", "origin", "refs/heads/main"], { cwd: prepared.cwd, signal });
   if (remote.split(/\s+/)[0] !== prepared.head) throw new RunError("publish-conflict", "Remote main changed before the explicit publication.");
   signal.throwIfAborted();
@@ -60,6 +75,7 @@ export async function publishReviewed(root, ids, signal, services = {}) {
   ], { cwd: prepared.cwd, signal });
   const sha = await operations.git(runtime, ["rev-parse", "HEAD"], { cwd: prepared.cwd, signal });
   const receipt = { version: 1, status: "pending", sha, ids, digest: createHash("sha256").update(text).digest("hex"),
+    ...(roleContext.policy ? { rolePolicyId: roleContext.policy.id, roleOverrideIds } : {}),
     approvalHashes: Object.fromEntries(ids.map((id) => [id, queue.entries.find((entry) => entry.id === id).evidenceHash])),
     approvalJobHashes: Object.fromEntries(ids.map((id) => [id, createHash("sha256").update(JSON.stringify(queue.entries.find((entry) => entry.id === id).approval.job)).digest("hex")])) };
   await atomicJson(join(root, "review-publication-pending.json"), receipt);
@@ -82,6 +98,8 @@ export async function retryReviewedPublication(root, signal, services = {}) {
   }
   const { queue, excludedIds } = await reviewContext(root);
   verifyApprovalBindings(queue, receipt.ids, excludedIds, receipt.approvalHashes);
+  const roleContext = await loadRoleContext(root, runtime);
+  requireRoleOverride(queue, receipt.ids, roleContext, receipt.rolePolicyId === roleContext.policy?.id ? receipt.roleOverrideIds ?? [] : []);
   const cwd = join(root, "publish");
   if (await executeGit(runtime, ["status", "--porcelain=v1"], { cwd, signal })
     || await executeGit(runtime, ["rev-parse", "HEAD"], { cwd, signal }) !== receipt.sha) {
@@ -90,6 +108,10 @@ export async function retryReviewedPublication(root, signal, services = {}) {
   const text = await readFile(join(cwd, "docs/data/jobs.json"), "utf8");
   if (createHash("sha256").update(text).digest("hex") !== receipt.digest) throw new RunError("reviewed-recovery-mismatch", "Pending snapshot bytes changed.");
   const snapshot = validateSnapshot(JSON.parse(text));
+  if (snapshot.jobs.some((job) => excludedIds.has(job.id))) throw new RunError("candidate-pending-excluded", "A pending reviewed snapshot contains an explicitly excluded record.");
+  if (filterRoleCandidates(snapshot, queue, roleContext).removals.length) {
+    throw new RunError("candidate-pending-role-excluded", "Current feedback excludes a retained candidate in the reviewed snapshot.");
+  }
   for (const id of receipt.ids) {
     const approved = queue.entries.find((entry) => entry.id === id).approval.job;
     if (receipt.approvalJobHashes

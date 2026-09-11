@@ -4,10 +4,11 @@ import { createHash, randomUUID } from "node:crypto";
 import { atomicJson, readJson, RunError, appendLog } from "./io.mjs";
 import { assertRuntimeMode, candidateMode, validateIntentPolicy } from "./intent.mjs";
 import { reviewContext } from "./review.mjs";
-import { buildCandidateSnapshot, rejectedCandidateIds } from "./candidates.mjs";
+import { buildCandidateSnapshot, rejectedCandidateIds, filterRoleCandidates, withoutSnapshotJobs } from "./candidates.mjs";
 import { validateLedger } from "./snapshot.mjs";
 import { prepareClone, git, publishSnapshot, verifyPublication } from "./publish.mjs";
 import { validateSnapshot, candidateCounts } from "../docs/model.mjs";
+import { loadRoleContext, rememberRoleExclusions } from "./role-exclusions.mjs";
 
 const path = "docs/data/jobs.json";
 const hash = (text) => createHash("sha256").update(text).digest("hex");
@@ -40,26 +41,53 @@ async function recordPublication(root, receipt, verified) {
   return result;
 }
 
-// The caller owns the kernel mutex; there are no approval or qualification gates here.
-export async function publishCandidates(root, context, signal, services = {}) {
-  const operations = { prepareClone, publishSnapshot, ...services };
-  const runtime = await candidateRuntime(root);
-  const { queue, excludedIds } = await reviewContext(root);
-  const prepared = await operations.prepareClone(root, runtime, signal);
-  const { snapshot, rejectedRecords } = buildCandidateSnapshot(prepared.snapshot, context.evidence, queue, context.ledger, {
-    policy: context.intent, excludedIds, runId: context.runId, sampleRunId: context.sampleRunId,
-    sampledAt: context.sampledAt, publicationKind: context.publicationKind, now: context.now,
-  });
-  if (rejectedRecords.length) await appendLog(root, { event: "candidate-safety-exclusions", runId: context.runId,
-    counts: Object.fromEntries([...new Set(rejectedRecords.map((item) => item.code))]
-      .map((code) => [code, rejectedRecords.filter((item) => item.code === code).length])) });
+async function commitCandidates(root, runtime, prepared, snapshot, signal, services) {
   let receipt;
-  const verified = await operations.publishSnapshot(root, runtime, snapshot, prepared, signal, async (binding) => {
+  const verified = await (services.publishSnapshot ?? publishSnapshot)(root, runtime, snapshot, prepared, signal, async (binding) => {
     receipt = { version: 1, type: candidateMode, status: "pending", ...binding, snapshot };
     await atomicJson(join(root, "pending.json"), receipt);
   }, services);
   if (!receipt || receipt.sha !== verified.sha) throw new RunError("candidate-receipt-missing", "Candidate publication has no matching durable receipt.");
   return recordPublication(root, receipt, verified);
+}
+
+// The caller owns the kernel mutex; explicit negative feedback is not an approval or qualification gate.
+export async function publishCandidates(root, context, signal, services = {}) {
+  const runtime = await candidateRuntime(root);
+  const roleContext = await loadRoleContext(root, runtime);
+  const { queue, excludedIds } = await reviewContext(root);
+  const prepared = await (services.prepareClone ?? prepareClone)(root, runtime, signal);
+  const { snapshot, rejectedRecords, removals } = buildCandidateSnapshot(prepared.snapshot, context.evidence, queue, context.ledger, {
+    policy: context.intent, excludedIds, roleContext, runId: context.runId, sampleRunId: context.sampleRunId,
+    sampledAt: context.sampledAt, publicationKind: context.publicationKind, now: context.now,
+  });
+  await rememberRoleExclusions(root, roleContext, removals);
+  if (rejectedRecords.length) await appendLog(root, { event: "candidate-safety-exclusions", runId: context.runId,
+    counts: Object.fromEntries([...new Set(rejectedRecords.map((item) => item.code))]
+      .map((code) => [code, rejectedRecords.filter((item) => item.code === code).length])) });
+  return commitCandidates(root, runtime, prepared, snapshot, signal, services);
+}
+
+export async function publishRoleCleanup(root, signal, services = {}) {
+  const runtime = await candidateRuntime(root), roleContext = await loadRoleContext(root, runtime);
+  if (!roleContext.policy) throw new RunError("role-policy-missing", "Configure an explicit feedback policy before filtering candidates.");
+  const { queue, excludedIds } = await reviewContext(root);
+  const prepared = await (services.prepareClone ?? prepareClone)(root, runtime, signal);
+  if (!prepared.snapshot.candidateFeed) throw new RunError("candidate-feed-missing", "Feedback cleanup requires an existing candidate snapshot.");
+  const allowed = withoutSnapshotJobs(prepared.snapshot, excludedIds);
+  const { snapshot, removals, selectionConflicts } = filterRoleCandidates(allowed, queue, roleContext);
+  const now = new Date().toISOString();
+  const filtered = validateSnapshot({ ...snapshot, generatedAt: now,
+    run: { ...snapshot.run, scope: "上海 · 企业级科技 · 岗位采样与已保存线索" },
+    candidateFeed: { ...snapshot.candidateFeed, publicationKind: "feedback-filter", runId: `feedback-${now.replace(/\D/g, "")}` } });
+  await rememberRoleExclusions(root, roleContext, removals, now);
+  const audit = { version: 1, policy: roleContext.policy.id, at: now, removals, selectionConflicts };
+  await atomicJson(join(root, "role-exclusion-cleanup.json"), audit);
+  const publication = await commitCandidates(root, runtime, prepared, filtered, signal, services);
+  return { ...publication, removedCandidates: removals.length,
+    removedByCategory: Object.fromEntries(roleContext.policy.categories.map((category) =>
+      [category, removals.filter((item) => item.category === category).length])),
+    priorSelectionConflicts: selectionConflicts.map((item) => item.id) };
 }
 
 export async function publishCaptured(root, sampleRunId, signal, services = {}) {
@@ -81,6 +109,7 @@ export async function publishCaptured(root, sampleRunId, signal, services = {}) 
 export async function retryCandidatePublication(root, signal, services = {}) {
   const executeGit = services.git ?? git, verify = services.verifyPublication ?? verifyPublication;
   const runtime = await candidateRuntime(root);
+  const roleContext = await loadRoleContext(root, runtime);
   const receipt = await readJson(join(root, "pending.json"));
   if (receipt.version !== 1 || receipt.type !== candidateMode || receipt.status !== "pending"
     || !["prepared", "committed"].includes(receipt.phase) || !/^[a-f0-9]{40}$/.test(receipt.baseSha)
@@ -96,6 +125,11 @@ export async function retryCandidatePublication(root, signal, services = {}) {
   const rejected = rejectedCandidateIds(queue, excludedIds);
   if (snapshot.jobs.some((job) => rejected.has(job.id))) {
     throw new RunError("candidate-pending-excluded", "A pending record was explicitly rejected; do not push or confirm the stale snapshot.", { blocked: true });
+  }
+  const filtered = filterRoleCandidates(snapshot, queue, roleContext);
+  if (filtered.removals.length) {
+    await rememberRoleExclusions(root, roleContext, filtered.removals);
+    throw new RunError("candidate-pending-role-excluded", "Current feedback excludes a pending candidate; stale publication is blocked.", { blocked: true });
   }
   const cwd = join(root, "publish"), target = join(cwd, path);
   if (await executeGit(runtime, ["remote", "get-url", "origin"], { cwd, signal }) !== `https://github.com/${runtime.repository}.git`

@@ -11,6 +11,7 @@ import { git } from "./publish.mjs";
 import { defaultIntentPolicy, validateIntentPolicy, assertRuntimeMode, collectionMode, candidateMode, modeSettings } from "./intent.mjs";
 import { emptyReviewQueue } from "./review.mjs";
 import { activateNextSlot } from "./clock.mjs";
+import { loadRoleContext } from "./role-exclusions.mjs";
 
 const xml = (value) => String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;")
   .replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&apos;");
@@ -91,6 +92,7 @@ export async function install({ root = defaultRoot(), matchingPath, ledgerPath, 
     const matching = validateMatchingConfig(await readJson(matchingPath));
     const ledger = validateLedger(await readJson(ledgerPath));
     const previousRuntime = await readJson(join(root, "runtime.json"), null);
+    await loadRoleContext(root, previousRuntime ?? {});
     const intent = validateIntentPolicy(await readJson(join(root, "intent-policy.json"), defaultIntentPolicy()));
     const runtime = {
       ...(previousRuntime ?? {}),
@@ -176,6 +178,7 @@ export async function resume(root) {
   try {
     const runtime = await readJson(join(root, "runtime.json"));
     settings = assertRuntimeMode(runtime);
+    await loadRoleContext(root, runtime);
     validateIntentPolicy(await readJson(join(root, "intent-policy.json")));
     const state = await readJson(join(root, "state.json"));
     await atomicJson(join(root, "state.json"), activateNextSlot(state));

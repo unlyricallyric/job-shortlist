@@ -11,7 +11,7 @@ import { assertRuntimeMode } from "./intent.mjs";
 import { reviewContext, reviewCounts, listReviews, showReview, approveReviews, rejectReview, saveReviewQueue } from "./review.mjs";
 import { publishReviewed, retryReviewedPublication } from "./publish-reviewed.mjs";
 import { loadManualExclusions, validateManualExclusions } from "./exclusions.mjs";
-import { publishCaptured, retryCandidatePublication } from "./publish-candidates.mjs";
+import { publishCaptured, retryCandidatePublication, publishRoleCleanup } from "./publish-candidates.mjs";
 
 process.umask(0o077);
 const [action, ...args] = process.argv.slice(2);
@@ -22,7 +22,7 @@ const known = new Set(["root", "matching", "ledger", "ssh-key", "known-hosts", "
 for (let index = 0; index < args.length; index++) {
   const name = args[index].replace(/^--/, "");
   if (!args[index].startsWith("--")) throw new Error("Expected a named command option.");
-  if (name === "dry-run" || name === "no-browser" || name === "controlled") flags.add(name);
+  if (name === "dry-run" || name === "no-browser" || name === "controlled" || name === "override-role-exclusions") flags.add(name);
   else if (known.has(name) && args[index + 1] && !args[index + 1].startsWith("--")) values.set(name, args[++index]);
   else throw new Error("Unknown or missing command option.");
 }
@@ -54,12 +54,12 @@ try {
     result = action === "review-list" ? { counts: reviewCounts(queue, excludedIds), entries: listReviews(queue, {
       limit: values.has("limit") ? Number(values.get("limit")) : 20, status: values.get("status") ?? "pending", excludedIds,
     }) } : showReview(queue, values.get("id"));
-  } else if (["publish-captured", "retry-candidate-publication"].includes(action)) {
+  } else if (["publish-captured", "retry-candidate-publication", "filter-candidates"].includes(action)) {
     const release = await acquireLock(root, action);
     try {
       const signal = AbortSignal.any([release.signal, AbortSignal.timeout(300000)]);
       result = action === "publish-captured" ? await publishCaptured(root, values.get("run-id"), signal)
-        : await retryCandidatePublication(root, signal);
+        : action === "filter-candidates" ? await publishRoleCleanup(root, signal) : await retryCandidatePublication(root, signal);
     } finally { await release(); }
   } else if (["review-approve", "review-reject", "publish-reviewed", "retry-reviewed-publication"].includes(action)) {
     const release = await acquireLock(root, action);
@@ -83,7 +83,8 @@ try {
         result = { rejected: id, published: false };
       } else {
         const ids = (values.get("ids") ?? "").split(",").filter(Boolean);
-        result = await publishReviewed(root, ids, AbortSignal.any([release.signal, AbortSignal.timeout(300000)]));
+        result = await publishReviewed(root, ids, AbortSignal.any([release.signal, AbortSignal.timeout(300000)]), {},
+          { roleOverride: flags.has("override-role-exclusions") });
       }
     } finally {
       await release();

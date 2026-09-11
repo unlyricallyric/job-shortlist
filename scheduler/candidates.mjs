@@ -5,6 +5,7 @@ import { parseJobSections } from "./screening.mjs";
 import { validateReviewQueue } from "./review.mjs";
 import { validateLedger } from "./snapshot.mjs";
 import { RunError } from "./io.mjs";
+import { assessRoleExclusion, validateRolePolicy, validateRoleHistory, emptyRoleHistory } from "./role-exclusions.mjs";
 
 const metadata = ["id", "source", "url", "title", "company", "location", "experienceText", "educationText", "salaryText"];
 const unsafe = /[\p{Co}\p{Cc}\p{Cf}]|https?:\/\/|www\.|[\w.+-]+@[\w.-]+\.[a-z]{2,}|(?:\+?86[- ]?)?1[3-9](?:[- ]?\d){9}|0\d{2,3}[- ]?\d{7,8}|securityid|(?:token|cookie|authorization)\s*[:=]|(?<!企业)微信|(?:加|添加|联系|扫码).{0,8}企业微信|企业微信\s*[:：]|手机号|简历|验证码|扫码登录/iu;
@@ -76,6 +77,7 @@ function sourceSummary(parsed) {
 export function buildCandidateSnapshot(previous, evidence, queue, ledger, {
   policy, excludedIds = new Set(), runId, sampleRunId = runId, sampledAt,
   publicationKind = "scheduled", now = new Date().toISOString(),
+  roleContext = { policy: null, history: emptyRoleHistory() },
 }) {
   validateSnapshot(previous);
   validateReviewQueue(queue);
@@ -175,5 +177,54 @@ export function buildCandidateSnapshot(previous, evidence, queue, ledger, {
       cardsThisSample: new Set(verifiedSample.cards.map((card) => card.id)).size,
       detailsThisSample: new Set(verifiedSample.details.map((record) => record.id)).size, timeZone: "Asia/Shanghai", times: ["09:30", "12:30"] },
   });
-  return { snapshot: result, rejectedRecords };
+  const filtered = filterRoleCandidates(result, queue, roleContext, evidence.details);
+  return { ...filtered, rejectedRecords };
+}
+
+export function boundRoleEvidence(job, state, queue, records = []) {
+  if (!job.jdRead || (state && state.evidence !== "full-jd")) return null;
+  const observedAt = state?.evidenceObservedAt ?? job.lastSeen;
+  const publicCard = sourceCard({ ...job, retrievedAt: observedAt }, job.lastSeen).card;
+  if (!publicCard) return null;
+  const entry = queue.entries.find((item) => item.id === job.id);
+  const candidates = [...records, ...(entry ? [{ ...entry.evidence, retrievedAt: entry.lastSeen }] : [])];
+  return candidates.find((record) => {
+    if (!record || record.id !== job.id || record.retrievedAt !== observedAt) return false;
+    const source = sourceCard(record, job.lastSeen).card;
+    return source && source.metadataHash === publicCard.metadataHash && typeof record.jd === "string";
+  }) ?? null;
+}
+
+export function filterRoleCandidates(snapshot, queue, context, records = []) {
+  validateSnapshot(snapshot);
+  validateReviewQueue(queue);
+  if (context.policy === null) return { snapshot, removals: [], selectionConflicts: [] };
+  validateRolePolicy(context.policy);
+  validateRoleHistory(context.history);
+  const removals = [], selectionConflicts = [];
+  for (const job of snapshot.jobs) {
+    const state = snapshot.candidateStatesById?.[job.id];
+    const historic = state && context.history.entries.find((entry) => entry.id === job.id);
+    const detail = boundRoleEvidence(job, state, queue, records);
+    const decision = historic ?? assessRoleExclusion({ title: job.title, jd: detail?.jd }, context.policy);
+    if (!decision) continue;
+    const item = { id: job.id, category: decision.category, reasonCode: decision.reasonCode, basis: decision.basis,
+      observedAt: historic?.observedAt ?? (decision.basis === "duties" ? detail.retrievedAt : job.lastSeen) };
+    (state ? removals : selectionConflicts).push(item);
+  }
+  const blocked = new Set(removals.map((item) => item.id));
+  if (!blocked.size) return { snapshot, removals, selectionConflicts };
+  return { snapshot: withoutSnapshotJobs(snapshot, blocked), removals, selectionConflicts };
+}
+
+export function withoutSnapshotJobs(snapshot, blocked) {
+  const jobs = snapshot.jobs.filter((job) => !blocked.has(job.id));
+  return validateSnapshot({
+    ...snapshot, jobs, run: { ...snapshot.run, selectedCount: jobs.length, newCount: jobs.filter((job) => job.isNew).length },
+    assessmentMethods: Object.fromEntries(Object.entries(snapshot.assessmentMethods ?? {}).filter(([id]) => !blocked.has(id))),
+    firstPublishedAtById: Object.fromEntries(Object.entries(snapshot.firstPublishedAtById ?? {}).filter(([id]) => !blocked.has(id))),
+    ...(snapshot.candidateStatesById ? {
+      candidateStatesById: Object.fromEntries(Object.entries(snapshot.candidateStatesById).filter(([id]) => !blocked.has(id))),
+    } : {}),
+  });
 }

@@ -2,7 +2,7 @@ import {
   SnapshotError, filterOptions, formatShanghaiTime, hasSalaryRange,
   parseSalaryRange, safeJobUrl, selectJobs, validateSnapshot,
   shanghaiDateKey, nextShanghaiMidnight, selectArrivalView, groupJobsByFirstSeen, candidateCounts,
-} from "./model.mjs?rev=20260910-feed1";
+} from "./model.mjs?rev=20260912-feedback1";
 
 const sourceLinkLabels = new Map([
   ["BOSS直聘", "查看原始岗位"],
@@ -86,15 +86,18 @@ function renderAutomation() {
   const automation = snapshot.automation;
   const feed = snapshot.candidateFeed;
   byId("candidate-feed-panel").hidden = !feed;
+  byId("feedback-maintenance-note").hidden = feed?.publicationKind !== "feedback-filter";
   byId("candidate-feed-warning").hidden = !feed || !isScheduleOverdue(snapshot);
   if (feed) {
     const counts = candidateCounts(snapshot);
     byId("candidate-publication-kind").textContent = {
       scheduled: "定时采样发布", controlled: "受控采样发布", "manual-backfill": "历史积压 · 补展示", "manual-selection": "人工选入更新",
+      "feedback-filter": "已保存候选 · 反馈过滤",
     }[feed.publicationKind];
     setTime(byId("candidate-sampled-at"), feed.sampledAt);
     byId("candidate-sample-counts").textContent = `${feed.cardsThisSample} 张 / ${feed.detailsThisSample} 份`;
-    byId("candidate-new-count").textContent = `${counts.newCandidates} 个`;
+    byId("candidate-new-label").textContent = feed.publicationKind === "feedback-filter" ? "本次仅过滤，没有新增展示" : "本次首次展示的候选";
+    byId("candidate-new-count").textContent = `${feed.publicationKind === "feedback-filter" ? 0 : counts.newCandidates} 个`;
     byId("candidate-totals").textContent = `当前已选入 ${counts.selected} 个 · 采样候选 ${counts.candidates} 个（其中仅卡片或详情待确认 ${counts.cardOnly} 个）。`;
   }
   const pausedPublication = snapshot.publication?.scheduler === "paused";
@@ -319,7 +322,7 @@ function setFilterOptions(id, key, defaultText) {
 async function fetchSnapshot() {
   let response;
   try {
-    response = await fetch(new URL("./data/jobs.json?rev=20260910-feed1", import.meta.url), {
+    response = await fetch(new URL("./data/jobs.json?rev=20260912-feedback1", import.meta.url), {
       cache: "no-store", credentials: "omit", redirect: "error",
     });
   } catch (error) {

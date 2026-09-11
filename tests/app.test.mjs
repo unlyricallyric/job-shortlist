@@ -78,6 +78,25 @@ test("candidate feed defaults to showing both selections and pending/outside can
   assert.equal(app.cards()[0].querySelector('[data-field="visibility"]').textContent, "已选入");
 });
 
+test("feedback cleanup shows maintenance separately from source sampling and preserved batch-new flags", async (t) => {
+  const data = snapshotOf([testJobs[1]]);
+  data.generatedAt = "2026-09-08T12:00:00+08:00";
+  data.run.mode = "采样候选 · 累计快照";
+  data.candidateFeed = { version: 1, mode: "candidate-feed", publicationKind: "feedback-filter",
+    runId: "feedback-test-maintenance", sampleRunId: "test-old-source", sampledAt: "2026-09-07T09:30:00+08:00",
+    cardsThisSample: 1, detailsThisSample: 1, timeZone: "Asia/Shanghai", times: ["09:30", "12:30"] };
+  data.candidateStatesById = {};
+  data.firstPublishedAtById = {};
+  data.assessmentMethods = { [testJobs[1].id]: "human-assisted" };
+  const app = await boot(t, { responses: [data], now: "2026-09-08T13:00:00+08:00" });
+  assert.equal(app.get("feedback-maintenance-note").hidden, false);
+  assert.match(app.get("candidate-publication-kind").textContent, /反馈过滤/);
+  assert.equal(app.get("candidate-new-count").textContent, "0 个");
+  assert.equal(app.get("candidate-sampled-at").getAttribute("datetime"), data.candidateFeed.sampledAt);
+  assert.equal(app.get("view-today-count").textContent, "0");
+  assert.equal(app.get("candidate-feed-warning").hidden, false);
+});
+
 test("manual paused publication displays saved data without presenting maintenance as a fresh sample", async (t) => {
   const data = snapshotOf(testJobs);
   data.run.mode = "人工维护 · 已保存快照";
@@ -383,16 +402,16 @@ test("the public snapshot renders all source records and counts without changing
   assert.equal(app.get("run-source").textContent, `${data.run.source} · ${data.run.mode}`);
   assert.equal(app.get("generated-at").textContent, formatShanghaiTime(data.generatedAt));
   assert.equal(app.get("automation-panel").hidden, !data.automation);
-  assert.equal(app.get("snapshot-label").textContent, data.publication?.scheduler === "collection-only" ? "只读 · 采集待人工复核"
+  assert.equal(app.get("snapshot-label").textContent, data.candidateFeed ? "只读 · 候选自动展示" : data.publication?.scheduler === "collection-only" ? "只读 · 采集待人工复核"
     : data.publication?.scheduler === "paused" ? "只读 · 采集已暂停"
     : data.automation ? "只读 · 定时采样快照" : "只读 · 人工辅助快照");
-  if (!data.automation) {
+  if (!data.automation && !data.candidateFeed) {
     assert.equal(app.get("automation-warning").hidden, true);
     assert.equal(app.get("schedule-times").textContent, "");
     assert.match(app.get("assessment-description").textContent, /人工辅助的启发式初筛/);
     assert.doesNotMatch(app.get("category-help").textContent, /固定规则/);
   }
-  for (const [index, job] of groupJobsByFirstSeen(data.jobs).flatMap((group) => group.jobs).entries()) {
+  for (const [index, job] of groupJobsByFirstSeen(data.jobs, { firstPublishedAtById: data.firstPublishedAtById }).flatMap((group) => group.jobs).entries()) {
     const field = (name) => app.cards()[index].querySelector(`[data-field="${name}"]`);
     const rulesBased = data.assessmentMethods?.[job.id] === "rules-v1";
     assert.equal(field("title").textContent, job.title ?? "岗位名称无法获取");
@@ -402,7 +421,8 @@ test("the public snapshot renders all source records and counts without changing
     assert.equal(field("first-seen").getAttribute("datetime"), job.firstSeen);
     assert.equal(field("last-seen").getAttribute("datetime"), job.lastSeen);
     assert.equal(field("new").hidden, !job.isNew);
-    assert.equal(field("assessment").textContent, rulesBased ? "规则初筛 · rules-v1" : "人工辅助初筛");
+    assert.equal(field("assessment").textContent, data.candidateStatesById?.[job.id] ? "来源记录 · 未人工选入"
+      : rulesBased ? "规则初筛 · rules-v1" : "人工辅助初筛");
     assert.equal(field("assessment-note").hidden, !rulesBased);
     assert.equal(field("source-retention").hidden, !data.automation?.retainedSources.includes(job.source));
   }
@@ -623,7 +643,7 @@ test("real card rendering preserves literal strings, safe links, nulls and obser
   assert.equal(app.get("new-count").textContent, "2");
   assert.equal(app.requests.length, 1);
   assert.ok(app.requests[0].url.pathname.endsWith("/docs/data/jobs.json"));
-  assert.equal(app.requests[0].url.search, "?rev=20260910-feed1");
+  assert.equal(app.requests[0].url.search, "?rev=20260912-feedback1");
   assert.equal(app.requests[0].options.credentials, "omit");
   assert.equal(app.requests[0].options.cache, "no-store");
 });
