@@ -11,10 +11,10 @@ export function assessOtherOccupation(record) {
     ["human-resources", /^(?:高级|资深)?hrbp$|hrbusinesspartner|humanresources(?:manager|partner|specialist)|(?:招聘|人力资源|薪酬绩效|员工关系)(?:专员|经理|主管|总监)|招聘运营/u.test(title)],
     ["production-planning", /生产计划(?:员|经理|专员|主管)|生产调度|productionplanner|productionplanningmanager/u.test(title)],
     ["finance-settlement", /^(?:高级|资深)?(?:财务|会计|出纳)(?:经理|总监|主管|专员|助理|专家|负责人|核算|结算|$)|清结算|清算运营|(?:支付|资金|账务|财务|渠道)?结算(?:专员|经理|运营)|^结算|accountant|bookkeeper|settlement(?:specialist|manager)/u.test(title)],
-    ["consumer-operations", /(?:游戏|手游|商家|酒旅|文旅|酒店|专科|口腔|消费医疗|公充)(?:业务|渠道|用户|内容)?运营|游戏发行|game(?:operations|useracquisition)|merchantoperations/u.test(title)],
-    ["professional-marketing", /信息流优化|广告(?:投放|优化|投手)|投放优化|品牌(?:活动)?策展|(?:内容|品牌|公关)(?:营销|传播|策划)(?:专家|专员|经理)|品牌活动(?:合作|策划)专家|科技内容传播|新媒体运营|paidmedia(?:manager|specialist)|performancemarketing|publicrelations(?:specialist|manager)/u.test(title)],
+    ["consumer-operations", /(?:游戏|手游|商家|酒旅|文旅|酒店|专科|口腔|消费医疗|公充)(?:业务|渠道|用户|内容)?运营|游戏发行|汽车金融渠道经理|(?:音频|音乐).{0,5}生态运营|生态运营(?:音频|音乐)|game(?:operations|useracquisition)|merchantoperations/u.test(title)],
+    ["professional-marketing", /信息流优化|广告(?:投放|优化|投手)|投放优化|品牌(?:活动)?策展|(?:内容|品牌|公关)(?:营销|传播|策划)(?:专家|专员|经理)|品牌活动(?:合作|策划)专家|^活动运营(?:助理|专员)|科技内容传播|新媒体运营|paidmedia(?:manager|specialist)|performancemarketing|publicrelations(?:specialist|manager)/u.test(title)],
     ["product-delivery", /产品经理|productmanager/u.test(title)
-      || (!businessRole.test(title) && /(?:技术|软件|实施|外包)?交付经理|implementationmanager|deliverymanager/u.test(title))],
+      || (!businessRole.test(title) && /^(?:pm)?项目经理$|(?:技术|软件|实施|外包)?交付经理|implementationmanager|deliverymanager/u.test(title))],
     ["internal-operations", /(?:内部|部门)(?:行政|运营|事务)管理|行政(?:专员|经理|运营)|办公室事务|officeadministrator/u.test(title)],
   ];
   for (const [category, matches] of titleRules) if (matches) return result(category, "title");

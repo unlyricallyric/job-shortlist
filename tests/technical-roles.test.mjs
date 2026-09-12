@@ -25,6 +25,7 @@ test("v2 excludes explicit technical professions across example titles, synonyms
     "Engineering Manager", "HPC Performance Engineer",
     "云原生SRE工程师", "IT高级经理", "IDC机房经理", "MES项目经理", "解决方案工程师（生态赋能方向）",
     "Solution Engineer", "IT Manager", "Data Center Operations Manager",
+    "无人车运营工程师",
   ];
   for (const [index, title] of titles.entries()) {
     const result = assessRoleExclusion({ id: `boss-technical-test-${index}`, title }, policy);
@@ -51,6 +52,10 @@ test("business wording does not override personally owned coding, implementation
     "负责算法开发、模型训练和推理优化，调试CUDA内核。",
     "负责开发者技术内容，独立建设接入教程、技术文章和Demo示例。",
     "主导整体方案设计并输出架构图及技术建议书，跟进技术实施。",
+    "负责从0到1建设技术文档、接入教程、技术文章和Demo等开发者基础设施。",
+    "负责建设开发者关系体系和品牌入口，包括面向外部开发者的技术文档、接入教程与技术文章。",
+    "负责独立编写SDK和接口代码，不负责商务销售。",
+    "负责独立编写SDK代码，并协调研发团队完成版本发布。",
   ]) assert.equal(decide("开发者生态运营", jd(duties))?.category, "technical-function", duties);
   const engineering = "Responsibilities:\nDevelop Python SDKs and maintain code samples for partners.\nIndependently deploy Kubernetes clusters and troubleshoot Linux servers.\nRequirements:\nRelevant experience.";
   assert.equal(decide("Partner Enablement Manager", engineering)?.basis, "duties");
@@ -63,6 +68,7 @@ test("technical presales and DevRel are excluded only on actual technical respon
     "精通C++与CUDA编程，具有底层研发经验。",
     "具备独立部署Linux系统和深层配置能力。",
     "必须具备独立编码能力，计算机专业优先。",
+    "能够独立设计并讲解解决方案架构，输出技术建议书与架构图。",
   ]) assert.equal(decide("解决方案合作经理", jd(business, requirements))?.category, "technical-function", requirements);
   assert.equal(decide("Developer Relations", "Responsibilities:\nManage the developer community and partner education programs without making qualification claims.\nRequirements:\nMust have hands-on coding and Kubernetes deployment experience.")?.basis, "requirements");
   const safe = [
@@ -73,6 +79,10 @@ test("technical presales and DevRel are excluded only on actual technical respon
     jd(business, "要求计算机或相关专业；理解SaaS商业合作模式，不要求独立编程或系统部署。"),
     jd("负责Java生态合作伙伴开发，推进商业协议并开展业务合作。\n负责Python产品的市场开发和渠道沟通。", "熟练掌握Java生态合作流程与商业协同方式。"),
     jd("收集市场与伙伴反馈，驱动产品和渠道政策优化。\n负责维护伙伴数据库与商机档案，整理业务反馈。", "需要协调研发工程师完成技术实现和系统部署。"),
+    jd("负责伙伴活动、预算和商务协议。\n技术文档、SDK示例代码由研发团队编写提供。\n技术Demo由专业技术团队负责，本岗位负责活动安排。"),
+    jd("负责建设伙伴活动与社区入口，技术文档和接入教程由研发团队提供。\n负责活动报名和商务协议。"),
+    jd("负责协调研发团队完成SDK开发，本岗位不承担编码。\n负责渠道合作协议。"),
+    jd("负责协调研发团队，完成SDK开发和系统部署。\n负责收集商业需求和合作进展。"),
     "Responsibilities:\nDevelop business partnerships around Python SDK products and manage commercial partner relationships.\nRequirements:\nExperience with business planning and customer communication.",
     "Responsibilities:\nCoordinate with engineers to develop SDKs and deploy cloud systems.\nManage channel partner education and commercial programs.\nRequirements:\nUnderstand cloud products and business relationships.\nPreferred qualifications:\nProgramming experience.",
   ];
@@ -86,10 +96,15 @@ test("other explicit occupation categories do not confuse commercial technology 
     ["科技内容传播专家", "professional-marketing"], ["商业化产品经理", "product-delivery"], ["外包交付经理", "product-delivery"],
     ["双休——部门运营管理", "internal-operations"],
     ["品牌活动策展经理", "professional-marketing"],
+    ["高级供应商管理经理", "procurement"], ["PM/项目经理", "product-delivery"],
+    ["汽车金融渠道经理（4S店与银行贷款）", "consumer-operations"], ["生态运营-音频、音乐", "consumer-operations"],
+    ["活动运营助理", "professional-marketing"],
   ]) assert.equal(decide(title)?.category, category, title);
   for (const title of ["医疗软件渠道经理", "财务软件合作伙伴经理", "游戏云服务伙伴开发经理", "技术合作项目经理",
     "AI产品合作伙伴经理", "硬件商务拓展", "商业运营经理", "伙伴运营经理", "IT Partner Manager",
-    "IDC机房渠道经理", "MES生态合作项目经理", "伙伴售前赋能经理"]) assert.equal(decide(title, jd(business)), null, title);
+    "IDC机房渠道经理", "MES生态合作项目经理", "伙伴售前赋能经理", "无人车渠道经理",
+    "金融软件渠道经理", "供应商管理软件伙伴经理", "伙伴活动运营经理", "MDF伙伴营销经理",
+    "音频API合作伙伴经理"]) assert.equal(decide(title, jd(business)), null, title);
   assert.equal(decide("生态合作伙伴拓展与运维经理",
     jd("负责企业和高校合作伙伴建联、合作协议和关系维护。\n负责伙伴计划复盘，组织商业交流与非技术合作事项。")), null);
 });

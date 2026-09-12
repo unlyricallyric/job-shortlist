@@ -138,7 +138,9 @@ export function assessRoleExclusion(record, policy) {
     ["entrepreneurial-partner", /合伙人|联合创始人|共同创始人|cofounder|foundingpartner|equitypartner|managingpartner|franchiseowner/u.test(title)],
     ["marketing-leadership", marketingHead.test(title)],
     ["executive-ownership", executive.test(title) || englishExecutive],
-    ["procurement", /采购|寻源|招采|purchasing|procurement|sourcingmanager/u.test(title) && !/采购(?:数字化|管理)?(?:软件|系统|产品|解决方案)|(?:采购经理|采购总监)客户/u.test(title)],
+    ["procurement", (/采购|寻源|招采|purchasing|procurement|sourcingmanager/u.test(title)
+      || (policy.version === 2 && /供应商管理(?:高级|资深)?(?:经理|主管|专员)|suppliermanagementmanager|vendormanagementmanager/u.test(title)))
+      && !/采购(?:数字化|管理)?(?:软件|系统|产品|解决方案)|(?:采购经理|采购总监)客户/u.test(title)],
     ["frontline-sales", directTitle.test(title)],
   ];
   for (const [category, matches] of titleChecks) if (matches && enabled.has(category)) return result(category, "title");
