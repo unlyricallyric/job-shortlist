@@ -1,1 +1,11 @@
 .DS_Store
+*.shortlist.enc
+*.shortlist.key
+*.shortlist.enc.*.tmp
+*.shortlist.key.*.tmp
+/.private/
+/private-context.json
+/migration-settings.json
+/migration-receipt.json
+/saved-snapshot.json
+/.migration-incomplete

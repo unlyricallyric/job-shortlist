@@ -1,4 +1,4 @@
-import { mkdir, cp, writeFile, chmod, lstat, access, unlink, realpath } from "node:fs/promises";
+import { mkdir, cp, writeFile, chmod, lstat, access, unlink, realpath, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
 import { homedir } from "node:os";
@@ -12,6 +12,7 @@ import { defaultIntentPolicy, validateIntentPolicy, assertRuntimeMode, collectio
 import { emptyReviewQueue } from "./review.mjs";
 import { activateNextSlot } from "./clock.mjs";
 import { loadRoleContext } from "./role-exclusions.mjs";
+import { migrationInstallation, isUnfinishedMigration } from "./migration.mjs";
 
 const xml = (value) => String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;")
   .replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&apos;");
@@ -80,27 +81,44 @@ async function bootstrap(name) {
 }
 
 export async function install({ root = defaultRoot(), matchingPath, ledgerPath, sshKeyPath, knownHostsPath, repository,
-  nodePath = process.execPath, gitPath = "/usr/bin/git", adoptWindow, adoptTab, mode }) {
+  nodePath = process.execPath, gitPath = "/usr/bin/git", adoptWindow, adoptTab, mode, services = {} }) {
+  const operations = { command, git, agentPath, isLoaded, bootout, bootstrap, ...services };
   const settings = modeSettings(mode);
   process.umask(0o077);
   root = resolve(root);
   await privateDirectory(root);
   const release = await acquireLock(root, "installation");
   try {
+    if (await isUnfinishedMigration(root)) throw new RunError("migration-incomplete", "Do not install over an unfinished restore.");
     const { validateMatchingConfig } = await import("./screening.mjs");
     if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository ?? "")) throw new RunError("install-arguments", "A GitHub owner/repository is required.");
     const matching = validateMatchingConfig(await readJson(matchingPath));
     const ledger = validateLedger(await readJson(ledgerPath));
     const previousRuntime = await readJson(join(root, "runtime.json"), null);
-    await loadRoleContext(root, previousRuntime ?? {});
+    const source = services.sourceRoot ?? resolve(dirname(fileURLToPath(import.meta.url)), "..");
+    const migrated = previousRuntime ? null : await migrationInstallation(root, {
+      repository, mode, sourceSnapshot: await readFile(join(source, "docs", "data", "jobs.json"), "utf8"),
+    });
+    if (migrated) {
+      for (const name of [label, awakeLabel, probeLabel]) {
+        if (await operations.isLoaded(name)) throw new RunError("migration-active-service", "A scheduler service already exists; do not enable two machines or overwrite another installation.");
+        try {
+          await lstat(operations.agentPath(name));
+          throw new RunError("migration-agent-conflict", "An existing LaunchAgent must be inspected before a migrated installation.");
+        } catch (error) { if (error.code !== "ENOENT") throw error; }
+      }
+    }
+    const priorSettings = previousRuntime ?? (migrated ? Object.fromEntries(Object.entries(migrated).filter(([key]) => key !== "schedule")) : {});
+    await loadRoleContext(root, priorSettings);
     const intent = validateIntentPolicy(await readJson(join(root, "intent-policy.json"), defaultIntentPolicy()));
     const runtime = {
-      ...(previousRuntime ?? {}),
+      ...priorSettings,
       version: 1, repository, branch: "main", nodePath: resolve(nodePath), gitPath: await realpath(gitPath),
       sshKeyPath: resolve(sshKeyPath), knownHostsPath: resolve(knownHostsPath), queries: intent.queries,
       limits: { ...(mode === candidateMode ? candidateLimits : defaultLimits),
-        ...Object.fromEntries(Object.entries(previousRuntime?.limits ?? {}).filter(([key]) => key !== "maxNewJobs")) },
+        ...Object.fromEntries(Object.entries(priorSettings.limits ?? {}).filter(([key]) => key !== "maxNewJobs")) },
       ...settings,
+      ...(migrated ? { migrationSetupPending: true } : {}),
     };
     for (const path of [runtime.sshKeyPath, runtime.knownHostsPath]) {
       const info = await lstat(path);
@@ -108,11 +126,10 @@ export async function install({ root = defaultRoot(), matchingPath, ledgerPath, 
         throw new RunError("deploy-key-path", "Deployment keys and pinned hosts must be task-owned private regular files.");
       }
     }
-    await command(runtime.nodePath, ["--version"]);
-    await command(runtime.gitPath, ["--version"]);
-    await command("/usr/bin/perl", ["-MFcntl=:flock", "-e", "exit 0"]);
+    await operations.command(runtime.nodePath, ["--version"]);
+    await operations.command(runtime.gitPath, ["--version"]);
+    await operations.command("/usr/bin/perl", ["-MFcntl=:flock", "-e", "exit 0"]);
     await access("/usr/sbin/lsof");
-    const source = resolve(dirname(fileURLToPath(import.meta.url)), "..");
     const installed = join(root, "app");
     if (source === installed) throw new RunError("install-source", "Run installation from the repository, not the installed runtime.");
     await privateDirectory(installed);
@@ -141,24 +158,27 @@ export async function install({ root = defaultRoot(), matchingPath, ledgerPath, 
       await access(join(clone, ".git"));
     } catch (error) {
       if (error.code !== "ENOENT") throw error;
-      await git(runtime, ["clone", "--quiet", "--branch", "main", `https://github.com/${repository}.git`, clone], { timeout: 120000 });
+      await operations.git(runtime, ["clone", "--quiet", "--branch", "main", `https://github.com/${repository}.git`, clone], { timeout: 120000 });
     }
     await privateDirectory(clone);
-    await mkdir(dirname(agentPath(label)), { recursive: true });
+    await mkdir(dirname(operations.agentPath(label)), { recursive: true });
     for (const [name, acOnly] of [[label, false], [awakeLabel, true]]) {
-      const path = agentPath(name);
+      const path = operations.agentPath(name);
       await writeFile(path, launchAgentPlist({ root, nodePath: runtime.nodePath, acOnly }), { mode: 0o600 });
       await chmod(path, 0o600);
-      await command("/usr/bin/plutil", ["-lint", path]);
+      await operations.command("/usr/bin/plutil", ["-lint", path]);
     }
-    await bootout(awakeLabel);
-    await bootout(probeLabel);
-    await unlink(agentPath(probeLabel)).catch((error) => {
-      if (error.code !== "ENOENT") throw error;
-    });
-    await bootout(label);
-    await bootstrap(label);
+    if (!runtime.migrationSetupPending) {
+      await operations.bootout(awakeLabel);
+      await operations.bootout(probeLabel);
+      await unlink(operations.agentPath(probeLabel)).catch((error) => {
+        if (error.code !== "ENOENT") throw error;
+      });
+      await operations.bootout(label);
+      await operations.bootstrap(label);
+    }
     return { root, label, installed: true, paused: true, ...settings,
+      servicesLoaded: !runtime.migrationSetupPending, restoredState: Boolean(migrated),
       collectionNeedsCredentials: false, explicitPublishingAuthentication: "task-repository-deploy-key" };
   } finally {
     await release();
@@ -183,6 +203,9 @@ export async function resume(root) {
     const state = await readJson(join(root, "state.json"));
     await atomicJson(join(root, "state.json"), activateNextSlot(state));
     await atomicJson(join(root, "control.json"), { paused: false, cancelRunId: null });
+    if (runtime.migrationSetupPending === true) {
+      await atomicJson(join(root, "runtime.json"), { ...runtime, migrationSetupPending: false });
+    }
   } finally {
     await release();
   }
