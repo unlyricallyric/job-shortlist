@@ -234,12 +234,13 @@ test("missing task tab in its saved normal window recovers once with no BOSS see
   assert.match(await readFile(join(root, "logs/scheduler.jsonl"), "utf8"), /browser-task-tab-recovered/);
 });
 
-test("a moved owned tab identifies the original context after its old window disappears, without creating a replacement", async (t) => {
+test("a moved owned tab is found before replacing it whether its old window survives or disappears", async (t) => {
   const root = await browserFixture(t), moved = { windowId: 20, tabId: 11 };
   await atomicJson(join(root, "browser-context.json"), { version: 1, process: chromeProcess, phase: "bound", tab: originalTab });
   const result = await ownedTab(root, initialUrl, undefined, servicesFor({
     apple: async (lines) => {
       assert.ok(lines.some((line) => line.includes("exists tab id 11 of sourceWindow")));
+      assert.ok(lines.findIndex((line) => line.includes('return "missing-tab')) > lines.indexOf("end repeat"));
       assert.ok(!lines.some((line) => line.includes("make new tab")));
       return observed(moved);
     },

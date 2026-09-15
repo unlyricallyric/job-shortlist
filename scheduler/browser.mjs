@@ -189,13 +189,14 @@ export async function discoverBoss(signal) {
 
 function ownedInspection(tab) {
   return [
+    "set originalWindowPresent to false",
     `if exists window id ${tab.windowId} then`,
+    "set originalWindowPresent to true",
     `set sourceWindow to window id ${tab.windowId}`,
     'if mode of sourceWindow is not "normal" then error "non-normal-window"',
     `if exists tab id ${tab.tabId} of sourceWindow then`,
     `return "owned|" & (id of sourceWindow as text) & "|${tab.tabId}|" & URL of tab id ${tab.tabId} of sourceWindow`,
     "end if",
-    `return "missing-tab|${tab.windowId}"`,
     "end if",
     // A moved task tab proves its context; unrelated tabs' URLs and content are not inspected.
     "repeat with sourceWindow in windows",
@@ -203,6 +204,7 @@ function ownedInspection(tab) {
     'if mode of sourceWindow is not "normal" then error "non-normal-window"',
     `return "owned|" & (id of sourceWindow as text) & "|${tab.tabId}|" & URL of tab id ${tab.tabId} of sourceWindow`,
     "end if", "end repeat",
+    `if originalWindowPresent then return "missing-tab|${tab.windowId}"`,
     'if (count of windows) is 0 then return "no-windows"',
     'return "missing-window"',
   ];
