@@ -21,7 +21,7 @@ recovery path without copying every historical run.
 not a script or a replacement for the current structured configuration. Do not
 put passwords, key material, browser data or old-machine absolute paths in it.
 
-Not read or exported: browser handles/login/cookies, SSH keys or pinned-host files,
+Not read or exported: browser handles/recovery context/login/cookies, SSH keys or pinned-host files,
 tokens, application authorization, processes/PIDs, locks, plists, installed code,
 the publishing clone, logs, old chat transcripts, arbitrary scratch files or all
 old raw evidence folders. The current public JSON is read from the checkout and

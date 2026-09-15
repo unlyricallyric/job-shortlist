@@ -34,6 +34,11 @@ and history, `review-queue.json`, `ledger.json` and `read-history.json` retain
 decisions and sampling continuity. `state.json` separates the last attempt,
 last completed collection and last confirmed publication.
 
+`browser.json` identifies only the task-owned tab. Private `browser-context.json`
+binds recovery to an ordinary Chrome process and records uncertain creation, not
+login state. A missing tab can be restored in its known normal window without a
+second BOSS seed tab; ambiguous or unavailable GUI/profile context remains blocked.
+
 The website remains the published snapshot, not a real-time daemon dashboard.
 `firstSeen` / `lastSeen` are observations. `firstPublishedAtById` is first public
 display, falling back to `firstSeen` for legacy records. `isNew` is a publication

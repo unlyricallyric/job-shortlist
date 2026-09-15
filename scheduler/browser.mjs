@@ -1,7 +1,8 @@
 import { join } from "node:path";
+import { lstat } from "node:fs/promises";
 import { setTimeout as delay } from "node:timers/promises";
 import { command } from "./process.mjs";
-import { RunError, atomicJson, readJson } from "./io.mjs";
+import { RunError, atomicJson, readJson, appendLog } from "./io.mjs";
 import { emptyReadHistory, planDetailReads, isDueRecheck } from "./coverage.mjs";
 
 const searchOrigin = "https://www.zhipin.com";
@@ -112,27 +113,60 @@ export function detailInPage(id, title) {
   return { state: "ready", jd, retrievedAt: new Date().toISOString() };
 }
 
-async function apple(lines, signal) {
+export function appleErrorCode(error) {
+  const detail = error.stderr ?? "";
+  if (/JavaScript.*Apple|Apple.*JavaScript/i.test(detail)) return "apple-events-javascript-disabled";
+  if (/not authorized|not permitted|1002|1743|Apple events.*not allowed/i.test(detail)) return "apple-events-denied";
+  if (/chrome-not-running/.test(detail)) return "chrome-not-running";
+  if (/unexpected-owned-tab/.test(detail)) return "unexpected-owned-tab";
+  if (/non-normal-window/.test(detail)) return "browser-context-unavailable";
+  if (/owner-window-missing|Can't get (?:window|tab)|Can’t get (?:window|tab)/i.test(detail)) return "chrome-window-unavailable";
+  if (error.code === "command-timeout" || /connection.*invalid|not responding|timed out|application isn.t running|\(-609\)|\(-600\)/i.test(detail)) return "chrome-gui-unavailable";
+  return "browser-access-failed";
+}
+
+async function apple(lines, signal, { timeout = 20000 } = {}) {
   try {
     return await command("/usr/bin/osascript", ["-"], {
       input: [
         'if application "Google Chrome" is not running then error "chrome-not-running"',
         'tell application "Google Chrome"', ...lines, "end tell",
       ].join("\n"),
-      signal, timeout: 20000,
+      signal, timeout,
     });
   } catch (error) {
     if (signal?.aborted) throw signal.reason;
-    const detail = error.stderr ?? "";
-    const code = /not authorized|not permitted|1002|1743|Apple events.*not allowed/i.test(detail) ? "apple-events-denied"
-      : /JavaScript.*Apple|Apple.*JavaScript/i.test(detail) ? "apple-events-javascript-disabled"
-      : /chrome-not-running/.test(detail) ? "chrome-not-running" : "browser-access-failed";
+    const code = appleErrorCode(error);
     throw new RunError(code, "Ordinary Chrome source access is unavailable; check the local browser permissions.", { blocked: true, cause: error });
   }
 }
 
+export async function ordinaryChromeInstance(signal, execute = command) {
+  let ids;
+  try { ids = await execute("/usr/bin/pgrep", ["-x", "Google Chrome"], { signal, timeout: 5000 }); }
+  catch (error) {
+    if (error.exitCode === 1 && !error.stderr?.trim()) throw new RunError("chrome-not-running", "Open ordinary Chrome before source collection.", { blocked: true });
+    throw error;
+  }
+  const pids = ids.split(/\s+/).map(Number);
+  if (pids.length !== 1 || !Number.isSafeInteger(pids[0]) || pids[0] < 1) {
+    throw new RunError("browser-context-ambiguous", "A single ordinary Chrome instance is required; no browser was opened.", { blocked: true });
+  }
+  const pid = pids[0], options = { signal, timeout: 5000, env: { LC_ALL: "C" } };
+  const [identity, args] = await Promise.all([
+    execute("/bin/ps", ["-p", String(pid), "-o", "uid=,lstart=,comm="], options),
+    execute("/bin/ps", ["-p", String(pid), "-o", "args="], options),
+  ]);
+  const match = /^\s*(\d+)\s+([A-Za-z]{3}\s+[A-Za-z]{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\s+\d{4})\s+(.+)$/.exec(identity);
+  if (!match || Number(match[1]) !== process.getuid() || !match[3].endsWith("/Google Chrome.app/Contents/MacOS/Google Chrome")
+    || /--(?:user-data-dir|headless|remote-debugging|enable-automation|test-type)\b/.test(args)) {
+    throw new RunError("browser-context-ambiguous", "Chrome's ordinary user context cannot be confirmed; no profile was launched or changed.", { blocked: true });
+  }
+  return { pid, startedAt: match[2].replace(/\s+/g, " ") };
+}
+
 function tabLines(tab) {
-  if (!Number.isSafeInteger(tab.windowId) || !Number.isSafeInteger(tab.tabId)) throw new RunError("invalid-tab", "Invalid task-owned browser handle.");
+  if (!Number.isSafeInteger(tab.windowId) || !Number.isSafeInteger(tab.tabId) || tab.windowId < 1 || tab.tabId < 1) throw new RunError("invalid-tab", "Invalid task-owned browser handle.");
   return [
     `set targetTab to tab id ${tab.tabId} of window id ${tab.windowId}`,
     'if (URL of targetTab) does not start with "https://www.zhipin.com/web/geek/jobs" then error "unexpected-owned-tab"',
@@ -153,46 +187,182 @@ export async function discoverBoss(signal) {
   return { windowId, tabId };
 }
 
+function ownedInspection(tab) {
+  return [
+    `if exists window id ${tab.windowId} then`,
+    `set sourceWindow to window id ${tab.windowId}`,
+    'if mode of sourceWindow is not "normal" then error "non-normal-window"',
+    `if exists tab id ${tab.tabId} of sourceWindow then`,
+    `return "owned|" & (id of sourceWindow as text) & "|${tab.tabId}|" & URL of tab id ${tab.tabId} of sourceWindow`,
+    "end if",
+    `return "missing-tab|${tab.windowId}"`,
+    "end if",
+    // A moved task tab proves its context; unrelated tabs' URLs and content are not inspected.
+    "repeat with sourceWindow in windows",
+    `if exists tab id ${tab.tabId} of sourceWindow then`,
+    'if mode of sourceWindow is not "normal" then error "non-normal-window"',
+    `return "owned|" & (id of sourceWindow as text) & "|${tab.tabId}|" & URL of tab id ${tab.tabId} of sourceWindow`,
+    "end if", "end repeat",
+    'if (count of windows) is 0 then return "no-windows"',
+    'return "missing-window"',
+  ];
+}
+
+function parseInspection(value) {
+  const match = /^owned\|(\d+)\|(\d+)\|([\s\S]+)$/.exec(value);
+  if (match) {
+    const tab = { windowId: Number(match[1]), tabId: Number(match[2]) };
+    tabLines(tab);
+    return { kind: "owned", tab, url: match[3] };
+  }
+  if (/^missing-tab\|\d+$/.test(value)) return { kind: "missing-tab" };
+  if (["missing-window", "no-windows"].includes(value)) return { kind: value };
+  throw new RunError("browser-result-invalid", "Unexpected Chrome window metadata; no task tab was created.", { blocked: true });
+}
+
+function requireSearchPage(value) {
+  let url;
+  try { url = new URL(value); }
+  catch (error) {
+    if (!(error instanceof TypeError)) throw error;
+    throw new RunError("unexpected-owned-tab", "The task tab is no longer on a public BOSS search page.", { blocked: true });
+  }
+  if (url.origin !== searchOrigin || url.pathname !== searchPath) {
+    throw new RunError("unexpected-owned-tab", "The task tab was navigated elsewhere; it will not be overwritten.", { blocked: true });
+  }
+}
+
+const sameTab = (a, b) => a?.windowId === b?.windowId && a?.tabId === b?.tabId;
+const sameProcess = (a, b) => a.pid === b.pid && a.startedAt === b.startedAt;
+
+async function loadBrowserContext(root) {
+  const path = join(root, "browser-context.json");
+  try {
+    const info = await lstat(path);
+    if (!info.isFile() || info.isSymbolicLink() || (info.mode & 0o077)) throw new RunError("private-permissions", "Browser recovery metadata must be a private regular file.");
+  } catch (error) { if (error.code === "ENOENT") return null; throw error; }
+  const value = await readJson(path);
+  if (!value || Object.keys(value).length !== 4 || value.version !== 1 || !["bound", "creating", "created"].includes(value.phase)
+    || !value.process || Object.keys(value.process).length !== 2 || !Number.isSafeInteger(value.process.pid) || value.process.pid < 1
+    || typeof value.process.startedAt !== "string" || !/^[A-Za-z]{3} [A-Za-z]{3} \d{1,2} \d{2}:\d{2}:\d{2} \d{4}$/.test(value.process.startedAt)
+    || (value.phase === "creating" && value.tab !== null)
+    || (value.phase !== "creating" && (!value.tab || !Number.isSafeInteger(value.tab.windowId) || !Number.isSafeInteger(value.tab.tabId)))) {
+    throw new RunError("browser-context-invalid", "Browser recovery metadata is invalid; inspect the task binding.", { blocked: true });
+  }
+  return value;
+}
+
+// Caller holds the existing scheduler mutex. A saved normal window, not a BOSS seed, identifies recovery context.
 export async function ownedTab(root, initialUrl, signal, services = {}) {
   const execute = services.apple ?? apple;
   const discover = services.discoverBoss ?? discoverBoss;
+  const instance = services.instance ?? ordinaryChromeInstance;
+  const pause = services.pause ?? ((ms) => delay(ms, undefined, { signal }));
+  const contextTimeoutMs = services.contextTimeoutMs ?? 12000;
+  const startedAt = Date.now(), process = await instance(signal);
   const existing = await readJson(join(root, "browser.json"), null);
-  if (existing) {
-    tabLines(existing);
-    const target = await execute([
-      `if not (exists window id ${existing.windowId}) then return "missing-window"`,
-      `if not (exists tab id ${existing.tabId} of window id ${existing.windowId}) then return "missing-tab"`,
-      `return URL of tab id ${existing.tabId} of window id ${existing.windowId}`,
-    ], signal);
-    if (!["missing-window", "missing-tab"].includes(target)) {
-      let url;
-      try {
-        url = new URL(target);
-      } catch (error) {
-        if (!(error instanceof TypeError)) throw error;
-        throw new RunError("unexpected-owned-tab", "The task-owned tab is no longer on the public BOSS search page.", { blocked: true });
-      }
-      if (url.origin !== searchOrigin || url.pathname !== searchPath) {
-        throw new RunError("unexpected-owned-tab", "The task-owned tab was navigated elsewhere; no other tab will be reused.", { blocked: true });
-      }
-      return existing;
-    }
+  const context = await loadBrowserContext(root);
+  if (context?.phase === "creating") {
+    throw new RunError("browser-recovery-unconfirmed", "A previous tab-creation result is unknown; inspect it before creating another tab.", { blocked: true });
   }
-  // Only a missing handle is recoverable. Permission, login and navigation failures are not.
-  const source = await discover(signal);
-  const result = await execute([
-    `set sourceWindow to window id ${source.windowId}`,
-    "set originalIndex to active tab index of sourceWindow",
-    `set ownedTab to make new tab at end of tabs of sourceWindow with properties {URL:${JSON.stringify(initialUrl)}}`,
-    "set createdId to id of ownedTab",
-    "set active tab index of sourceWindow to originalIndex",
-    'return (id of sourceWindow as text) & "," & (createdId as text)',
-  ], signal);
-  const [windowId, tabId] = result.split(",").map(Number);
-  const tab = { windowId, tabId };
-  tabLines(tab);
-  await atomicJson(join(root, "browser.json"), tab);
-  return tab;
+  if (context && (context.phase === "created" || sameTab(existing, context.tab)) && !sameProcess(context.process, process)) {
+    throw new RunError("browser-context-changed", "Chrome restarted or changed context; explicitly confirm the new task binding.", { blocked: true });
+  }
+  let tab = context?.phase === "created" ? context.tab : existing;
+  const saveContext = (phase, handle) => atomicJson(join(root, "browser-context.json"), { version: 1, process, phase, tab: handle });
+  const confirmProcess = async () => {
+    if (!sameProcess(process, await instance(signal))) throw new RunError("browser-context-changed", "Chrome changed during recovery; no second tab will be created.", { blocked: true });
+  };
+  const waitContext = async (handle) => {
+    const deadline = Date.now() + contextTimeoutMs;
+    let last = null;
+    do {
+      signal?.throwIfAborted();
+      try {
+        const result = parseInspection(await execute(ownedInspection(handle), signal, { timeout: 5000 }));
+        if (result.kind === "owned" || (result.kind === "missing-tab" && last?.kind === "missing-tab")) return result;
+        last = result;
+      } catch (error) {
+        if (!["chrome-gui-unavailable", "chrome-window-unavailable"].includes(error.code)) throw error;
+        last = { kind: "gui-unavailable" };
+      }
+      if (Date.now() >= deadline) break;
+      await pause(Math.min(750, Math.max(0, deadline - Date.now())));
+      await confirmProcess();
+    } while (Date.now() <= deadline);
+    throw new RunError(last?.kind === "missing-window" ? "browser-owner-window-missing" : "chrome-gui-unavailable",
+      "The original normal Chrome window is unavailable. Sleeping/locked/restoring GUI or a different profile cannot be assumed safe.", { blocked: true });
+  };
+  try {
+    let inspection;
+    if (tab) {
+      tabLines(tab);
+      inspection = await waitContext(tab);
+      if (inspection.kind === "owned" && context?.phase !== "created") {
+        requireSearchPage(inspection.url);
+        await confirmProcess();
+        if (!sameTab(existing, inspection.tab)) await atomicJson(join(root, "browser.json"), inspection.tab);
+        if (!context || !sameTab(context.tab, inspection.tab) || !sameProcess(context.process, process)) await saveContext("bound", inspection.tab);
+        return inspection.tab;
+      }
+      if (inspection.kind === "owned") {
+        tab = inspection.tab;
+        if (!sameTab(existing, tab)) await atomicJson(join(root, "browser.json"), tab);
+      }
+    }
+    if (context?.phase !== "created") {
+      requireSearchPage(initialUrl);
+      const sourceWindow = tab?.windowId ?? (await discover(signal)).windowId;
+      if (!Number.isSafeInteger(sourceWindow) || sourceWindow < 1) throw new RunError("invalid-tab", "Chrome returned an invalid source window.");
+      await confirmProcess();
+      await saveContext("creating", null);
+      const created = await execute([
+        `if not (exists window id ${sourceWindow}) then error "owner-window-missing"`,
+        `set sourceWindow to window id ${sourceWindow}`,
+        'if mode of sourceWindow is not "normal" then error "non-normal-window"',
+        "set originalActiveId to id of active tab of sourceWindow",
+        `set newTaskTab to make new tab at end of tabs of sourceWindow with properties {URL:${JSON.stringify(initialUrl)}}`,
+        "set createdId to id of newTaskTab",
+        "if (id of active tab of sourceWindow) is createdId then",
+        "repeat with tabIndex from 1 to count of tabs of sourceWindow",
+        "if (id of tab tabIndex of sourceWindow) is originalActiveId then",
+        "set active tab index of sourceWindow to tabIndex", "exit repeat",
+        "end if", "end repeat", "end if",
+        'return (id of sourceWindow as text) & "," & (createdId as text)',
+      ], signal);
+      const match = /^(\d+),(\d+)$/.exec(created);
+      if (!match) throw new RunError("browser-recovery-unconfirmed", "Chrome did not confirm the new task handle; inspect before trying again.", { blocked: true });
+      tab = { windowId: Number(match[1]), tabId: Number(match[2]) };
+      tabLines(tab);
+      await saveContext("created", tab);
+      await atomicJson(join(root, "browser.json"), tab);
+    } else if (inspection?.kind === "missing-tab") {
+      throw new RunError("browser-recovery-unconfirmed", "The unverified task page disappeared; inspect the existing binding before replacing it.", { blocked: true });
+    }
+    const ready = services.sourceReady ?? (async (handle) => {
+      const current = parseInspection(await execute(ownedInspection(handle), signal, { timeout: 5000 }));
+      if (current.kind !== "owned") return { state: "waiting" };
+      if (current.url === "about:blank" || current.url === "chrome://newtab/") return { state: "waiting" };
+      const url = new URL(current.url);
+      if (url.origin === searchOrigin && /^\/(?:web\/user\/|web\/geek\/(?:login|signup)|passport)/.test(url.pathname)) {
+        throw new RunError("login-required", "Log in on the task's source page before continuing.", { blocked: true });
+      }
+      requireSearchPage(current.url);
+      return (services.evaluatePage ?? evaluatePage)(current.tab, null, cardsInPage, [], signal);
+    });
+    await waitPage(() => ready(tab), services.sourceTimeoutMs ?? 45000, signal,
+      { intervalMs: services.sourceIntervalMs ?? 1200 });
+    await confirmProcess();
+    await saveContext("bound", tab);
+    await appendLog(root, { event: "browser-task-tab-recovered", context: "original-normal-window",
+      elapsedMs: Date.now() - startedAt });
+    return tab;
+  } catch (error) {
+    const failure = signal?.aborted ? signal.reason ?? error : error;
+    await appendLog(root, { event: "browser-recovery-blocked", code: failure instanceof RunError ? failure.code : "browser-access-failed",
+      elapsedMs: Date.now() - startedAt });
+    throw failure;
+  }
 }
 
 export async function evaluatePage(tab, expectedUrl, fn, args = [], signal) {
