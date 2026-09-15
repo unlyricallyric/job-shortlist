@@ -67,6 +67,7 @@ test("actual applicant employment arrangements are distinct from company descrip
     "该职位属于劳务派遣。",
     "用工性质：外包。",
     "入职后与第三方公司签订劳动合同，由该公司派驻客户方工作。",
+    "入职后与第三方公司签订劳动合同。\n录用人员派驻客户单位工作。",
     "劳动合同与外包公司签署，并派驻客户单位现场办公。",
     "你将由第三方发放工资，并安排到客户单位工作。",
     "This role is outsourced.",
@@ -86,6 +87,7 @@ test("actual applicant employment arrangements are distinct from company descrip
     "需要驻场工作，合同为一年期，部分工作会外派。",
     "This role is not outsourced. You will manage outsourced teams.",
     "Manage employment contracts for third party staff assigned to the client.",
+    "负责管理外包团队。\n负责审核第三方人员劳动合同和派驻客户安排。",
   ]) assert.equal(assessOutsourcedEmployment({ title: "商业伙伴经理", jd: jd(statement) }), null, statement);
   assert.equal(assessOutsourcedEmployment({ title: "管理外包团队经理（外包）" })?.basis, "title");
   assert.equal(assessOutsourcedEmployment({ title: "伙伴经理", jd: jd("本岗位非派遣。\n本岗位采用人力外包形式。") })?.basis, "employment");

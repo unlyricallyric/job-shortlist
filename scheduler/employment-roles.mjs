@@ -33,7 +33,19 @@ export function assessOutsourcedEmployment(record) {
   if (titleOutsourcing(record.title)) return { category: "outsourced-employment", reasonCode: "role-outsourced-employment", basis: "title" };
   if (typeof record.jd !== "string" || record.jd.length < 80 || record.jd.length > 60000) return null;
   const lines = record.jd.normalize("NFKC").split(/[\r\n。；;]+/u).map((line) => line.replace(/^\s*(?:[-*•]|\d+[、.)])\s*/u, "").trim()).filter(Boolean);
+  let arrangement = null;
   for (const line of lines) {
+    if (/^(?:用工说明|雇佣安排|合同说明|employment terms|employment arrangement)\s*[:：]?$/iu.test(line)) {
+      arrangement = [];
+      continue;
+    }
+    if (/^(?:岗位职责|工作职责|任职要求|任职资格|公司介绍|福利待遇|responsibilities|requirements)\s*[:：]?/iu.test(line)) arrangement = null;
+    if (arrangement && arrangement.length < 4) {
+      arrangement.push(line);
+      if (employedArrangement(arrangement.join("，"))) {
+        return { category: "outsourced-employment", reasonCode: "role-outsourced-employment", basis: "employment" };
+      }
+    }
     if (/任职要求|任职资格|岗位职责|工作职责|公司介绍/u.test(line)) {
       const statement = line.replace(/^(?:任职要求|任职资格|岗位职责|工作职责|公司介绍)\s*[:：]?\s*/u, "");
       if (employedArrangement(statement)) return { category: "outsourced-employment", reasonCode: "role-outsourced-employment", basis: "employment" };
