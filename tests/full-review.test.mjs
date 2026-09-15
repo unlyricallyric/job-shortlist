@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createHash } from "node:crypto";
 import { fixture, snapshotOf } from "./helpers/fixtures.mjs";
-import { validateFullReview, buildFullReviewSnapshot } from "../scheduler/full-review.mjs";
+import { validateFullReview, buildFullReviewSnapshot, validateFullReviewReceipt } from "../scheduler/full-review.mjs";
 import { publishFullReview, retryCandidatePublication } from "../scheduler/publish-candidates.mjs";
 import { publishReviewed, retryReviewedPublication } from "../scheduler/publish-reviewed.mjs";
 import { buildCandidateSnapshot } from "../scheduler/candidates.mjs";
@@ -79,6 +79,17 @@ test("full audit digest, complete IDs and typed decisions fail closed without gu
     assert.throws(() => validateFullReview(payload, data.text, policy));
   }
   assert.throws(() => validateFullReview(data.payload, `${data.text}\n`, policy), { code: "full-review-stale" });
+});
+
+test("full-review receipts keep v2 compatibility while accepting the explicit v3 employment category", () => {
+  const data = fixtureData(), v3 = feedbackRolePolicy(3), payload = structuredClone(data.payload);
+  payload.decisions[0].category = "outsourced-employment";
+  const { snapshot, counts } = buildFullReviewSnapshot(data.text, payload, v3, "2026-09-11T00:00:00Z");
+  const receipt = { version: 1, status: "pending", publicSha256: payload.publicSha256, decisions: payload.decisions,
+    policyId: v3.id, reviewedAt: snapshot.generatedAt, counts };
+  assert.equal(validateFullReviewReceipt(receipt, snapshot), receipt);
+  assert.throws(() => validateFullReviewReceipt({ ...receipt, policyId: "role-feedback-v2" }, snapshot), { code: "full-review-receipt-invalid" });
+  assert.throws(() => validateFullReviewReceipt({ ...receipt, policyId: "role-feedback-v99" }, snapshot), { code: "full-review-receipt-invalid" });
 });
 
 async function setup(t) {

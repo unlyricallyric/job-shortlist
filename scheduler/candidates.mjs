@@ -212,7 +212,7 @@ export function filterRoleCandidates(snapshot, queue, context, records = []) {
     const decision = historic ?? assessRoleExclusion({ title: job.title, jd: detail?.jd }, context.policy);
     if (!decision) continue;
     const item = { id: job.id, category: decision.category, reasonCode: decision.reasonCode, basis: decision.basis,
-      observedAt: historic?.observedAt ?? (decision.basis === "duties" ? detail.retrievedAt : job.lastSeen) };
+      observedAt: historic?.observedAt ?? (decision.basis === "title" ? job.lastSeen : detail.retrievedAt) };
     (state ? removals : selectionConflicts).push(item);
   }
   const blocked = new Set(removals.map((item) => item.id));

@@ -54,7 +54,9 @@ export function buildFullReviewSnapshot(snapshotText, payload, policy, now = new
 }
 
 export function validateFullReviewReceipt(value, snapshot) {
-  const policy = feedbackRolePolicy(2);
+  const version = /^role-feedback-v([23])$/.exec(value?.policyId ?? "")?.[1];
+  if (!version) throw new RunError("full-review-receipt-invalid", "Unsupported role policy in the pending full-review audit.", { blocked: true });
+  const policy = feedbackRolePolicy(Number(version));
   if (!exact(value, ["version", "status", "publicSha256", "decisions", "policyId", "reviewedAt", "counts"])
     || value.version !== 1 || value.status !== "pending" || value.policyId !== policy.id
     || typeof value.publicSha256 !== "string" || !/^[a-f0-9]{64}$/.test(value.publicSha256)

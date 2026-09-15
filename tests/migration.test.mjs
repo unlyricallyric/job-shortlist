@@ -337,3 +337,27 @@ test("migration artifact ignores are narrow and leave the legitimate published J
   await assert.rejects(command("/usr/bin/git", ["check-ignore", "--no-index", "docs/data/jobs.json", "scheduler/migration-schema.mjs"]),
     (error) => error.exitCode === 1);
 });
+
+test("v3 employment feedback round trips without rewriting old v1/v2 history or admission dates", async (t) => {
+  const data = await setup(t);
+  const runtime = await readJson(join(data.root, "runtime.json"));
+  const history = await readJson(join(data.root, "role-exclusions-history.json"));
+  const prior = structuredClone(history.entries);
+  history.entries.push(
+    { id: "boss-migration-v2-excluded", policyId: "role-feedback-v2", policyVersion: 2, category: "technical-function",
+      reasonCode: "role-technical-function", basis: "requirements", observedAt: seen, filteredAt: published },
+    { id: "boss-migration-outsourced", policyId: "role-feedback-v3", policyVersion: 3, category: "outsourced-employment",
+      reasonCode: "role-outsourced-employment", basis: "employment", observedAt: seen, filteredAt: published },
+  );
+  await atomicJson(join(data.root, "role-exclusions-history.json"), history);
+  await atomicJson(join(data.root, "role-exclusions.json"), feedbackRolePolicy(3));
+  await atomicJson(join(data.root, "runtime.json"), { ...runtime, roleExclusionsVersion: 3 });
+  await exportMigration(data.options);
+  const target = join(data.directory, "v3-restored");
+  await restoreMigration({ ...data.options, target });
+  const verified = await verifyRestoredMigration(target);
+  assert.equal(verified.settings.roleExclusionsVersion, 3);
+  assert.deepEqual(await readJson(join(target, "role-exclusions-history.json")), history);
+  assert.deepEqual((await readJson(join(target, "role-exclusions-history.json"))).entries.slice(0, prior.length), prior);
+  assert.deepEqual(verified.snapshot.firstPublishedAtById, data.snapshot.firstPublishedAtById);
+});

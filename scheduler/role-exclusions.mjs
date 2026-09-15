@@ -5,10 +5,12 @@ import { atomicJson, readJson, RunError } from "./io.mjs";
 import { parseJobSections } from "./screening.mjs";
 import { assessTechnicalFunction } from "./technical-roles.mjs";
 import { assessOtherOccupation } from "./occupational-roles.mjs";
+import { assessOutsourcedEmployment } from "./employment-roles.mjs";
 
 const categories = ["cockpit-project", "marketing-leadership", "entrepreneurial-partner", "executive-ownership", "procurement", "frontline-sales"];
 const versions = new Map([[1, categories], [2, [...categories, "technical-function", "human-resources",
   "production-planning", "finance-settlement", "consumer-operations", "professional-marketing", "product-delivery", "internal-operations"]]]);
+versions.set(3, [...versions.get(2), "outsourced-employment"]);
 const exact = (value, keys) => value && typeof value === "object" && !Array.isArray(value)
   && Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key));
 export const feedbackRolePolicy = (version = 1) => validateRolePolicy({
@@ -36,7 +38,9 @@ export function validateRoleHistory(value) {
       || typeof entry.id !== "string" || !/^(?:boss-[A-Za-z0-9_~-]+|bytedance-\d+|liepin-\d+)$/.test(entry.id)
       || !versions.has(entry.policyVersion) || entry.policyId !== `role-feedback-v${entry.policyVersion}`
       || !versions.get(entry.policyVersion).includes(entry.category)
-      || entry.reasonCode !== `role-${entry.category}` || !["title", "duties", ...(entry.policyVersion === 2 ? ["requirements"] : [])].includes(entry.basis)
+      || entry.reasonCode !== `role-${entry.category}` || !["title", "duties",
+        ...(entry.policyVersion >= 2 ? ["requirements"] : []), ...(entry.policyVersion >= 3 ? ["employment"] : [])].includes(entry.basis)
+      || (entry.basis === "employment" && entry.category !== "outsourced-employment")
       || !isIsoDate(entry.observedAt, false) || !isIsoDate(entry.filteredAt, false)
       || Date.parse(entry.observedAt) > Date.parse(entry.filteredAt) || keys.has(key)) {
       throw new RunError("invalid-role-history", "A private role-exclusion record is invalid.", { blocked: true });
@@ -125,11 +129,15 @@ export function assessRoleExclusion(record, policy) {
     && !/assistant|support|liaison|report|客户|对接|支持|协助|汇报|助理/u.test(rawTitle);
   const enabled = new Set(policy.categories);
   const result = (category, basis) => enabled.has(category) ? { category, reasonCode: `role-${category}`, basis } : null;
+  if (enabled.has("outsourced-employment")) {
+    const outsourced = assessOutsourcedEmployment(record);
+    if (outsourced) return outsourced;
+  }
   if (enabled.has("technical-function")) {
     const technical = assessTechnicalFunction(record);
     if (technical) return technical;
   }
-  if (policy.version === 2) {
+  if (policy.version >= 2) {
     const other = assessOtherOccupation(record);
     if (other && enabled.has(other.category)) return other;
   }
@@ -139,7 +147,7 @@ export function assessRoleExclusion(record, policy) {
     ["marketing-leadership", marketingHead.test(title)],
     ["executive-ownership", executive.test(title) || englishExecutive],
     ["procurement", (/采购|寻源|招采|purchasing|procurement|sourcingmanager/u.test(title)
-      || (policy.version === 2 && /供应商管理(?:高级|资深)?(?:经理|主管|专员)|suppliermanagementmanager|vendormanagementmanager/u.test(title)))
+      || (policy.version >= 2 && /供应商管理(?:高级|资深)?(?:经理|主管|专员)|suppliermanagementmanager|vendormanagementmanager/u.test(title)))
       && !/采购(?:数字化|管理)?(?:软件|系统|产品|解决方案)|(?:采购经理|采购总监)客户/u.test(title)],
     ["frontline-sales", directTitle.test(title)],
   ];
