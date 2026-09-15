@@ -1,14 +1,14 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-15T02:17:53.865Z",
+  "generatedAt": "2026-09-15T02:44:47.817Z",
   "run": {
     "source": "BOSS直聘 + 字节跳动招聘官网 + 猎聘",
     "scope": "上海 · 企业级科技 · 岗位采样与已保存线索",
     "mode": "采样候选 · 累计快照",
     "cardsReviewed": 381,
     "detailsRead": 137,
-    "selectedCount": 42,
-    "newCount": 2
+    "selectedCount": 41,
+    "newCount": 1
   },
   "jobs": [
     {
@@ -1399,38 +1399,6 @@
       "lastSeen": "2026-09-15T02:17:47.050Z",
       "jdRead": true,
       "isNew": true
-    },
-    {
-      "id": "boss-1e17e9116d0ed6e70nJ93d27E1tY",
-      "title": "交付项目经理(外包)",
-      "company": "软通动力",
-      "city": "上海",
-      "location": "上海·杨浦区·五角场",
-      "source": "BOSS直聘",
-      "url": "https://www.zhipin.com/job_detail/1e17e9116d0ed6e70nJ93d27E1tY.html",
-      "salaryText": null,
-      "salaryMinK": null,
-      "salaryMaxK": null,
-      "salaryMonths": null,
-      "experienceText": "5-10年",
-      "educationText": "大专",
-      "category": null,
-      "matchScore": null,
-      "priority": "采样候选 · 待你判断",
-      "summary": [
-        "尚未取得可完整核对的 JD，请查看原岗位。"
-      ],
-      "requirements": [],
-      "matchReasons": [],
-      "concerns": [
-        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
-      ],
-      "languageNote": null,
-      "publishedAt": null,
-      "firstSeen": "2026-09-15T02:17:47.050Z",
-      "lastSeen": "2026-09-15T02:17:47.050Z",
-      "jdRead": false,
-      "isNew": true
     }
   ],
   "assessmentMethods": {
@@ -1474,8 +1442,7 @@
     "boss-8be33a425cd2de880nF_3dq1EVJR": "source-only",
     "boss-fa4ca7a150fa63bd03R_3Ni-FlZU": "source-only",
     "boss-f050fa390767b99e0nN-09q0FFJU": "source-only",
-    "boss-ad9ec8522a521eeb0nJ63Ny5EVRT": "source-only",
-    "boss-1e17e9116d0ed6e70nJ93d27E1tY": "source-only"
+    "boss-ad9ec8522a521eeb0nJ63Ny5EVRT": "source-only"
   },
   "candidateStatesById": {
     "boss-1a4d803e99f2ae6e03J42t67FVNY": {
@@ -1652,11 +1619,6 @@
       "evidence": "full-jd",
       "direction": "outside",
       "evidenceObservedAt": "2026-09-15T02:17:29.071Z"
-    },
-    "boss-1e17e9116d0ed6e70nJ93d27E1tY": {
-      "evidence": "identity-conflict",
-      "direction": "unclear",
-      "evidenceObservedAt": "2026-09-15T02:17:47.050Z"
     }
   },
   "firstPublishedAtById": {
@@ -1696,14 +1658,13 @@
     "boss-8be33a425cd2de880nF_3dq1EVJR": "2026-09-13T02:21:55.417Z",
     "boss-fa4ca7a150fa63bd03R_3Ni-FlZU": "2026-09-13T04:31:43.424Z",
     "boss-f050fa390767b99e0nN-09q0FFJU": "2026-09-14T16:45:14.126Z",
-    "boss-ad9ec8522a521eeb0nJ63Ny5EVRT": "2026-09-15T02:17:53.865Z",
-    "boss-1e17e9116d0ed6e70nJ93d27E1tY": "2026-09-15T02:17:53.865Z"
+    "boss-ad9ec8522a521eeb0nJ63Ny5EVRT": "2026-09-15T02:17:53.865Z"
   },
   "candidateFeed": {
     "version": 1,
     "mode": "candidate-feed",
-    "publicationKind": "controlled",
-    "runId": "retry-20260915021646282-5a0c12d7",
+    "publicationKind": "feedback-filter",
+    "runId": "feedback-20260915024447817",
     "sampleRunId": "retry-20260915021646282-5a0c12d7",
     "sampledAt": "2026-09-15T02:17:52.797Z",
     "cardsThisSample": 42,
