@@ -1,14 +1,14 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-16T21:36:34.357Z",
+  "generatedAt": "2026-09-17T01:31:26.839Z",
   "run": {
     "source": "BOSS直聘 + 字节跳动招聘官网 + 猎聘",
     "scope": "上海 · 企业级科技 · 岗位采样与已保存线索",
     "mode": "采样候选 · 累计快照",
-    "cardsReviewed": 387,
+    "cardsReviewed": 388,
     "detailsRead": 143,
     "selectedCount": 49,
-    "newCount": 2
+    "newCount": 0
   },
   "jobs": [
     {
@@ -303,7 +303,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-09T18:49:12.625Z",
-      "lastSeen": "2026-09-16T21:36:31.897Z",
+      "lastSeen": "2026-09-17T01:30:28.550Z",
       "jdRead": false,
       "isNew": false
     },
@@ -335,7 +335,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-09T18:49:15.986Z",
-      "lastSeen": "2026-09-16T21:35:59.659Z",
+      "lastSeen": "2026-09-17T01:31:19.343Z",
       "jdRead": false,
       "isNew": false
     },
@@ -367,7 +367,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:31:21.471Z",
-      "lastSeen": "2026-09-16T21:36:31.897Z",
+      "lastSeen": "2026-09-17T01:30:48.259Z",
       "jdRead": false,
       "isNew": false
     },
@@ -399,7 +399,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T01:31:00.686Z",
-      "lastSeen": "2026-09-16T21:36:31.897Z",
+      "lastSeen": "2026-09-17T01:30:50.408Z",
       "jdRead": false,
       "isNew": false
     },
@@ -592,7 +592,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T02:24:32.183Z",
-      "lastSeen": "2026-09-16T21:36:19.513Z",
+      "lastSeen": "2026-09-17T01:31:21.756Z",
       "jdRead": true,
       "isNew": false
     },
@@ -642,11 +642,11 @@
       "salaryMonths": null,
       "experienceText": "经验不限",
       "educationText": "学历不限",
-      "category": null,
+      "category": "大客户销售",
       "matchScore": null,
       "priority": "采样候选 · 待你判断",
       "summary": [
-        "尚未取得可完整核对的 JD，请查看原岗位。"
+        "已读取可分离的岗位职责与要求，仅作为来源记录展示，不表示适合。"
       ],
       "requirements": [],
       "matchReasons": [],
@@ -656,8 +656,8 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T02:24:42.838Z",
-      "lastSeen": "2026-09-16T21:36:31.897Z",
-      "jdRead": false,
+      "lastSeen": "2026-09-17T01:30:52.895Z",
+      "jdRead": true,
       "isNew": false
     },
     {
@@ -882,7 +882,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T02:24:32.183Z",
-      "lastSeen": "2026-09-16T21:36:19.513Z",
+      "lastSeen": "2026-09-17T01:30:28.550Z",
       "jdRead": false,
       "isNew": false
     },
@@ -915,7 +915,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-10T04:32:01.857Z",
-      "lastSeen": "2026-09-16T21:36:02.401Z",
+      "lastSeen": "2026-09-17T01:31:19.343Z",
       "jdRead": true,
       "isNew": false
     },
@@ -1011,7 +1011,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-12T04:30:50.248Z",
-      "lastSeen": "2026-09-16T21:35:59.659Z",
+      "lastSeen": "2026-09-17T01:31:24.211Z",
       "jdRead": true,
       "isNew": false
     },
@@ -1033,7 +1033,7 @@
       "matchScore": null,
       "priority": "采样候选 · 待你判断",
       "summary": [
-        "已读取来源中的职责与要求，具体职业方向仍需核对，不据渠道或合作等字样认定为商业伙伴岗位。"
+        "尚未取得可完整核对的 JD，请查看原岗位。"
       ],
       "requirements": [],
       "matchReasons": [],
@@ -1043,8 +1043,8 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-12T04:31:13.997Z",
-      "lastSeen": "2026-09-13T02:21:44.269Z",
-      "jdRead": true,
+      "lastSeen": "2026-09-17T01:30:34.309Z",
+      "jdRead": false,
       "isNew": false
     },
     {
@@ -1366,7 +1366,7 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-14T16:45:01.252Z",
-      "lastSeen": "2026-09-15T04:31:31.665Z",
+      "lastSeen": "2026-09-17T01:31:09.841Z",
       "jdRead": false,
       "isNew": false
     },
@@ -1486,7 +1486,7 @@
       "matchScore": null,
       "priority": "采样候选 · 待你判断",
       "summary": [
-        "已读取来源中的职责与要求，具体职业方向仍需核对，不据渠道或合作等字样认定为商业伙伴岗位。"
+        "尚未取得可完整核对的 JD，请查看原岗位。"
       ],
       "requirements": [],
       "matchReasons": [],
@@ -1496,8 +1496,8 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-15T04:31:14.248Z",
-      "lastSeen": "2026-09-15T04:31:22.547Z",
-      "jdRead": true,
+      "lastSeen": "2026-09-17T01:30:34.309Z",
+      "jdRead": false,
       "isNew": false
     },
     {
@@ -1624,9 +1624,9 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-16T21:36:00.272Z",
-      "lastSeen": "2026-09-16T21:36:31.897Z",
+      "lastSeen": "2026-09-17T01:31:19.343Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     },
     {
       "id": "boss-dbdf714e210ddd9d0nN_3dq5F1VZ",
@@ -1656,9 +1656,9 @@
       "languageNote": null,
       "publishedAt": null,
       "firstSeen": "2026-09-16T21:36:07.891Z",
-      "lastSeen": "2026-09-16T21:36:08.409Z",
+      "lastSeen": "2026-09-17T01:31:12.330Z",
       "jdRead": true,
-      "isNew": true
+      "isNew": false
     }
   ],
   "assessmentMethods": {
@@ -1716,22 +1716,22 @@
     "boss-1a4d803e99f2ae6e03J42t67FVNY": {
       "evidence": "incomplete-jd",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-16T21:36:31.897Z"
+      "evidenceObservedAt": "2026-09-17T01:30:28.550Z"
     },
     "boss-bd6779a7f0a1d57c0nd62dy-FldV": {
       "evidence": "incomplete-jd",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-16T21:35:59.659Z"
+      "evidenceObservedAt": "2026-09-17T01:31:19.343Z"
     },
     "boss-a2f89fa3913ea5350nJ_39u8F1FT": {
       "evidence": "identity-conflict",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-16T21:36:31.897Z"
+      "evidenceObservedAt": "2026-09-17T01:30:48.259Z"
     },
     "boss-8dccbe03789cc56f0nN62Ny9FlNY": {
       "evidence": "incomplete-jd",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-16T21:36:31.897Z"
+      "evidenceObservedAt": "2026-09-17T01:30:50.408Z"
     },
     "boss-97443cdc0638be130nF409m8ElJU": {
       "evidence": "full-jd",
@@ -1761,7 +1761,7 @@
     "boss-665d394ca22441160nF_3d-7FVNR": {
       "evidence": "full-jd",
       "direction": "primary",
-      "evidenceObservedAt": "2026-09-14T16:45:11.334Z"
+      "evidenceObservedAt": "2026-09-17T01:31:21.756Z"
     },
     "boss-91bfcc18e61cd02d0nJ909S6FlpX": {
       "evidence": "incomplete-jd",
@@ -1769,9 +1769,9 @@
       "evidenceObservedAt": "2026-09-16T21:36:31.897Z"
     },
     "boss-2ed990db7ffe941d1HF82tW_EVBT": {
-      "evidence": "identity-conflict",
-      "direction": "unclear",
-      "evidenceObservedAt": "2026-09-16T21:36:31.897Z"
+      "evidence": "full-jd",
+      "direction": "secondary",
+      "evidenceObservedAt": "2026-09-17T01:30:52.895Z"
     },
     "boss-b5fe25737915b8240nJ52tq4F1tR": {
       "evidence": "incomplete-jd",
@@ -1806,7 +1806,7 @@
     "boss-c7151f881ce8208a0nZ83N-5EFVZ": {
       "evidence": "identity-conflict",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-16T21:36:19.513Z"
+      "evidenceObservedAt": "2026-09-17T01:30:28.550Z"
     },
     "boss-f398c1e732c8992b0nJ53tm-GVtQ": {
       "evidence": "full-jd",
@@ -1826,12 +1826,12 @@
     "boss-ff8ddeac76b215ef0ndz3dS_EFtR": {
       "evidence": "full-jd",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-15T04:31:07.292Z"
+      "evidenceObservedAt": "2026-09-17T01:31:24.211Z"
     },
     "boss-780d1e87ff9b834b03d539m_GFFS": {
-      "evidence": "full-jd",
+      "evidence": "identity-conflict",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-13T02:21:44.269Z"
+      "evidenceObservedAt": "2026-09-17T01:30:34.309Z"
     },
     "boss-187b35224ef621fb0nZ93dq9EFdQ": {
       "evidence": "identity-conflict",
@@ -1881,7 +1881,7 @@
     "boss-f050fa390767b99e0nN-09q0FFJU": {
       "evidence": "incomplete-jd",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-15T04:31:31.665Z"
+      "evidenceObservedAt": "2026-09-17T01:31:09.841Z"
     },
     "boss-ad9ec8522a521eeb0nJ63Ny5EVRT": {
       "evidence": "full-jd",
@@ -1899,9 +1899,9 @@
       "evidenceObservedAt": "2026-09-15T04:31:18.846Z"
     },
     "boss-1105c89ed6d4b56c0nN_29y4ElBW": {
-      "evidence": "full-jd",
+      "evidence": "identity-conflict",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-15T04:31:22.547Z"
+      "evidenceObservedAt": "2026-09-17T01:30:34.309Z"
     },
     "boss-3ba097c34592c1e80nN-0ti0EVdQ": {
       "evidence": "identity-conflict",
@@ -1926,7 +1926,7 @@
     "boss-dbdf714e210ddd9d0nN_3dq5F1VZ": {
       "evidence": "full-jd",
       "direction": "unclear",
-      "evidenceObservedAt": "2026-09-16T21:36:08.409Z"
+      "evidenceObservedAt": "2026-09-17T01:31:12.330Z"
     }
   },
   "firstPublishedAtById": {
@@ -1979,11 +1979,11 @@
   "candidateFeed": {
     "version": 1,
     "mode": "candidate-feed",
-    "publicationKind": "controlled",
-    "runId": "retry-20260916213537301-f6e3fc8d",
-    "sampleRunId": "retry-20260916213537301-f6e3fc8d",
-    "sampledAt": "2026-09-16T21:36:33.490Z",
-    "cardsThisSample": 41,
+    "publicationKind": "scheduled",
+    "runId": "2026-09-17-0930",
+    "sampleRunId": "2026-09-17-0930",
+    "sampledAt": "2026-09-17T01:31:25.793Z",
+    "cardsThisSample": 45,
     "detailsThisSample": 7,
     "timeZone": "Asia/Shanghai",
     "times": [
