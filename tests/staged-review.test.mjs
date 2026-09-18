@@ -51,7 +51,7 @@ const approval = (queue, ids = queue.entries.map((entry) => entry.id)) => ({
 
 test("private intent policy fixes partner/channel/ecosystem rotation without altering qualification facts", () => {
   assert.equal(validateIntentPolicy(policy), policy);
-  assert.equal(policy.queries.length, 6);
+  assert.equal(policy.queries.length, 8);
   assert.ok(policy.queries.every((query) => /[\u3400-\u9fff]/u.test(query.term) && !/市场|活动|内容/.test(query.term)));
   assert.ok(policy.queries.every((query) => !Object.hasOwn(query, "position")));
   assert.throws(() => validateIntentPolicy({ ...policy, queries: [{ term: "市场", industry: "100021" }] }));

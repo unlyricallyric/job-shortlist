@@ -46,7 +46,7 @@ export function validateMigrationSettings(value) {
   requireValue(exact(value, ["version", "repository", "branch", "mode", "autoPublish", "reviewRequired",
     "manualApprovalRequiredForVisibility", "queries", "limits", "roleExclusionsVersion", "schedule"]));
   requireValue(value.version === 1 && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(value.repository)
-    && value.branch === "main" && [1, 2, 3].includes(value.roleExclusionsVersion));
+    && value.branch === "main" && [1, 2, 3, 4].includes(value.roleExclusionsVersion));
   assertRuntimeMode(value);
   requireValue(JSON.stringify(value.schedule) === JSON.stringify(schedule));
   const bounds = value.mode === "candidate-feed" ? candidateLimits : defaultLimits;

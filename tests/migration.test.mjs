@@ -253,6 +253,10 @@ test("a failed restore rolls back only its own new files; incomplete imports can
 
 test("migrated installation rebuilds machine paths, preserves policies/dates/cursor, and never loads services", async (t) => {
   const data = await setup(t);
+  const originalIntent = defaultIntentPolicy();
+  const customQueries = [originalIntent.queries[0], originalIntent.queries[6], originalIntent.queries[2], originalIntent.queries[7]];
+  await atomicJson(join(data.root, "intent-policy.json"), { ...originalIntent, queries: customQueries });
+  await atomicJson(join(data.root, "runtime.json"), { ...data.files["runtime.json"], queries: customQueries });
   await exportMigration(data.options);
   const target = join(data.directory, "destination");
   await restoreMigration({ ...data.options, target });
@@ -294,6 +298,7 @@ test("migrated installation rebuilds machine paths, preserves policies/dates/cur
   assert.equal(configured.runtime.nodePath, process.execPath);
   assert.equal(configured.runtime.sshKeyPath, join(keys, "deploy"));
   assert.equal(configured.runtime.roleExclusionsVersion, 2);
+  assert.deepEqual(configured.runtime.queries, customQueries);
   assert.equal(configured.runtime.migrationSetupPending, true);
   for (const name of ["matching.json", "intent-policy.json", "manual-exclusions.json", "role-exclusions.json",
     "role-exclusions-history.json", "ledger.json", "read-history.json", "review-queue.json"]) {
@@ -310,6 +315,7 @@ test("migrated installation rebuilds machine paths, preserves policies/dates/cur
   const repeated = await install(installOptions);
   assert.equal(repeated.servicesLoaded, false);
   assert.equal((await readJson(join(target, "control.json"))).paused, true);
+  assert.deepEqual((await readJson(join(target, "runtime.json"))).queries, customQueries);
 });
 
 test("private context cannot introduce credentials or old-machine paths, and manifest corruption is caught", async (t) => {
@@ -360,4 +366,26 @@ test("v3 employment feedback round trips without rewriting old v1/v2 history or 
   assert.deepEqual(await readJson(join(target, "role-exclusions-history.json")), history);
   assert.deepEqual((await readJson(join(target, "role-exclusions-history.json"))).entries.slice(0, prior.length), prior);
   assert.deepEqual(verified.snapshot.firstPublishedAtById, data.snapshot.firstPublishedAtById);
+});
+
+test("v4 title feedback and eight-query intent retain older policy records and real admission dates in offline migration", async (t) => {
+  const data = await setup(t), runtime = await readJson(join(data.root, "runtime.json"));
+  const history = await readJson(join(data.root, "role-exclusions-history.json")), original = structuredClone(history.entries);
+  history.entries.push(
+    { id: "boss-v2-technical-test", policyId: "role-feedback-v2", policyVersion: 2, category: "technical-function", reasonCode: "role-technical-function", basis: "requirements", observedAt: seen, filteredAt: published },
+    { id: "boss-v3-outsourced-test", policyId: "role-feedback-v3", policyVersion: 3, category: "outsourced-employment", reasonCode: "role-outsourced-employment", basis: "employment", observedAt: seen, filteredAt: published },
+    { id: "boss-v4-sales-title-test", policyId: "role-feedback-v4", policyVersion: 4, category: "sales-leadership", reasonCode: "role-sales-leadership", basis: "title", observedAt: seen, filteredAt: published },
+  );
+  await atomicJson(join(data.root, "role-exclusions-history.json"), history);
+  await atomicJson(join(data.root, "role-exclusions.json"), feedbackRolePolicy(4));
+  await atomicJson(join(data.root, "runtime.json"), { ...runtime, roleExclusionsVersion: 4 });
+  await exportMigration(data.options);
+  const target = join(data.directory, "v4-restored");
+  await restoreMigration({ ...data.options, target });
+  const checked = await verifyRestoredMigration(target);
+  assert.equal(checked.settings.roleExclusionsVersion, 4);
+  assert.equal(checked.settings.queries.length, 8);
+  assert.deepEqual((await readJson(join(target, "role-exclusions-history.json"))).entries, history.entries);
+  assert.deepEqual(history.entries.slice(0, original.length), original);
+  assert.deepEqual(checked.snapshot.firstPublishedAtById, data.snapshot.firstPublishedAtById);
 });

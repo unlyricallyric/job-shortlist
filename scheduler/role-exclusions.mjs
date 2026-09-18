@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { isIsoDate } from "../docs/model.mjs";
 import { atomicJson, readJson, RunError } from "./io.mjs";
 import { parseJobSections } from "./screening.mjs";
-import { assessTechnicalFunction } from "./technical-roles.mjs";
+import { assessTechnicalFunction, occupationalSections } from "./technical-roles.mjs";
 import { assessOtherOccupation } from "./occupational-roles.mjs";
 import { assessOutsourcedEmployment } from "./employment-roles.mjs";
 
@@ -11,6 +11,7 @@ const categories = ["cockpit-project", "marketing-leadership", "entrepreneurial-
 const versions = new Map([[1, categories], [2, [...categories, "technical-function", "human-resources",
   "production-planning", "finance-settlement", "consumer-operations", "professional-marketing", "product-delivery", "internal-operations"]]]);
 versions.set(3, [...versions.get(2), "outsourced-employment"]);
+versions.set(4, [...versions.get(3), "sales-leadership", "automotive-project"]);
 const exact = (value, keys) => value && typeof value === "object" && !Array.isArray(value)
   && Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key));
 export const feedbackRolePolicy = (version = 1) => validateRolePolicy({
@@ -120,6 +121,33 @@ function dutyClauses(jd) {
     .filter((clause) => clause && !/^(?:向|汇报|晋升|熟悉|了解|具备|具有|至少|优先|要求)/u.test(clause));
 }
 
+function automotiveProjectEvidence(record, title) {
+  const project = /(?:项目|交付)(?:经理|总监|负责人)|(?:project|program|delivery)manager/u.test(title);
+  const ownTitle = title
+    .replace(/(?:不要求|无需|无须|不限)(?:整车|汽车研发|车辆开发)(?:开发|研发|项目)?(?:经验|背景)/gu, "")
+    .replace(/(?:整车|汽车研发|车辆开发)(?:开发|研发|项目)?(?:经验|背景)(?:非必须|非必需|不要求|不限|优先)/gu, "");
+  const directRole = /(?:整车|车辆|汽车)(?:研发|开发|制造|集成|工程)?(?:项目|交付)(?:管理)?(?:经理|总监|负责人)|(?:vehicle|automotive)(?:development)?(?:project|program|delivery)manager/u.test(ownTitle);
+  const requiredInTitle = /(?:整车|车辆研发|汽车开发).{0,8}(?:经验|背景).{0,4}(?:必须|必需|必备|要求)|(?:必须|必需|要求|必备).{0,8}(?:整车|车辆研发|汽车开发).{0,8}(?:经验|背景)/u.test(ownTitle);
+  if (directRole || (project && requiredInTitle)) return "title";
+  const owned = dutyClauses(record.jd).filter((text) => !/(?:协调|协同|支持|协助|对接).{0,12}(?:研发|技术|交付|伙伴|客户)/u.test(text));
+  if (owned.some((text) => /(?:负责|主导|独立).{0,10}(?:整车|车型|汽车|车辆)(?:研发|开发|量产导入|试制|集成验证)|(?:负责|主导|独立).{0,8}(?:整车|车型)项目(?:管理|交付)|(?:own|lead|manage).{0,10}(?:vehicledevelopment|automotivedevelopment|vehicleprogram)/u.test(text))) {
+    return "duties";
+  }
+  if (!project) return null;
+  const { requirements } = occupationalSections(record);
+  let preferred = false;
+  for (const raw of requirements.split(contextHeading)[0].split(/[\r\n。；;，,]+/u)) {
+    const text = normalizeRoleText(raw);
+    if (/^(?:加分项|优先条件|优先要求|preferred|nicetohave)/u.test(text)) preferred = true;
+    else if (/^(?:必备条件|基本要求|必要条件|required|minimum)/u.test(text)) preferred = false;
+    if (preferred || /优先|加分|非必须|非必需|不要求|无需|无须|不限|preferred|bonus|notrequired/u.test(text)) continue;
+    if (/(?:具备|具有|要求|必须|必备|至少).{0,15}(?:整车|车型|汽车|车辆)(?:研发|开发|项目管理|项目交付).{0,8}(?:经验|经历)|(?:整车|车型)(?:研发|开发|项目管理|项目交付).{0,8}(?:经验|经历)(?:必须|必备)|(?:musthave|required|experiencein).{0,15}(?:vehicledevelopment|automotiveprojectdelivery)/u.test(text)) {
+      return "requirements";
+    }
+  }
+  return null;
+}
+
 export function assessRoleExclusion(record, policy) {
   if (policy === null) return null;
   validateRolePolicy(policy);
@@ -133,6 +161,10 @@ export function assessRoleExclusion(record, policy) {
     const outsourced = assessOutsourcedEmployment(record);
     if (outsourced) return outsourced;
   }
+  if (enabled.has("automotive-project")) {
+    const evidence = automotiveProjectEvidence(record, title);
+    if (evidence) return result("automotive-project", evidence);
+  }
   if (enabled.has("technical-function")) {
     const technical = assessTechnicalFunction(record);
     if (technical) return technical;
@@ -144,7 +176,9 @@ export function assessRoleExclusion(record, policy) {
   const titleChecks = [
     ["cockpit-project", /(?:座舱|cockpit).{0,18}(?:项目经理|项目管理|项目总监|技术交付|交付经理|projectmanager|programmanager)/u.test(title)],
     ["entrepreneurial-partner", /合伙人|联合创始人|共同创始人|cofounder|foundingpartner|equitypartner|managingpartner|franchiseowner/u.test(title)],
-    ["marketing-leadership", marketingHead.test(title)],
+    ["marketing-leadership", marketingHead.test(title) && !(policy.version >= 4
+      && /(?:伙伴|渠道|生态)(?:营销|市场|赋能)(?:高级|资深)?总监|(?:partner|channel)(?:marketing|enablement)director/u.test(title)
+      && !/chiefmarketingofficer|(?:^|[^a-z])cmo(?:$|[^a-z])/u.test(title))],
     ["executive-ownership", executive.test(title) || englishExecutive],
     ["procurement", (/采购|寻源|招采|purchasing|procurement|sourcingmanager/u.test(title)
       || (policy.version >= 2 && /供应商管理(?:高级|资深)?(?:经理|主管|专员)|suppliermanagementmanager|vendormanagementmanager/u.test(title)))
@@ -197,6 +231,23 @@ export function assessRoleExclusion(record, policy) {
     /伙伴转售|(?:伙伴|经销商|渠道).{0,6}(?:销售指标|收入指标|业绩)|转售指标|partnerrevenue|resellertargets/u,
     /联合打单|联合销售|商机互荐|coselling|jointselling|referrals/u,
   ].filter((pattern) => owning.some((text) => pattern.test(text))).length >= 2;
+  if (enabled.has("sales-leadership")) {
+    const position = title
+      .replace(/(?:向|对接|支持|协助)(?:区域|公司)?销售(?:总监|负责人)(?:汇报)?/gu, "")
+      .replace(/销售(?:总监|负责人)(?:助理|秘书)|(?:assistantto|supportfor)(?:the)?(?:salesdirector|headofsales)|salesdirectorassistant/gu, "");
+    const relatedTitle = /渠道|伙伴|partner|channel|reseller|pdr|bdr|sdr|生态(?:合作|销售|商业|渠道)|销售开发|salesdevelopment/u.test(position);
+    const generalLeader = /销售(?:总监|负责人|管理经理|管理主管)|销售(?:团队|部门)(?:经理|主管|负责人)|salesdirector|directorofsales|headofsales|salesleadership/u.test(position);
+    const teamOwnership = owning.filter((text) => !/(?:协助|支持|赋能|培训|对接|协调).{0,10}(?:直销|终端销售|销售)团队|销售团队管理(?:软件|系统|平台)|(?:support|enable|train).{0,12}(?:directsales|sales)team/u.test(text));
+    const directTeam = teamOwnership.some((text) => /(?:组建|管理|带领|领导).{0,12}(?:直销|终端销售)团队|(?:manage|lead|build).{0,15}(?:directsales|endcustomersales)team/u.test(text));
+    const genericTeam = teamOwnership.some((text) => /(?:组建|管理|带领|领导).{0,8}销售团队|销售团队管理|(?:manage|lead|build).{0,12}salesteam/u.test(text));
+    if (directTeam) return result("sales-leadership", "duties");
+    if (!relatedTitle && !partnerLifecycle) {
+      if (generalLeader) return result("sales-leadership", "title");
+      if (genericTeam && owning.some((text) => /销售目标|销售计划|营收指标|salestarget|revenuegoal/u.test(text))) {
+        return result("sales-leadership", "duties");
+      }
+    }
+  }
   const salesPurpose = owning.some((text) => !partnerSupport(text)
     && /(?:拓展|开发|开拓)(?:与维护)?(?:终端|企业|新|大)?客户|负责.{0,10}(?:企业级|终端|大)客户.{0,65}(?:开拓|拓展|开发)|customeracquisition|endcustomerprospecting/u.test(text));
   if (!partnerTitle.test(title) && !/客户成功|customersuccess|csm/u.test(title) && !partnerLifecycle

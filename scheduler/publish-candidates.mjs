@@ -100,7 +100,7 @@ export async function publishRoleCleanup(root, signal, services = {}) {
 
 export async function publishFullReview(root, payload, signal, services = {}) {
   const runtime = await candidateRuntime(root), roleContext = await loadRoleContext(root, runtime);
-  if (![2, 3].includes(roleContext.policy?.version)) throw new RunError("full-review-policy-required", "Full relevance review requires an explicit supported extended role policy.");
+  if (![2, 3, 4].includes(roleContext.policy?.version)) throw new RunError("full-review-policy-required", "Full relevance review requires an explicit supported extended role policy.");
   if (await readJson(join(root, "pending.json"), null)) {
     throw new RunError("pending-publication", "Recover the existing pending publication before applying a new full review.", { blocked: true });
   }

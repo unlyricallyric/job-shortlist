@@ -23,7 +23,7 @@ export function assertRuntimeMode(runtime) {
   } else assertCollectionMode(runtime);
   return modeSettings(runtime.mode);
 }
-export const partnerQueries = [
+const originalPartnerQueries = [
   { term: "渠道经理", industry: "100021" },
   { term: "渠道拓展", industry: "100029" },
   { term: "生态合作经理", industry: "100021" },
@@ -31,20 +31,28 @@ export const partnerQueries = [
   { term: "渠道经理", industry: "100023" },
   { term: "生态合作", industry: "100029" },
 ];
-export const defaultIntentPolicy = () => ({
-  version: 1, id: "partner-commercial-v1",
+export const partnerQueries = [
+  ...originalPartnerQueries, { term: "渠道", industry: "100021" }, { term: "生态", industry: "100029" },
+];
+export const defaultIntentPolicy = (version = 2) => ({
+  version, id: `partner-commercial-v${version}`,
   primary: ["partner-development", "channel-management", "business-ecosystem"],
   secondary: ["customer-success", "account-sales"],
-  queries: partnerQueries.map((query) => ({ ...query })),
+  queries: (version === 1 ? originalPartnerQueries : partnerQueries).map((query) => ({ ...query })),
 });
 
 export function validateIntentPolicy(policy) {
-  const expected = defaultIntentPolicy();
+  const expected = defaultIntentPolicy(policy?.version);
   if (!policy || typeof policy !== "object" || Array.isArray(policy)
-    || Object.keys(policy).length !== 5 || policy.version !== 1 || policy.id !== expected.id
+    || Object.keys(policy).length !== 5 || ![1, 2].includes(policy.version) || policy.id !== expected.id
     || JSON.stringify(policy.primary) !== JSON.stringify(expected.primary)
     || JSON.stringify(policy.secondary) !== JSON.stringify(expected.secondary)
-    || JSON.stringify(policy.queries) !== JSON.stringify(expected.queries)) {
+    || !Array.isArray(policy.queries)
+    || (policy.version === 1 ? JSON.stringify(policy.queries) !== JSON.stringify(expected.queries)
+      : policy.queries.length < 1 || policy.queries.length > partnerQueries.length
+        || new Set(policy.queries.map((query) => JSON.stringify([query?.term, query?.industry]))).size !== policy.queries.length
+        || policy.queries.some((query) => !query || Object.keys(query).length !== 2
+          || !partnerQueries.some((allowed) => query.term === allowed.term && query.industry === allowed.industry)))) {
     throw new RunError("invalid-intent-policy", "An explicitly supported private career-intent policy is required.", { blocked: true });
   }
   return policy;

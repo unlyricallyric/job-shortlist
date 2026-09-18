@@ -92,6 +92,16 @@ test("full-review receipts keep v2 compatibility while accepting the explicit v3
   assert.throws(() => validateFullReviewReceipt({ ...receipt, policyId: "role-feedback-v99" }, snapshot), { code: "full-review-receipt-invalid" });
 });
 
+test("v4 full-review receipts retain the explicit policy/category binding", () => {
+  const data = fixtureData(), v4 = feedbackRolePolicy(4), payload = structuredClone(data.payload);
+  payload.decisions[0].category = "sales-leadership";
+  const { snapshot, counts } = buildFullReviewSnapshot(data.text, payload, v4, "2026-09-11T00:00:00Z");
+  const receipt = { version: 1, status: "pending", publicSha256: payload.publicSha256, decisions: payload.decisions,
+    policyId: v4.id, reviewedAt: snapshot.generatedAt, counts };
+  assert.equal(validateFullReviewReceipt(receipt, snapshot), receipt);
+  assert.throws(() => validateFullReviewReceipt({ ...receipt, policyId: "role-feedback-v3" }, snapshot), { code: "full-review-receipt-invalid" });
+});
+
 async function setup(t) {
   const root = await mkdtemp(join(tmpdir(), "shortlist-full-review-"));
   t.after(() => rm(root, { recursive: true, force: true }));
