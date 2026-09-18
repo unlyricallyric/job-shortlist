@@ -38,6 +38,9 @@ last completed collection and last confirmed publication.
 binds recovery to an ordinary Chrome process and records uncertain creation, not
 login state. A missing tab can be restored in its known normal window without a
 second BOSS seed tab; ambiguous or unavailable GUI/profile context remains blocked.
+If a confirmed task tab becomes the known same-origin BOSS chat route, it is left
+untouched and unread while one new search tab is bound in the same normal window.
+Unknown navigation and authentication still block; recovery never navigates chats.
 
 The website remains the published snapshot, not a real-time daemon dashboard.
 `firstSeen` / `lastSeen` are observations. `firstPublishedAtById` is first public

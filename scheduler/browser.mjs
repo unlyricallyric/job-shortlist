@@ -119,6 +119,7 @@ export function appleErrorCode(error) {
   if (/not authorized|not permitted|1002|1743|Apple events.*not allowed/i.test(detail)) return "apple-events-denied";
   if (/chrome-not-running/.test(detail)) return "chrome-not-running";
   if (/unexpected-owned-tab/.test(detail)) return "unexpected-owned-tab";
+  if (/preserved-chat-changed/.test(detail)) return "browser-preserved-page-changed";
   if (/non-normal-window/.test(detail)) return "browser-context-unavailable";
   if (/owner-window-missing|Can't get (?:window|tab)|Can’t get (?:window|tab)/i.test(detail)) return "chrome-window-unavailable";
   if (error.code === "command-timeout" || /connection.*invalid|not responding|timed out|application isn.t running|\(-609\)|\(-600\)/i.test(detail)) return "chrome-gui-unavailable";
@@ -222,15 +223,33 @@ function parseInspection(value) {
   throw new RunError("browser-result-invalid", "Unexpected Chrome window metadata; no task tab was created.", { blocked: true });
 }
 
-function requireSearchPage(value) {
+function ownedPageKind(value) {
   let url;
-  try { url = new URL(value); }
+  try {
+    if (typeof value !== "string" || /[\s\\\u0000-\u001f\u007f]/u.test(value)) throw new TypeError("Invalid source URL.");
+    url = new URL(value);
+  }
   catch (error) {
     if (!(error instanceof TypeError)) throw error;
     throw new RunError("unexpected-owned-tab", "The task tab is no longer on a public BOSS search page.", { blocked: true });
   }
-  if (url.origin !== searchOrigin || url.pathname !== searchPath) {
+  if (url.origin !== searchOrigin || url.username || url.password) {
     throw new RunError("unexpected-owned-tab", "The task tab was navigated elsewhere; it will not be overwritten.", { blocked: true });
+  }
+  if (/^\/(?:web\/user\/(?:login(?:\.html)?\/?|signup\/?|register\/?)?|web\/geek\/(?:login|signup)\/?|passport(?:\/login)?\/?)$/.test(url.pathname)) {
+    throw new RunError("login-required", "The task source page requires login; no further replacement will be opened.", { blocked: true });
+  }
+  if (/^\/web\/(?:common\/(?:security-check|verify|captcha)(?:\.html)?|geek\/(?:verify|captcha))\/?$/.test(url.pathname)) {
+    throw new RunError("captcha", "The task source page requires verification; no further replacement will be opened.", { blocked: true });
+  }
+  if (url.pathname === searchPath) return "search";
+  if (url.pathname === "/web/geek/chat") return "chat";
+  throw new RunError("unexpected-owned-tab", "The task tab was navigated elsewhere; it will not be overwritten.", { blocked: true });
+}
+
+function requireSearchPage(value) {
+  if (ownedPageKind(value) !== "search") {
+    throw new RunError("unexpected-owned-tab", "A readable public search page is required; this page will not be navigated.", { blocked: true });
   }
 }
 
@@ -296,20 +315,26 @@ export async function ownedTab(root, initialUrl, signal, services = {}) {
       "The original normal Chrome window is unavailable. Sleeping/locked/restoring GUI or a different profile cannot be assumed safe.", { blocked: true });
   };
   try {
-    let inspection;
+    let inspection, preservedChat = null;
     if (tab) {
       tabLines(tab);
       inspection = await waitContext(tab);
       if (inspection.kind === "owned" && context?.phase !== "created") {
-        requireSearchPage(inspection.url);
+        const kind = ownedPageKind(inspection.url);
         await confirmProcess();
-        if (!sameTab(existing, inspection.tab)) await atomicJson(join(root, "browser.json"), inspection.tab);
-        if (!context || !sameTab(context.tab, inspection.tab) || !sameProcess(context.process, process)) await saveContext("bound", inspection.tab);
-        return inspection.tab;
+        if (kind === "search") {
+          if (!sameTab(existing, inspection.tab)) await atomicJson(join(root, "browser.json"), inspection.tab);
+          if (!context || !sameTab(context.tab, inspection.tab) || !sameProcess(context.process, process)) await saveContext("bound", inspection.tab);
+          return inspection.tab;
+        }
+        if (!context || context.phase !== "bound" || !sameTab(context.tab, existing)) {
+          throw new RunError("browser-context-unavailable", "A confirmed original browser binding is required before preserving a chat page.", { blocked: true });
+        }
+        preservedChat = inspection;
       }
       if (inspection.kind === "owned") {
         tab = inspection.tab;
-        if (!sameTab(existing, tab)) await atomicJson(join(root, "browser.json"), tab);
+        if (!preservedChat && !sameTab(existing, tab)) await atomicJson(join(root, "browser.json"), tab);
       }
     }
     if (context?.phase !== "created") {
@@ -317,11 +342,22 @@ export async function ownedTab(root, initialUrl, signal, services = {}) {
       const sourceWindow = tab?.windowId ?? (await discover(signal)).windowId;
       if (!Number.isSafeInteger(sourceWindow) || sourceWindow < 1) throw new RunError("invalid-tab", "Chrome returned an invalid source window.");
       await confirmProcess();
+      if (preservedChat) {
+        const current = parseInspection(await execute(ownedInspection(preservedChat.tab), signal, { timeout: 5000 }));
+        if (current.kind !== "owned" || !sameTab(current.tab, preservedChat.tab) || current.url !== preservedChat.url) {
+          throw new RunError("browser-preserved-page-changed", "The original chat tab changed during recovery; it was left untouched.", { blocked: true });
+        }
+        await confirmProcess();
+      }
       await saveContext("creating", null);
-      const created = await execute([
+      const creationLines = [
         `if not (exists window id ${sourceWindow}) then error "owner-window-missing"`,
         `set sourceWindow to window id ${sourceWindow}`,
         'if mode of sourceWindow is not "normal" then error "non-normal-window"',
+        ...(preservedChat ? [
+          `if not (exists tab id ${preservedChat.tab.tabId} of sourceWindow) then error "preserved-chat-changed"`,
+          `if URL of tab id ${preservedChat.tab.tabId} of sourceWindow is not ${JSON.stringify(preservedChat.url)} then error "preserved-chat-changed"`,
+        ] : []),
         "set originalActiveId to id of active tab of sourceWindow",
         `set newTaskTab to make new tab at end of tabs of sourceWindow with properties {URL:${JSON.stringify(initialUrl)}}`,
         "set createdId to id of newTaskTab",
@@ -331,7 +367,14 @@ export async function ownedTab(root, initialUrl, signal, services = {}) {
         "set active tab index of sourceWindow to tabIndex", "exit repeat",
         "end if", "end repeat", "end if",
         'return (id of sourceWindow as text) & "," & (createdId as text)',
-      ], signal);
+      ];
+      let created;
+      try { created = await execute(creationLines, signal); }
+      catch (error) {
+        // This exact pre-creation guard proves that no new page was made; uncertain replies stay blocked.
+        if (preservedChat && error.code === "browser-preserved-page-changed") await saveContext("bound", existing);
+        throw error;
+      }
       const match = /^(\d+),(\d+)$/.exec(created);
       if (!match) throw new RunError("browser-recovery-unconfirmed", "Chrome did not confirm the new task handle; inspect before trying again.", { blocked: true });
       tab = { windowId: Number(match[1]), tabId: Number(match[2]) };
@@ -345,10 +388,6 @@ export async function ownedTab(root, initialUrl, signal, services = {}) {
       const current = parseInspection(await execute(ownedInspection(handle), signal, { timeout: 5000 }));
       if (current.kind !== "owned") return { state: "waiting" };
       if (current.url === "about:blank" || current.url === "chrome://newtab/") return { state: "waiting" };
-      const url = new URL(current.url);
-      if (url.origin === searchOrigin && /^\/(?:web\/user\/|web\/geek\/(?:login|signup)|passport)/.test(url.pathname)) {
-        throw new RunError("login-required", "Log in on the task's source page before continuing.", { blocked: true });
-      }
       requireSearchPage(current.url);
       return (services.evaluatePage ?? evaluatePage)(current.tab, null, cardsInPage, [], signal);
     });
@@ -357,6 +396,7 @@ export async function ownedTab(root, initialUrl, signal, services = {}) {
     await confirmProcess();
     await saveContext("bound", tab);
     await appendLog(root, { event: "browser-task-tab-recovered", context: "original-normal-window",
+      reason: preservedChat ? "preserved-source-chat" : "missing-task-tab",
       elapsedMs: Date.now() - startedAt });
     return tab;
   } catch (error) {
