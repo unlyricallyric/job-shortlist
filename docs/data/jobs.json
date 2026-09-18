@@ -1,14 +1,14 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-18T18:24:34.880Z",
+  "generatedAt": "2026-09-18T18:46:58.184Z",
   "run": {
     "source": "BOSS直聘 + 字节跳动招聘官网 + 猎聘",
     "scope": "上海 · 企业级科技 · 岗位采样与已保存线索",
     "mode": "采样候选 · 累计快照",
     "cardsReviewed": 402,
     "detailsRead": 146,
-    "selectedCount": 57,
-    "newCount": 2
+    "selectedCount": 55,
+    "newCount": 0
   },
   "jobs": [
     {
@@ -1851,70 +1851,6 @@
       "lastSeen": "2026-09-17T04:30:31.824Z",
       "jdRead": false,
       "isNew": false
-    },
-    {
-      "id": "boss-a1f8bd8ec47dbc1b0nR-39S6EFFR",
-      "title": "(IDC )销售总监",
-      "company": "JOYRUN",
-      "city": "上海",
-      "location": "上海·普陀区·长风",
-      "source": "BOSS直聘",
-      "url": "https://www.zhipin.com/job_detail/a1f8bd8ec47dbc1b0nR-39S6EFFR.html",
-      "salaryText": null,
-      "salaryMinK": null,
-      "salaryMaxK": null,
-      "salaryMonths": null,
-      "experienceText": "5-10年",
-      "educationText": "大专",
-      "category": null,
-      "matchScore": null,
-      "priority": "采样候选 · 待你判断",
-      "summary": [
-        "尚未取得可完整核对的 JD，请查看原岗位。"
-      ],
-      "requirements": [],
-      "matchReasons": [],
-      "concerns": [
-        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
-      ],
-      "languageNote": null,
-      "publishedAt": null,
-      "firstSeen": "2026-09-18T18:24:05.986Z",
-      "lastSeen": "2026-09-18T18:24:08.389Z",
-      "jdRead": false,
-      "isNew": true
-    },
-    {
-      "id": "boss-b18eadb3221cb33b0nN_2dm_E1RW",
-      "title": "项目经理(整车经验必须)",
-      "company": "大连某中型计算机服务公司",
-      "city": "上海",
-      "location": "上海",
-      "source": "BOSS直聘",
-      "url": "https://www.zhipin.com/job_detail/b18eadb3221cb33b0nN_2dm_E1RW.html",
-      "salaryText": null,
-      "salaryMinK": null,
-      "salaryMaxK": null,
-      "salaryMonths": null,
-      "experienceText": "5-10年",
-      "educationText": "本科",
-      "category": null,
-      "matchScore": null,
-      "priority": "采样候选 · 待你判断",
-      "summary": [
-        "尚未取得可完整核对的 JD，请查看原岗位。"
-      ],
-      "requirements": [],
-      "matchReasons": [],
-      "concerns": [
-        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
-      ],
-      "languageNote": null,
-      "publishedAt": null,
-      "firstSeen": "2026-09-18T18:23:42.036Z",
-      "lastSeen": "2026-09-18T18:23:42.036Z",
-      "jdRead": false,
-      "isNew": true
     }
   ],
   "assessmentMethods": {
@@ -1972,9 +1908,7 @@
     "boss-42c8ba9c3e0a31750nN_3N67FlNU": "source-only",
     "boss-6d460c21d8b953430nN63NS0F1ZX": "source-only",
     "boss-8975b5e3bf0c77f603B_3t-8FltV": "source-only",
-    "boss-663494c26bbe229b0nFz2di9F1dY": "source-only",
-    "boss-a1f8bd8ec47dbc1b0nR-39S6EFFR": "source-only",
-    "boss-b18eadb3221cb33b0nN_2dm_E1RW": "source-only"
+    "boss-663494c26bbe229b0nFz2di9F1dY": "source-only"
   },
   "candidateStatesById": {
     "boss-1a4d803e99f2ae6e03J42t67FVNY": {
@@ -2221,16 +2155,6 @@
       "evidence": "identity-conflict",
       "direction": "unclear",
       "evidenceObservedAt": "2026-09-17T04:30:31.824Z"
-    },
-    "boss-a1f8bd8ec47dbc1b0nR-39S6EFFR": {
-      "evidence": "incomplete-jd",
-      "direction": "unclear",
-      "evidenceObservedAt": "2026-09-18T18:24:08.389Z"
-    },
-    "boss-b18eadb3221cb33b0nN_2dm_E1RW": {
-      "evidence": "identity-conflict",
-      "direction": "unclear",
-      "evidenceObservedAt": "2026-09-18T18:23:42.036Z"
     }
   },
   "firstPublishedAtById": {
@@ -2284,15 +2208,13 @@
     "boss-42c8ba9c3e0a31750nN_3N67FlNU": "2026-09-17T04:31:45.266Z",
     "boss-6d460c21d8b953430nN63NS0F1ZX": "2026-09-17T04:31:45.266Z",
     "boss-8975b5e3bf0c77f603B_3t-8FltV": "2026-09-17T04:31:45.266Z",
-    "boss-663494c26bbe229b0nFz2di9F1dY": "2026-09-17T04:31:45.266Z",
-    "boss-a1f8bd8ec47dbc1b0nR-39S6EFFR": "2026-09-18T18:24:34.880Z",
-    "boss-b18eadb3221cb33b0nN_2dm_E1RW": "2026-09-18T18:24:34.880Z"
+    "boss-663494c26bbe229b0nFz2di9F1dY": "2026-09-17T04:31:45.266Z"
   },
   "candidateFeed": {
     "version": 1,
     "mode": "candidate-feed",
-    "publicationKind": "controlled",
-    "runId": "manual-20260918182331622-90b7b2c4",
+    "publicationKind": "feedback-filter",
+    "runId": "feedback-20260918184658184",
     "sampleRunId": "manual-20260918182331622-90b7b2c4",
     "sampledAt": "2026-09-18T18:24:33.427Z",
     "cardsThisSample": 45,
