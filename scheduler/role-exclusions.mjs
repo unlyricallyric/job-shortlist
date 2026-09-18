@@ -231,6 +231,16 @@ export function assessRoleExclusion(record, policy) {
     /伙伴转售|(?:伙伴|经销商|渠道).{0,6}(?:销售指标|收入指标|业绩)|转售指标|partnerrevenue|resellertargets/u,
     /联合打单|联合销售|商机互荐|coselling|jointselling|referrals/u,
   ].filter((pattern) => owning.some((text) => pattern.test(text))).length >= 2;
+  if (policy.version >= 4 && enabled.has("internal-operations") && !partnerLifecycle) {
+    const assistance = clauses.filter((text) => /^\d*(?:协助|负责|处理|整理|汇总|传达|安排|管理|协调|执行)/u.test(text));
+    const schedule = /(?:领导|管理层|负责人|上级).{0,16}(?:日程|行程|预约)|(?:日程|行程|预约).{0,16}(?:领导|管理层|负责人|上级)/u;
+    const paperwork = /汇总.{0,12}(?:部门|项目).{0,8}(?:报表|资料)|(?:部门|项目).{0,10}(?:报表|资料).{0,6}(?:整理|汇总)|资料整理/u;
+    const internalLiaison = /(?:上下级|内部).{0,10}(?:传达|事务)|(?:传达|沟通).{0,10}(?:上下级|内部)/u;
+    if (assistance.some((text) => schedule.test(text))
+      && assistance.filter((text) => schedule.test(text) || paperwork.test(text) || internalLiaison.test(text)).length >= 2) {
+      return result("internal-operations", "duties");
+    }
+  }
   if (enabled.has("sales-leadership")) {
     const position = title
       .replace(/(?:向|对接|支持|协助)(?:区域|公司)?销售(?:总监|负责人)(?:汇报)?/gu, "")
@@ -252,6 +262,9 @@ export function assessRoleExclusion(record, policy) {
     && /(?:拓展|开发|开拓)(?:与维护)?(?:终端|企业|新|大)?客户|负责.{0,10}(?:企业级|终端|大)客户.{0,65}(?:开拓|拓展|开发)|customeracquisition|endcustomerprospecting/u.test(text));
   if (!partnerTitle.test(title) && !/客户成功|customersuccess|csm/u.test(title) && !partnerLifecycle
     && !salesSupportTitle.test(title)) {
+    if (policy.version >= 4 && /^(?:高级|资深|区域)?(?:直营|(?:媒介|媒体)?广告|媒介|媒体)销售(?:经理|顾问|代表|专员|主管|总监)?(?:\d+(?:w|万|k|薪)?)*$/u.test(title)) {
+      return result("frontline-sales", "title");
+    }
     if (accountTitle.test(title) || representativeTitle.test(title)) return result("frontline-sales", "title");
     if (salesPurpose && /销售|sales(?:manager|executive)/u.test(title)) return result("frontline-sales", "duties");
   }
