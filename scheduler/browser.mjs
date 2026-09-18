@@ -119,7 +119,9 @@ export function appleErrorCode(error) {
   if (/not authorized|not permitted|1002|1743|Apple events.*not allowed/i.test(detail)) return "apple-events-denied";
   if (/chrome-not-running/.test(detail)) return "chrome-not-running";
   if (/unexpected-owned-tab/.test(detail)) return "unexpected-owned-tab";
-  if (/preserved-chat-changed/.test(detail)) return "browser-preserved-page-changed";
+  if (/preserved-(?:chat|source)-changed/.test(detail)) return "browser-preserved-page-changed";
+  if (/source-login-required/.test(detail)) return "login-required";
+  if (/source-captcha-required/.test(detail)) return "captcha";
   if (/non-normal-window/.test(detail)) return "browser-context-unavailable";
   if (/owner-window-missing|Can't get (?:window|tab)|Can’t get (?:window|tab)/i.test(detail)) return "chrome-window-unavailable";
   if (error.code === "command-timeout" || /connection.*invalid|not responding|timed out|application isn.t running|\(-609\)|\(-600\)/i.test(detail)) return "chrome-gui-unavailable";
@@ -223,6 +225,13 @@ function parseInspection(value) {
   throw new RunError("browser-result-invalid", "Unexpected Chrome window metadata; no task tab was created.", { blocked: true });
 }
 
+const sourceAuthRoutes = [
+  { roots: ["/web/user", "/web/geek/login", "/web/geek/signup", "/passport"], code: "login-required", marker: "source-login-required" },
+  { roots: ["/web/common/security-check", "/web/common/verify", "/web/common/captcha", "/web/geek/verify", "/web/geek/captcha"],
+    code: "captcha", marker: "source-captcha-required" },
+];
+const authPathMatches = (path, root) => path === root || path.startsWith(`${root}/`) || path === `${root}.html`;
+
 function ownedPageKind(value) {
   let url;
   try {
@@ -236,21 +245,40 @@ function ownedPageKind(value) {
   if (url.origin !== searchOrigin || url.username || url.password) {
     throw new RunError("unexpected-owned-tab", "The task tab was navigated elsewhere; it will not be overwritten.", { blocked: true });
   }
-  if (/^\/(?:web\/user\/(?:login(?:\.html)?\/?|signup\/?|register\/?)?|web\/geek\/(?:login|signup)\/?|passport(?:\/login)?\/?)$/.test(url.pathname)) {
-    throw new RunError("login-required", "The task source page requires login; no further replacement will be opened.", { blocked: true });
-  }
-  if (/^\/web\/(?:common\/(?:security-check|verify|captcha)(?:\.html)?|geek\/(?:verify|captcha))\/?$/.test(url.pathname)) {
-    throw new RunError("captcha", "The task source page requires verification; no further replacement will be opened.", { blocked: true });
+  const authentication = sourceAuthRoutes.find((route) => route.roots.some((root) => authPathMatches(url.pathname, root)));
+  if (authentication) {
+    throw new RunError(authentication.code, "The source route requires human authentication; no further replacement will be opened.", { blocked: true });
   }
   if (url.pathname === searchPath) return "search";
-  if (url.pathname === "/web/geek/chat") return "chat";
-  throw new RunError("unexpected-owned-tab", "The task tab was navigated elsewhere; it will not be overwritten.", { blocked: true });
+  return "source-page";
 }
 
 function requireSearchPage(value) {
   if (ownedPageKind(value) !== "search") {
     throw new RunError("unexpected-owned-tab", "A readable public search page is required; this page will not be navigated.", { blocked: true });
   }
+}
+
+function preservedSourceGuard(tab) {
+  const origins = [searchOrigin, `${searchOrigin}:443`];
+  return [
+    `if not (exists tab id ${tab.tabId} of sourceWindow) then error "preserved-source-changed"`,
+    `set preservedSourceUrl to URL of tab id ${tab.tabId} of sourceWindow`,
+    "set preservedSourcePath to missing value",
+    ...origins.flatMap((origin) => [
+      `if preservedSourceUrl is ${JSON.stringify(origin)} then set preservedSourcePath to "/"`,
+      `if preservedSourceUrl starts with ${JSON.stringify(`${origin}/`)} then set preservedSourcePath to text ${origin.length + 1} thru -1 of preservedSourceUrl`,
+    ]),
+    'if preservedSourcePath is missing value then error "preserved-source-changed"',
+    "set savedDelimiters to AppleScript's text item delimiters",
+    'set AppleScript\'s text item delimiters to "?"',
+    "set preservedSourcePath to text item 1 of preservedSourcePath",
+    'set AppleScript\'s text item delimiters to "#"',
+    "set preservedSourcePath to text item 1 of preservedSourcePath",
+    "set AppleScript's text item delimiters to savedDelimiters",
+    ...sourceAuthRoutes.flatMap(({ roots, marker }) => roots.map((root) =>
+      `if preservedSourcePath is ${JSON.stringify(root)} or preservedSourcePath starts with ${JSON.stringify(`${root}/`)} or preservedSourcePath is ${JSON.stringify(`${root}.html`)} then error ${JSON.stringify(marker)}`)),
+  ];
 }
 
 const sameTab = (a, b) => a?.windowId === b?.windowId && a?.tabId === b?.tabId;
@@ -315,7 +343,7 @@ export async function ownedTab(root, initialUrl, signal, services = {}) {
       "The original normal Chrome window is unavailable. Sleeping/locked/restoring GUI or a different profile cannot be assumed safe.", { blocked: true });
   };
   try {
-    let inspection, preservedChat = null;
+    let inspection, preservedPage = null;
     if (tab) {
       tabLines(tab);
       inspection = await waitContext(tab);
@@ -328,13 +356,13 @@ export async function ownedTab(root, initialUrl, signal, services = {}) {
           return inspection.tab;
         }
         if (!context || context.phase !== "bound" || !sameTab(context.tab, existing)) {
-          throw new RunError("browser-context-unavailable", "A confirmed original browser binding is required before preserving a chat page.", { blocked: true });
+          throw new RunError("browser-context-unavailable", "A confirmed original browser binding is required before preserving a source page.", { blocked: true });
         }
-        preservedChat = inspection;
+        preservedPage = inspection.tab;
       }
       if (inspection.kind === "owned") {
         tab = inspection.tab;
-        if (!preservedChat && !sameTab(existing, tab)) await atomicJson(join(root, "browser.json"), tab);
+        if (!preservedPage && !sameTab(existing, tab)) await atomicJson(join(root, "browser.json"), tab);
       }
     }
     if (context?.phase !== "created") {
@@ -342,11 +370,12 @@ export async function ownedTab(root, initialUrl, signal, services = {}) {
       const sourceWindow = tab?.windowId ?? (await discover(signal)).windowId;
       if (!Number.isSafeInteger(sourceWindow) || sourceWindow < 1) throw new RunError("invalid-tab", "Chrome returned an invalid source window.");
       await confirmProcess();
-      if (preservedChat) {
-        const current = parseInspection(await execute(ownedInspection(preservedChat.tab), signal, { timeout: 5000 }));
-        if (current.kind !== "owned" || !sameTab(current.tab, preservedChat.tab) || current.url !== preservedChat.url) {
-          throw new RunError("browser-preserved-page-changed", "The original chat tab changed during recovery; it was left untouched.", { blocked: true });
+      if (preservedPage) {
+        const current = parseInspection(await execute(ownedInspection(preservedPage), signal, { timeout: 5000 }));
+        if (current.kind !== "owned" || !sameTab(current.tab, preservedPage)) {
+          throw new RunError("browser-preserved-page-changed", "The original source window or tab changed during recovery; it was left untouched.", { blocked: true });
         }
+        ownedPageKind(current.url);
         await confirmProcess();
       }
       await saveContext("creating", null);
@@ -354,10 +383,7 @@ export async function ownedTab(root, initialUrl, signal, services = {}) {
         `if not (exists window id ${sourceWindow}) then error "owner-window-missing"`,
         `set sourceWindow to window id ${sourceWindow}`,
         'if mode of sourceWindow is not "normal" then error "non-normal-window"',
-        ...(preservedChat ? [
-          `if not (exists tab id ${preservedChat.tab.tabId} of sourceWindow) then error "preserved-chat-changed"`,
-          `if URL of tab id ${preservedChat.tab.tabId} of sourceWindow is not ${JSON.stringify(preservedChat.url)} then error "preserved-chat-changed"`,
-        ] : []),
+        ...(preservedPage ? preservedSourceGuard(preservedPage) : []),
         "set originalActiveId to id of active tab of sourceWindow",
         `set newTaskTab to make new tab at end of tabs of sourceWindow with properties {URL:${JSON.stringify(initialUrl)}}`,
         "set createdId to id of newTaskTab",
@@ -372,7 +398,7 @@ export async function ownedTab(root, initialUrl, signal, services = {}) {
       try { created = await execute(creationLines, signal); }
       catch (error) {
         // This exact pre-creation guard proves that no new page was made; uncertain replies stay blocked.
-        if (preservedChat && error.code === "browser-preserved-page-changed") await saveContext("bound", existing);
+        if (preservedPage && ["browser-preserved-page-changed", "login-required", "captcha"].includes(error.code)) await saveContext("bound", existing);
         throw error;
       }
       const match = /^(\d+),(\d+)$/.exec(created);
@@ -396,7 +422,7 @@ export async function ownedTab(root, initialUrl, signal, services = {}) {
     await confirmProcess();
     await saveContext("bound", tab);
     await appendLog(root, { event: "browser-task-tab-recovered", context: "original-normal-window",
-      reason: preservedChat ? "preserved-source-chat" : "missing-task-tab",
+      reason: preservedPage ? "preserved-source-page" : "missing-task-tab",
       elapsedMs: Date.now() - startedAt });
     return tab;
   } catch (error) {

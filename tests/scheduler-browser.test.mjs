@@ -280,7 +280,7 @@ test("transient GUI restoration is rechecked boundedly rather than interpreted a
 
 test("unexpected navigation and Apple Events denial do not trigger tab recovery", async (t) => {
   const root = await browserFixture(t);
-  for (const url of ["https://example.invalid/", "https://www.zhipin.com/web/geek/jobs-other"]) {
+  for (const url of ["https://example.invalid/", "https://zhipin.com/web/geek/jobs"]) {
     await assert.rejects(ownedTab(root, initialUrl, undefined, servicesFor({
       apple: async () => observed(originalTab, url),
     })), { code: "unexpected-owned-tab" });
@@ -304,7 +304,7 @@ test("a confirmed same-origin chat tab is preserved while one new search tab is 
       calls.push(lines);
       if (lines.some((line) => line.includes("make new tab"))) {
         creations++;
-        assert.ok(lines.some((line) => line.includes("if URL of tab id 11 of sourceWindow is not")));
+        assert.ok(lines.some((line) => line.includes("set preservedSourceUrl to URL of tab id 11 of sourceWindow")));
         assert.ok(lines.some((line) => line.includes(`properties {URL:${JSON.stringify(initialUrl)}}`)));
         assert.ok(lines.some((line) => line.includes("if (id of active tab of sourceWindow) is createdId then")));
         assert.ok(!lines.some((line) => /set URL|close|activate|make new window|javascript/i.test(line)));
@@ -326,20 +326,47 @@ test("a confirmed same-origin chat tab is preserved while one new search tab is 
   assert.equal(sourceChecks, 1);
   assert.equal(calls.length, 4);
   const log = await readFile(join(root, "logs/scheduler.jsonl"), "utf8");
-  assert.match(log, /preserved-source-chat/);
+  assert.match(log, /preserved-source-page/);
   assert.doesNotMatch(log, /TEST_PRIVATE_SELECTOR|\/web\/geek\/chat/);
 });
 
-test("only the exact known chat route may create a replacement; login and captcha routes block distinctly", async (t) => {
+test("same-origin home and other ordinary pages are preserved without consulting their DOM", async (t) => {
+  for (const route of ["https://www.zhipin.com/", "https://www.zhipin.com", "https://www.zhipin.com:443/",
+    "https://www.zhipin.com/web/geek/recommend?TEST_PRIVATE_SELECTOR=1", "https://www.zhipin.com/web/geek/chat/",
+    "https://www.zhipin.com/web/geek/jobs-other"]) {
+    const root = await browserFixture(t), fresh = { windowId: 10, tabId: 12 };
+    await atomicJson(join(root, "browser-context.json"), { version: 1, process: chromeProcess, phase: "bound", tab: originalTab });
+    let created = 0;
+    const services = servicesFor({
+      apple: async (lines) => {
+        if (lines.some((line) => line.includes("make new tab"))) {
+          created++;
+          assert.ok(lines.some((line) => line.includes('"https://www.zhipin.com/"')));
+          assert.ok(lines.some((line) => line.includes('"https://www.zhipin.com:443/"')));
+          assert.ok(lines.some((line) => line.includes('then error "source-login-required"')));
+          assert.ok(lines.some((line) => line.includes('then error "source-captcha-required"')));
+          assert.ok(!lines.join("\n").includes("TEST_PRIVATE_SELECTOR"));
+          assert.ok(!lines.some((line) => /set URL|close|activate|make new window|javascript/i.test(line)));
+          return "10,12";
+        }
+        return created ? observed(fresh) : observed(originalTab, route);
+      },
+      sourceReady: async (tab) => {
+        assert.deepEqual(tab, fresh, "Only the newly created search page may be read.");
+        return { state: "ready" };
+      },
+    });
+    assert.deepEqual(await ownedTab(root, initialUrl, undefined, services), fresh);
+    assert.deepEqual(await ownedTab(root, initialUrl, undefined, services), fresh);
+    assert.equal(created, 1, route);
+  }
+});
+
+test("cross-origin and credential-bearing contexts are not reused; login and captcha routes block distinctly", async (t) => {
   const root = await browserFixture(t);
   await atomicJson(join(root, "browser-context.json"), { version: 1, process: chromeProcess, phase: "bound", tab: originalTab });
   for (const [url, code] of [
-    ["https://www.zhipin.com/web/geek/chat-more", "unexpected-owned-tab"],
-    ["https://www.zhipin.com/web/geek/chat/", "unexpected-owned-tab"],
-    ["https://www.zhipin.com/web/geek/chat/messages", "unexpected-owned-tab"],
-    ["https://www.zhipin.com/web/geek/%63hat", "unexpected-owned-tab"],
-    ["https://www.zhipin.com/web/geek/chat%2F", "unexpected-owned-tab"],
-    ["https://www.zhipin.com/unknown", "unexpected-owned-tab"],
+    ["https://example.invalid/web/geek/chat", "unexpected-owned-tab"],
     ["https://www.zhipin.com.example.invalid/web/geek/chat", "unexpected-owned-tab"],
     ["http://www.zhipin.com/web/geek/chat", "unexpected-owned-tab"],
     ["https://user@www.zhipin.com/web/geek/chat", "unexpected-owned-tab"],
@@ -347,6 +374,7 @@ test("only the exact known chat route may create a replacement; login and captch
     ["https://www.zhipin.com\\web\\geek\\chat", "unexpected-owned-tab"],
     ["https://www.zhipin.com/web/user/", "login-required"],
     ["https://www.zhipin.com/web/user/login", "login-required"],
+    ["https://www.zhipin.com/web/user/login?redirect=/", "login-required"],
     ["https://www.zhipin.com/web/geek/login", "login-required"],
     ["https://www.zhipin.com/passport/login", "login-required"],
     ["https://www.zhipin.com/web/common/security-check.html", "captcha"],
@@ -383,8 +411,13 @@ test("chat recovery requires a confirmed process binding and preserves the page 
   assert.deepEqual(await readJson(join(root, "browser.json")), originalTab);
 });
 
-test("user navigation or tab movement during chat recovery does not overwrite any user page", async (t) => {
-  for (const changed of [observed(originalTab, initialUrl), observed({ windowId: 20, tabId: 11 }, "https://www.zhipin.com/web/geek/chat"), "missing-tab|10"]) {
+test("cross-origin navigation or tab movement during source-page recovery does not overwrite any user page", async (t) => {
+  for (const [changed, code] of [
+    [observed(originalTab, "https://example.invalid/"), "unexpected-owned-tab"],
+    [observed(originalTab, "https://www.zhipin.com/web/user/login"), "login-required"],
+    [observed({ windowId: 20, tabId: 11 }, "https://www.zhipin.com/web/geek/chat"), "browser-preserved-page-changed"],
+    ["missing-tab|10", "browser-preserved-page-changed"],
+  ]) {
     const root = await browserFixture(t);
     await atomicJson(join(root, "browser-context.json"), { version: 1, process: chromeProcess, phase: "bound", tab: originalTab });
     let calls = 0;
@@ -393,10 +426,30 @@ test("user navigation or tab movement during chat recovery does not overwrite an
         assert.ok(!lines.some((line) => line.includes("make new tab")));
         return ++calls === 1 ? observed(originalTab, "https://www.zhipin.com/web/geek/chat") : changed;
       },
-    })), { code: "browser-preserved-page-changed" });
+    })), { code });
     assert.equal((await readJson(join(root, "browser-context.json"))).phase, "bound");
     assert.deepEqual(await readJson(join(root, "browser.json")), originalTab);
   }
+});
+
+test("ordinary same-origin navigation between checks does not require the old URL or query to remain identical", async (t) => {
+  const root = await browserFixture(t), fresh = { windowId: 10, tabId: 12 };
+  await atomicJson(join(root, "browser-context.json"), { version: 1, process: chromeProcess, phase: "bound", tab: originalTab });
+  let checks = 0, created = 0;
+  assert.deepEqual(await ownedTab(root, initialUrl, undefined, servicesFor({
+    apple: async (lines) => {
+      if (lines.some((line) => line.includes("make new tab"))) {
+        created++;
+        assert.ok(!lines.some((line) => line.includes("is not \"https://www.zhipin.com")));
+        return "10,12";
+      }
+      return observed(originalTab, ++checks === 1
+        ? "https://www.zhipin.com/web/geek/chat?TEST_OLD=1"
+        : "https://www.zhipin.com/?TEST_NEW=2");
+    },
+    sourceReady: async (tab) => { assert.deepEqual(tab, fresh); return { state: "ready" }; },
+  })), fresh);
+  assert.equal(created, 1);
 });
 
 test("Chrome changing after chat revalidation blocks before creating a page", async (t) => {
@@ -414,7 +467,7 @@ test("Chrome changing after chat revalidation blocks before creating a page", as
 });
 
 test("an exact chat pre-creation race resets only a definitely unused claim while uncertain creation stays blocked", async (t) => {
-  for (const code of ["browser-preserved-page-changed", "chrome-gui-unavailable"]) {
+  for (const code of ["browser-preserved-page-changed", "login-required", "captcha", "chrome-gui-unavailable"]) {
     const root = await browserFixture(t);
     await atomicJson(join(root, "browser-context.json"), { version: 1, process: chromeProcess, phase: "bound", tab: originalTab });
     let creationCalls = 0;
@@ -422,7 +475,7 @@ test("an exact chat pre-creation race resets only a definitely unused claim whil
       apple: async (lines) => {
         if (lines.some((line) => line.includes("make new tab"))) {
           creationCalls++;
-          const guard = lines.findIndex((line) => line.includes('then error "preserved-chat-changed"'));
+          const guard = lines.findIndex((line) => line.includes('then error "preserved-source-changed"'));
           const create = lines.findIndex((line) => line.includes("make new tab"));
           assert.ok(guard >= 0 && guard < create);
           throw new RunError(code, "TEST_ONLY");
@@ -432,7 +485,7 @@ test("an exact chat pre-creation race resets only a definitely unused claim whil
     });
     await assert.rejects(ownedTab(root, initialUrl, undefined, services), { code });
     assert.deepEqual(await readJson(join(root, "browser.json")), originalTab);
-    assert.equal((await readJson(join(root, "browser-context.json"))).phase, code === "browser-preserved-page-changed" ? "bound" : "creating");
+    assert.equal((await readJson(join(root, "browser-context.json"))).phase, code === "chrome-gui-unavailable" ? "creating" : "bound");
     if (code === "chrome-gui-unavailable") {
       await assert.rejects(ownedTab(root, initialUrl, undefined, services), { code: "browser-recovery-unconfirmed" });
       assert.equal(creationCalls, 1);
@@ -445,6 +498,7 @@ test("a new chat-replacement tab that redirects to authentication or chat is not
     ["https://www.zhipin.com/web/user/login", "login-required"],
     ["https://www.zhipin.com/web/common/security-check", "captcha"],
     ["https://www.zhipin.com/web/geek/chat", "unexpected-owned-tab"],
+    ["https://www.zhipin.com/", "unexpected-owned-tab"],
   ]) {
     const root = await browserFixture(t), fresh = { windowId: 10, tabId: 12 };
     await atomicJson(join(root, "browser-context.json"), { version: 1, process: chromeProcess, phase: "bound", tab: originalTab });
@@ -617,5 +671,8 @@ test("Apple Events errors distinguish GUI unavailability from permission and nav
     [{ stderr: "unexpected-owned-tab" }, "unexpected-owned-tab"],
     [{ stderr: "non-normal-window" }, "browser-context-unavailable"],
     [{ stderr: "preserved-chat-changed" }, "browser-preserved-page-changed"],
+    [{ stderr: "preserved-source-changed" }, "browser-preserved-page-changed"],
+    [{ stderr: "source-login-required" }, "login-required"],
+    [{ stderr: "source-captcha-required" }, "captcha"],
   ]) assert.equal(appleErrorCode(error), code);
 });
