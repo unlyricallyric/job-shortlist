@@ -1,14 +1,14 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-18T19:06:04.648Z",
+  "generatedAt": "2026-09-18T19:14:34.530Z",
   "run": {
     "source": "BOSS直聘 + 字节跳动招聘官网 + 猎聘",
     "scope": "上海 · 企业级科技 · 岗位采样与已保存线索",
     "mode": "采样候选 · 累计快照",
     "cardsReviewed": 408,
     "detailsRead": 148,
-    "selectedCount": 60,
-    "newCount": 5
+    "selectedCount": 57,
+    "newCount": 2
   },
   "jobs": [
     {
@@ -1853,70 +1853,6 @@
       "isNew": false
     },
     {
-      "id": "boss-656a0c820e2c59df0nN43Ny0FFdR",
-      "title": "16薪—中层协助管理(急招)",
-      "company": "藏烨萱",
-      "city": "上海",
-      "location": "上海·虹口区·江湾",
-      "source": "BOSS直聘",
-      "url": "https://www.zhipin.com/job_detail/656a0c820e2c59df0nN43Ny0FFdR.html",
-      "salaryText": null,
-      "salaryMinK": null,
-      "salaryMaxK": null,
-      "salaryMonths": null,
-      "experienceText": "1-3年",
-      "educationText": "大专",
-      "category": null,
-      "matchScore": null,
-      "priority": "采样候选 · 待你判断",
-      "summary": [
-        "已读取来源中的职责与要求，具体职业方向仍需核对，不据渠道或合作等字样认定为商业伙伴岗位。"
-      ],
-      "requirements": [],
-      "matchReasons": [],
-      "concerns": [
-        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
-      ],
-      "languageNote": null,
-      "publishedAt": null,
-      "firstSeen": "2026-09-18T19:05:24.384Z",
-      "lastSeen": "2026-09-18T19:05:50.647Z",
-      "jdRead": true,
-      "isNew": true
-    },
-    {
-      "id": "boss-9684951cd2dc2f850nJ92d28FFtX",
-      "title": "媒.介/广/告销/售+40-50W",
-      "company": "云南瀚川数字科技",
-      "city": "上海",
-      "location": "上海·静安区·静安寺",
-      "source": "BOSS直聘",
-      "url": "https://www.zhipin.com/job_detail/9684951cd2dc2f850nJ92d28FFtX.html",
-      "salaryText": null,
-      "salaryMinK": null,
-      "salaryMaxK": null,
-      "salaryMonths": null,
-      "experienceText": "1-3年",
-      "educationText": "本科",
-      "category": null,
-      "matchScore": null,
-      "priority": "采样候选 · 待你判断",
-      "summary": [
-        "尚未取得可完整核对的 JD，请查看原岗位。"
-      ],
-      "requirements": [],
-      "matchReasons": [],
-      "concerns": [
-        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
-      ],
-      "languageNote": null,
-      "publishedAt": null,
-      "firstSeen": "2026-09-18T19:05:50.647Z",
-      "lastSeen": "2026-09-18T19:05:50.647Z",
-      "jdRead": false,
-      "isNew": true
-    },
-    {
       "id": "boss-ed1639fdf8ae62e70nd82t6_FFVR",
       "title": "测试",
       "company": "中电金信",
@@ -1962,38 +1898,6 @@
       "salaryMonths": null,
       "experienceText": "经验不限",
       "educationText": "本科",
-      "category": null,
-      "matchScore": null,
-      "priority": "采样候选 · 待你判断",
-      "summary": [
-        "尚未取得可完整核对的 JD，请查看原岗位。"
-      ],
-      "requirements": [],
-      "matchReasons": [],
-      "concerns": [
-        "来自有限搜索采样，尚未人工选入；方向、任职资格、岗位有效性及实际条件均需自行核对。"
-      ],
-      "languageNote": null,
-      "publishedAt": null,
-      "firstSeen": "2026-09-18T19:05:50.647Z",
-      "lastSeen": "2026-09-18T19:05:50.647Z",
-      "jdRead": false,
-      "isNew": true
-    },
-    {
-      "id": "boss-32b22b400adf0fb90nN53tS4E1ZW",
-      "title": "直营销售经理",
-      "company": "企域",
-      "city": "上海",
-      "location": "上海·徐汇区·漕河泾",
-      "source": "BOSS直聘",
-      "url": "https://www.zhipin.com/job_detail/32b22b400adf0fb90nN53tS4E1ZW.html",
-      "salaryText": null,
-      "salaryMinK": null,
-      "salaryMaxK": null,
-      "salaryMonths": null,
-      "experienceText": "1-3年",
-      "educationText": "大专",
       "category": null,
       "matchScore": null,
       "priority": "采样候选 · 待你判断",
@@ -2069,11 +1973,8 @@
     "boss-6d460c21d8b953430nN63NS0F1ZX": "source-only",
     "boss-8975b5e3bf0c77f603B_3t-8FltV": "source-only",
     "boss-663494c26bbe229b0nFz2di9F1dY": "source-only",
-    "boss-656a0c820e2c59df0nN43Ny0FFdR": "source-only",
-    "boss-9684951cd2dc2f850nJ92d28FFtX": "source-only",
     "boss-ed1639fdf8ae62e70nd82t6_FFVR": "source-only",
-    "boss-eb8593f8ee33af240nN82tq7FFFQ": "source-only",
-    "boss-32b22b400adf0fb90nN53tS4E1ZW": "source-only"
+    "boss-eb8593f8ee33af240nN82tq7FFFQ": "source-only"
   },
   "candidateStatesById": {
     "boss-1a4d803e99f2ae6e03J42t67FVNY": {
@@ -2321,27 +2222,12 @@
       "direction": "unclear",
       "evidenceObservedAt": "2026-09-17T04:30:31.824Z"
     },
-    "boss-656a0c820e2c59df0nN43Ny0FFdR": {
-      "evidence": "full-jd",
-      "direction": "unclear",
-      "evidenceObservedAt": "2026-09-18T19:05:24.384Z"
-    },
-    "boss-9684951cd2dc2f850nJ92d28FFtX": {
-      "evidence": "card-only",
-      "direction": "unclear",
-      "evidenceObservedAt": "2026-09-18T19:05:50.647Z"
-    },
     "boss-ed1639fdf8ae62e70nd82t6_FFVR": {
       "evidence": "card-only",
       "direction": "unclear",
       "evidenceObservedAt": "2026-09-18T19:05:50.647Z"
     },
     "boss-eb8593f8ee33af240nN82tq7FFFQ": {
-      "evidence": "card-only",
-      "direction": "unclear",
-      "evidenceObservedAt": "2026-09-18T19:05:50.647Z"
-    },
-    "boss-32b22b400adf0fb90nN53tS4E1ZW": {
       "evidence": "card-only",
       "direction": "unclear",
       "evidenceObservedAt": "2026-09-18T19:05:50.647Z"
@@ -2399,17 +2285,14 @@
     "boss-6d460c21d8b953430nN63NS0F1ZX": "2026-09-17T04:31:45.266Z",
     "boss-8975b5e3bf0c77f603B_3t-8FltV": "2026-09-17T04:31:45.266Z",
     "boss-663494c26bbe229b0nFz2di9F1dY": "2026-09-17T04:31:45.266Z",
-    "boss-656a0c820e2c59df0nN43Ny0FFdR": "2026-09-18T19:06:04.648Z",
-    "boss-9684951cd2dc2f850nJ92d28FFtX": "2026-09-18T19:06:04.648Z",
     "boss-ed1639fdf8ae62e70nd82t6_FFVR": "2026-09-18T19:06:04.648Z",
-    "boss-eb8593f8ee33af240nN82tq7FFFQ": "2026-09-18T19:06:04.648Z",
-    "boss-32b22b400adf0fb90nN53tS4E1ZW": "2026-09-18T19:06:04.648Z"
+    "boss-eb8593f8ee33af240nN82tq7FFFQ": "2026-09-18T19:06:04.648Z"
   },
   "candidateFeed": {
     "version": 1,
     "mode": "candidate-feed",
-    "publicationKind": "controlled",
-    "runId": "manual-20260918190502425-5ffe715c",
+    "publicationKind": "feedback-filter",
+    "runId": "feedback-20260918191434530",
     "sampleRunId": "manual-20260918190502425-5ffe715c",
     "sampledAt": "2026-09-18T19:06:03.762Z",
     "cardsThisSample": 39,
